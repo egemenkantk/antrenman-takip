@@ -1,0 +1,29 @@
+# Sunucu fonksiyonlarının son uyarı/hata kayıtlarını gösterir (sorun giderme için).
+# Kayıtlarda şifre bulunmaz; telefon numaralarının yalnızca son 2 hanesi yazılır.
+
+name: Sunucu kayıtları
+
+on:
+  workflow_dispatch:
+    inputs:
+      saat:
+        description: 'Son kaç saatin kayıtları'
+        default: '2'
+
+permissions:
+  contents: read
+
+jobs:
+  oku:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kayıtları oku
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
+          gcloud logging read 'resource.type="cloud_run_revision" AND severity>=WARNING' \
+            --freshness="${{ inputs.saat }}h" --limit=40 --project antrenman-takip-e6e4f \
+            --format='value(timestamp, resource.labels.service_name, textPayload, jsonPayload.message, jsonPayload)'
+          rm -f "$RUNNER_TEMP/sa.json"

@@ -68,11 +68,18 @@ exports.girisYap = onCall(async (request) => {
   const gecersiz = new HttpsError('invalid-argument', 'Telefon numarası veya şifre hatalı.');
   if (!telefon || !sifre) throw gecersiz;
 
+  const iz = '…' + telefon.slice(-2); // kayıtlarda numaranın yalnızca son 2 hanesi
   const kayit = await kayitGetir(telefon);
-  if (!kayit || kayit.aktif === false || !kayit.uid) throw gecersiz;
+  if (!kayit || kayit.aktif === false || !kayit.uid) {
+    console.warn('girisYap reddedildi', { iz, sebep: !kayit ? 'kayit-yok' : !kayit.uid ? 'uid-yok' : 'pasif' });
+    throw gecersiz;
+  }
 
   const kullanici = await admin.auth().getUser(kayit.uid).catch(() => null);
-  if (!kullanici || kullanici.disabled) throw gecersiz;
+  if (!kullanici || kullanici.disabled) {
+    console.warn('girisYap reddedildi', { iz, sebep: !kullanici ? 'hesap-yok' : 'hesap-kapali' });
+    throw gecersiz;
+  }
 
   const r = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
@@ -84,6 +91,7 @@ exports.girisYap = onCall(async (request) => {
   );
   if (!r.ok) {
     const hata = (await r.json().catch(() => ({})))?.error?.message || '';
+    console.warn('girisYap reddedildi', { iz, sebep: 'sifre-kontrolu', durum: r.status, hata });
     if (hata.startsWith('TOO_MANY_ATTEMPTS')) {
       throw new HttpsError('resource-exhausted', 'Çok fazla hatalı deneme. Biraz sonra tekrar deneyin.');
     }
