@@ -21,6 +21,12 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - İlk sürümde kurum seçimi YOK. Siteye giren herkes doğrudan Fitkon'u görür.
 - Arka planda tüm kayıtlar bir kurum etiketiyle (Fitkon) tutulur. Görünmez, ama ileride ikinci kurum eklemeyi kolaylaştırır.
 - Tüm yetki yöneticide (Çağla). Koçlara ek yetkiler tek tek açılabilir.
+- Fitkon'un iki salonu var; gruplar, dersler ve paketler salona bağlı.
+
+### Hesaplar ve veri saklama
+- Öğrenci hesabında yaş sınırı yok: telefonu olan reşit olmayan sporcu aile onayıyla kendi hesabını kullanabilir.
+- Wellness formu salonda doldurulur; öğrenci/veli sadece geçmişi görür.
+- Ayrılan kişi pasife alınır, silinmez (KVKK silme talebi hariç).
 
 ### Roller
 | Rol | Görebildikleri |
@@ -43,14 +49,16 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - "Beni hatırla" ile uzun süreli oturum; ana ekrana eklenebilir (uygulama gibi açılır).
 
 ### Paketler ve ödeme
-- Paketler bir kez tanımlanır: ad, ders sayısı, geçerlilik süresi, fiyat. Fiyatlar herkese aynı, paketler farklı.
+- Paketler bir kez tanımlanır: ad, salon, tür (grup/bireysel), kitle (sporcu/yetişkin PT danışanı), ders sayısı, fiyat. Fiyatlar aynı paket için herkese aynı; salona, türe ve kitleye göre farklı paketler var.
+- Paketlerde süre sınırı YOK; paket dersler bitince biter.
+- Bir kişide aynı anda birden fazla paket olabilir; ders, türüne uyan en eski aktif paketten düşer.
 - Fiyat değişikliği yalnızca yeni satışlara yansır.
 - Paket atanırken isteğe bağlı indirim/not alanı.
 - Ödeme siteden ALINMAZ. Ödemeyi her koç kendi öğrencisinden alır ve sisteme kendisi kaydeder (tutar, tarih, yöntem, tahsil eden koç otomatik); taksitte kalan otomatik hesaplanır.
 - Koç yalnızca kendi öğrencilerinin ödemelerini görür; yönetici hepsini görür, tahsil eden koça göre filtreleyebilir.
 - Kaydedilen ödemede yapılan her düzeltme kim/ne zaman bilgisiyle loglanır; silme yalnızca yöneticide.
 - Yoklama girilince ders otomatik düşer.
-- Öğrenci görür: aktif paket, kalan ders, bitiş tarihi, ödenen/kalan tutar, ödeme geçmişi.
+- Öğrenci görür: aktif paket(ler), kalan ders, ödenen/kalan tutar, ödeme geçmişi.
 - Koçlara yapılan ödemeler / hakediş: kapsam dışı (öğrenciden tahsilat ise kapsamda, koçlar kaydeder).
 
 ### Erteleme ve iptal
@@ -60,7 +68,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Bildirimler
 - Şimdilik yalnızca site içi (bildirim alanı + ana sayfada önemli kartlar).
-- Örnekler: paket bitiyor, ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
+- Örnekler: paket azaldı (son dersler), ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
 - Yönetici hangi otomatik bildirimlerin çalışacağını açıp kapatabilir.
 - SMS/WhatsApp bildirimi ileride eklenebilir.
 
@@ -118,7 +126,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ### Claude
 - [x] Proje notları (bu dosya)
-- [ ] Veri modeli ve ekran listesi
+- [x] Veri modeli ve ekran listesi (VERI_MODELI.md)
 - [ ] Kod iskeleti, giriş sistemi, roller, otomatik yayın, test/gerçek ortam
 - [ ] Mevcut iki sayfadan veri aktarma aracı
 - [ ] Branş ve sakatlık kütüphanesi taslakları
