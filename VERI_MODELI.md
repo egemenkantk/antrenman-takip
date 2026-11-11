@@ -188,7 +188,9 @@ Her kişinin altında kendine ait kayıtlar:
 
 > Raporlar metin olarak okunur; grafikler (tek tek sıçrama değerleri) resim olduğu için alınmaz.
 > Boy ve kilo rapordan kişi kaydına güncellenebilir (onayla).
-> Her test türü için bir okuyucu tanımlanır; elimizdeki örnekler: Bosco. Bekleniyor: Denge ve diğerleri.
+> Ortak üst kısım tek okuyucuyla, teste özel bölümler test türüne göre okunur. Elimizdeki örnekler: Bosco, Denge (sağ ayak).
+> Denge: puan, bölge dağılımı (A, H, B… yüzdeleri), X-Y eksen eğilimi (ön/arka, sağ/sol %). Sağ ve sol ayak raporları birleştirilip asimetri hesaplanır.
+> Takım karşılaştırmaları (Performanz'ın 'takım' alanına göre) alınmaz; karşılaştırmalar sitede kendi gruplarımızla yapılır.
 | branslar | Ana kaslar, kas çalışma şekli, enerji sistemleri, riskler, öncelikli testler, sezon yapısı, kaynaklar (Aşama 4) |
 | sakatlikTipleri | Aşamalar, geçiş kriterleri, kaçınılacaklar, koçun yapacakları, kaynaklar (Aşama 4) |
 

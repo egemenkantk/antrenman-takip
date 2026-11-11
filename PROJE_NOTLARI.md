@@ -109,7 +109,10 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Portal her test için PDF rapor veriyor; raporlar aynı mantıkta ve metni okunabilir.
 - Sitede "Performanz raporu yükle": PDF'ler toplu yüklenir, değerler okunur, sporcu ad + doğum tarihiyle eşleşir, önizleme ve onayla kaydedilir; mükerrer yükleme engellenir.
 - Özet değerler, normatif seviye, boy/kilo alınır; grafiklerdeki tek tek değerler alınmaz.
-- Her test türü için örnek rapor gerekli. Elde: Bosco. Bekleniyor: Denge ve diğer test türleri.
+- Her test türü için örnek rapor gerekli. Elde: Bosco, Denge (sağ ayak). Bekleniyor: diğer test türleri.
+- Tüm raporlarda üst kısım (sporcu ve test bilgileri) aynı; altta teste özel bölümler var.
+- Denge sağ ve sol ayak ayrı rapor; ikisi birleştirilip sağ-sol farkı (asimetri) hesaplanır.
+- Performanz'ın otomatik yorum metinleri kendi içinde tutarsız olabiliyor; esas alınan ham sayılar, yorum metni ayrıca saklanır.
 - İleride Performanz API erişimi verirse otomatik aktarıma geçilir (Performanz'a sorulacak).
 
 ### Mevcut özellikler (taşınacak)
