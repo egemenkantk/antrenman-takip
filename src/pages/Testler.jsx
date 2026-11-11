@@ -217,6 +217,8 @@ function PerformanzYukle({ kisiler, ben, onKaydedildi }) {
             belirsizAnahtar,
             deger: o.deger,
             taraf: o.taraf || null,
+            ana: !!o.ana,
+            birim: o.ana ? r.birim : '',
             dahil: true,
           });
         }
@@ -251,8 +253,8 @@ function PerformanzYukle({ kisiler, ben, onKaydedildi }) {
           deger: s.deger,
           taraf: s.taraf,
           kaynak: 'performanz',
-          detay: s.r.detay || {},
-          normSeviye: s.r.normSeviye || null,
+          detay: s.ana ? s.r.detay || {} : {},
+          normSeviye: s.ana ? s.r.normSeviye || null : null,
           yasGrubu: s.r.yasGrubu || null,
           performanzTur: s.r.tur,
           dosyaAdi: s.dosya,
@@ -345,9 +347,9 @@ function PerformanzYukle({ kisiler, ben, onKaydedildi }) {
                         <>{s.test}{s.taraf ? ` · ${TARAF_ADI[s.taraf]}` : ''}</>
                       )}
                     </td>
-                    <td>{sayiGoster(s.deger)} {s.r.birim}</td>
+                    <td>{sayiGoster(s.deger)} {s.birim}</td>
                     <td>
-                      {s.r.normSeviye ? <span className={'norm-rozet n-' + s.r.normSeviye}>{s.r.normSeviye}</span> : s.r.normTakimdan ? <small className="aciklama">norm yok</small> : '—'}
+                      {!s.ana ? '' : s.r.normSeviye ? <span className={'norm-rozet n-' + s.r.normSeviye}>{s.r.normSeviye}</span> : s.r.normTakimdan ? <small className="aciklama">norm yok</small> : '—'}
                     </td>
                   </tr>
                 )

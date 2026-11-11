@@ -135,15 +135,29 @@ export function raporuOku(hamOgeler) {
       const v = altindakiDeger(ogeler, e);
       if (v) sonucNesnesi.detay[k] = sayiyaCevir(v.replace(/[^\d,.-]/g, ''));
     }
-    sonucNesnesi.olcumler.push({ test: 'Bosco skoru (cm)', deger: sonuc });
+    const d = sonucNesnesi.detay;
+    sonucNesnesi.olcumler.push({ test: 'Bosco skoru (cm)', deger: sonuc, ana: true });
+    for (const [k, test] of [
+      ['enYuksek', 'Bosco · en yüksek sıçrama (cm)'],
+      ['ortalamaYukseklik', 'Bosco · ortalama yükseklik (cm)'],
+      ['ortalamaRsi', 'Bosco · ortalama RSI'],
+      ['ortalamaTemas', 'Bosco · ortalama temas süresi (sn)'],
+      ['yorgunlukIndeksi', 'Bosco · yorgunluk indeksi (%)'],
+      ['toplamSicrama', 'Bosco · toplam sıçrama'],
+    ]) {
+      if (d[k] != null) sonucNesnesi.olcumler.push({ test, deger: d[k] });
+    }
   } else if (/counter movement|cmj/.test(t)) {
     const ucus = altindakiDeger(ogeler, 'Uçuş Süresi');
     if (ucus) sonucNesnesi.detay.ucusSuresi = sayiyaCevir(ucus.replace(/[^\d,.-]/g, ''));
-    sonucNesnesi.olcumler.push({ test: 'CMJ (cm)', deger: sonuc });
+    sonucNesnesi.olcumler.push({ test: 'CMJ (cm)', deger: sonuc, ana: true });
+    if (sonucNesnesi.detay.ucusSuresi != null) {
+      sonucNesnesi.olcumler.push({ test: 'CMJ · uçuş süresi (sn)', deger: sonucNesnesi.detay.ucusSuresi });
+    }
   } else if (/squat jump/.test(t)) {
-    sonucNesnesi.olcumler.push({ test: 'Squat jump (cm)', deger: sonuc });
+    sonucNesnesi.olcumler.push({ test: 'Squat jump (cm)', deger: sonuc, ana: true });
   } else if (/drop jump/.test(t)) {
-    sonucNesnesi.olcumler.push({ test: 'Drop jump RSI', deger: sonuc });
+    sonucNesnesi.olcumler.push({ test: 'Drop jump RSI', deger: sonuc, ana: true });
   } else if (/denge/.test(t)) {
     const taraf = /sağ/.test(t) ? 'sag' : /sol/.test(t) ? 'sol' : null;
     const bolgeler = {};
@@ -156,7 +170,7 @@ export function raporuOku(hamOgeler) {
       ...(onArka ? { onArkaYon: onArka[1], onArkaYuzde: sayiyaCevir(onArka[2]) } : {}),
       ...(sagSol ? { sagSolYon: sagSol[1], sagSolYuzde: sayiyaCevir(sagSol[2]) } : {}),
     };
-    sonucNesnesi.olcumler.push({ test: 'Denge (puan)', deger: sonuc, taraf });
+    sonucNesnesi.olcumler.push({ test: 'Denge (puan)', deger: sonuc, taraf, ana: true });
   } else if (/sürat|surat/.test(t)) {
     const araSureler = [];
     const gorulen = new Set();
@@ -171,17 +185,17 @@ export function raporuOku(hamOgeler) {
     sonucNesnesi.mesafe = mesafe;
     if (/belirsiz/.test(t)) {
       sonucNesnesi.belirsiz = true; // hangi test olduğu yüklemede seçilir (ör. V-cut)
-      sonucNesnesi.olcumler.push({ test: null, deger: sonuc });
+      sonucNesnesi.olcumler.push({ test: null, deger: sonuc, ana: true });
     } else {
       const m = /(\d+)\s*metre/.exec(t);
       const n = m ? Number(m[1]) : mesafe;
-      sonucNesnesi.olcumler.push({ test: `${n} m sürat (sn)`, deger: sonuc });
+      sonucNesnesi.olcumler.push({ test: `${n} m sürat (sn)`, deger: sonuc, ana: true });
     }
   } else if (/otur|uzan/.test(t)) {
-    sonucNesnesi.olcumler.push({ test: 'Otur-uzan (cm)', deger: sonuc });
+    sonucNesnesi.olcumler.push({ test: 'Otur-uzan (cm)', deger: sonuc, ana: true });
   } else {
     sonucNesnesi.bilinmeyen = true;
-    sonucNesnesi.olcumler.push({ test: null, deger: sonuc });
+    sonucNesnesi.olcumler.push({ test: null, deger: sonuc, ana: true });
   }
   return sonucNesnesi;
 }
