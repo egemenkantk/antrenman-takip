@@ -137,7 +137,7 @@ export default function Ayarlar({ onGeri }) {
       )}
 
       {subeler && subeler.length > 0 && <Aktarim subeler={subeler} koclar={koclar} />}
-      {subeler && subeler.length > 0 && <ProgramAktarimi />}
+      {subeler && subeler.length > 0 && <ProgramAktarimi koclar={koclar} subeler={subeler} />}
     </div>
   );
 }

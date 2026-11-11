@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ProgramDuzenleyici from './ProgramDuzenleyici';
 import { programlariGetir, programEkle, programGuncelle, programSil } from './veri';
+import { sahibinGunOzelleri } from '../bugun/veri';
 import {
   BOLUMLER,
   BOLUM_RENK,
@@ -56,7 +57,7 @@ function GunKarti({ b, g, i, hafta }) {
   );
 }
 
-function BlokGorunumu({ b }) {
+function BlokGorunumu({ b, ozeller }) {
   const t = bugun();
   const durum = blokDurumu(b, t);
   const n = haftaSayisi(b);
@@ -103,6 +104,19 @@ function BlokGorunumu({ b }) {
       <div className="gun-izgara">
         {(b.gunler || []).map((g, i) => <GunKarti key={i} b={b} g={g} i={i} hafta={rx} />)}
       </div>
+      {ozeller.length > 0 && (
+        <div className="ozel-liste">
+          <h4>Güne özel değişiklikler</h4>
+          <ul>
+            {ozeller.map((o) => (
+              <li key={o.id}>
+                <b>{kisaTarih(o.tarih)}</b> — {o.dinlenme ? 'dinlenme günü' : o.baslik || 'seans değiştirildi'}
+                {o.not ? ` · ${o.not}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -112,8 +126,10 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
   const [secili, setSecili] = useState(null);
   const [mod, setMod] = useState(null); // null | 'yeni' | 'duzenle'
   const [hata, setHata] = useState('');
+  const [ozeller, setOzeller] = useState([]);
 
   async function yukle(seciliId) {
+    sahibinGunOzelleri(sahipId).then(setOzeller).catch(() => setOzeller([]));
     try {
       const l = await programlariGetir(sahipId);
       setBloklar(l);
@@ -192,7 +208,15 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
             )}
           </div>
 
-          {b && <BlokGorunumu key={b.id} b={b} />}
+          {b && (
+            <BlokGorunumu
+              key={b.id}
+              b={b}
+              ozeller={ozeller
+                .filter((o) => o.tarih >= b.baslangic && o.tarih < blokBitis(b))
+                .sort((x, y) => x.tarih.localeCompare(y.tarih))}
+            />
+          )}
 
           {b && duzenleyebilir && (
             <div className="dugme-satiri">

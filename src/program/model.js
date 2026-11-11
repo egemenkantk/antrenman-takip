@@ -293,3 +293,38 @@ export function eskiBloguDonustur(b) {
     sade: false,
   };
 }
+
+// Güne özel değişiklik uygulanmış seans. ozel: gunOzel belgesi (yoksa null)
+export function gununSeansi(bloklar, tarih, ozel) {
+  const s = planliSeans(bloklar, tarih);
+  if (!ozel) return s;
+  if (ozel.dinlenme) return { blok: s?.blok || null, dinlenme: true, ozel: true, ozelNot: ozel.not || '' };
+  const gun = { baslik: ozel.baslik || '', bolumler: ozel.bolumler || [], icerik: ozel.icerik || {} };
+  const gunIdx = s?.gunIdx ?? 0;
+  const gunDoz = [];
+  gunDoz[gunIdx] = ozel.doz || {};
+  return {
+    blok: s?.blok || { sade: !!ozel.sade, bolumler: ozel.bolumler || [] },
+    hafta: s?.hafta ?? 0,
+    gunIdx,
+    gun,
+    rx: { not: ozel.not || '', gun: gunDoz },
+    ozel: true,
+    ozelNot: ozel.not || '',
+  };
+}
+
+// Seansın kısa metin özeti (antrenman kaydına yazılır)
+export function seansOzeti(s) {
+  if (!s?.gun) return '';
+  if (s.blok?.sade) return s.gun.icerik?.liste || '';
+  return gunBolumleri(s.blok, s.gun)
+    .map((k) => {
+      const d = dozaj(s.rx, s.gunIdx, k);
+      const h = String(s.gun.icerik?.[k] || '').split('\n').map((x) => x.trim()).filter(Boolean).join(', ');
+      if (!h && !d) return '';
+      return `${BOLUMLER[k]?.ad || k}${d ? ` (${d})` : ''}: ${h}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+}

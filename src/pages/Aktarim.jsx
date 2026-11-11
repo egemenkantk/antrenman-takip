@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { doc, writeBatch, serverTimestamp, collection, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { eskiBloguDonustur } from '../program/eskiDonustur';
+import { grupKoclariniEsitle } from '../gruplar/veri';
 import { db } from '../firebase';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
@@ -245,45 +246,119 @@ export default function Aktarim({ subeler, koclar }) {
   );
 }
 
-// Aktarılmış sporcuların saklanan eski program bloklarını yeni program bölümüne dönüştürür.
-export function ProgramAktarimi() {
+// Aktarılmış sporcuların saklanan eski verilerinden: program blokları, antrenman saatleri,
+// güne özel değişiklikler ve gruplar (grup programı ve üyeleriyle).
+const ESKI_BOLUM = { surat: 'hiz', plio: 'power', kondisyon: 'kardiyo', toparlanma: 'mobilite' };
+const bolumCevir = (k) => ESKI_BOLUM[k] || k;
+const nesneCevir = (o = {}) => Object.fromEntries(Object.entries(o).map(([k, v]) => [bolumCevir(k), v]));
+function eskiOzeliCevir(ov) {
+  if (ov.rest) return { dinlenme: true, not: ov.note || '' };
+  return {
+    dinlenme: false,
+    sade: false,
+    baslik: ov.title || '',
+    bolumler: (ov.secs || []).map(bolumCevir),
+    icerik: nesneCevir(ov.items),
+    doz: nesneCevir(ov.dose),
+    not: ov.note || '',
+    blokId: null,
+  };
+}
+function saatleriCevir(times, weekdays, time) {
+  const r = {};
+  for (const [g, t] of Object.entries(times || {})) r[g] = t || '';
+  if (!Object.keys(r).length) for (const g of weekdays || []) r[g] = time || '';
+  return r;
+}
+
+export function ProgramAktarimi({ koclar = [], subeler = [] }) {
   const { durum } = useOturum();
   const [ilerleme, setIlerleme] = useState(null);
   const [sonuc, setSonuc] = useState(null);
   const [hata, setHata] = useState('');
 
+  const kocBul = (ad) => {
+    const kok = String(ad || '').toLocaleLowerCase('tr').replace(/\s*hoca$/, '').trim();
+    return koclar.find((u) => u.ad.toLocaleLowerCase('tr').startsWith(kok))?.id || null;
+  };
+
   async function calistir() {
     setHata('');
     setSonuc(null);
-    setIlerleme('Kişiler okunuyor…');
+    setIlerleme('Eski kayıtlar okunuyor…');
+    const yapan = durum.kullanici.id;
+    const ortak = { kurumId: KURUM_ID, kaynak: 'sporcu-karti' };
     try {
       const kisiler = await getDocs(query(collection(db, 'kisiler'), where('kaynak', '==', 'sporcu-karti')));
       const yazilar = [];
+      const sayac = { blok: 0, ozel: 0, saat: 0, grup: 0 };
+      const eskiGrubu = {}; // eski grup id → [kişi id]
       for (const k of kisiler.docs) {
         const eski = await getDoc(doc(db, 'kisiler', k.id, 'ozel', 'eskiKayit'));
-        for (const b of eski.exists() ? eski.data().blocks || [] : []) {
+        if (!eski.exists()) continue;
+        const e = eski.data();
+        for (const b of e.blocks || []) {
           if (!b?.start) continue;
-          yazilar.push([
-            doc(db, 'programlar', 'sk_' + b.id),
-            {
-              ...eskiBloguDonustur(b),
-              sahipTip: 'kisi',
-              sahipId: k.id,
-              kurumId: KURUM_ID,
-              kaynak: 'sporcu-karti',
-              olusturan: durum.kullanici.id,
-              olusturma: serverTimestamp(),
-            },
-          ]);
+          yazilar.push([doc(db, 'programlar', 'sk_' + b.id), { ...eskiBloguDonustur(b), sahipTip: 'kisi', sahipId: k.id, ...ortak, olusturan: yapan, olusturma: serverTimestamp() }, false]);
+          sayac.blok++;
+        }
+        for (const [tarih, ov] of Object.entries(e.overrides || {})) {
+          yazilar.push([doc(db, 'gunOzel', `${k.id}__${tarih}`), { ...eskiOzeliCevir(ov), sahipTip: 'kisi', sahipId: k.id, tarih, ...ortak, kaydeden: yapan }, false]);
+          sayac.ozel++;
+        }
+        const saatler = saatleriCevir(e.times);
+        if (Object.keys(saatler).length && !e.groupId) {
+          yazilar.push([doc(db, 'kisiler', k.id), { haftalikSaatler: saatler }, true]);
+          sayac.saat++;
+        }
+        if (e.groupId) (eskiGrubu[e.groupId] ||= []).push(k.id);
+      }
+
+      const genel = await getDoc(doc(db, 'aktarim', 'sporcu-karti'));
+      const uyeler = [];
+      for (const g of genel.exists() ? genel.data().groups || [] : []) {
+        const grupId = 'sk_' + g.id;
+        const uyeIds = eskiGrubu[g.id] || [];
+        uyeler.push(...uyeIds);
+        const ilkUye = kisiler.docs.find((d) => d.id === uyeIds[0]);
+        yazilar.push([
+          doc(db, 'gruplar', grupId),
+          {
+            ad: g.name || 'Grup',
+            subeId: ilkUye?.data().subeIds?.[0] || subeler[0]?.id || '',
+            kocIds: (g.coaches || []).map(kocBul).filter(Boolean),
+            eskiKoclar: g.coaches || [],
+            saatler: saatleriCevir(g.times, g.weekdays, g.time),
+            sure: g.duration || 60,
+            not: g.note || '',
+            uyeIds,
+            aktif: true,
+            ...ortak,
+            olusturan: yapan,
+            olusturma: serverTimestamp(),
+          },
+          false,
+        ]);
+        sayac.grup++;
+        for (const b of g.blocks || []) {
+          if (!b?.start) continue;
+          yazilar.push([doc(db, 'programlar', 'sk_' + b.id), { ...eskiBloguDonustur(b), sahipTip: 'grup', sahipId: grupId, ...ortak, olusturan: yapan, olusturma: serverTimestamp() }, false]);
+          sayac.blok++;
+        }
+        for (const [tarih, ov] of Object.entries(g.overrides || {})) {
+          yazilar.push([doc(db, 'gunOzel', `${grupId}__${tarih}`), { ...eskiOzeliCevir(ov), sahipTip: 'grup', sahipId: grupId, tarih, ...ortak, kaydeden: yapan }, false]);
+          sayac.ozel++;
         }
       }
-      setIlerleme(`${yazilar.length} blok yazılıyor…`);
+
+      setIlerleme(`${yazilar.length} kayıt yazılıyor…`);
       for (let i = 0; i < yazilar.length; i += 400) {
         const bt = writeBatch(db);
-        yazilar.slice(i, i + 400).forEach(([r, v]) => bt.set(r, v));
+        yazilar.slice(i, i + 400).forEach(([r, v, birlestir]) => (birlestir ? bt.set(r, v, { merge: true }) : bt.set(r, v)));
         await bt.commit();
       }
-      setSonuc({ blok: yazilar.length, kisi: kisiler.size });
+      await grupKoclariniEsitle([...new Set(uyeler)]);
+      setSonuc(sayac);
     } catch (e) {
       setHata(hataMesaji(e));
     } finally {
@@ -293,16 +368,21 @@ export function ProgramAktarimi() {
 
   return (
     <section className="kart-form">
-      <h3>Eski program bloklarını aktar</h3>
+      <h3>Eski program, grup ve saatleri aktar</h3>
       <p className="aciklama kucuk-yazi">
-        Sporcu Kartı'ndan aktarılan sporcuların program blokları (günler, bölümler, haftalık dozajlar) Program sekmesine dönüştürülür.
-        Tekrar çalıştırılırsa aynı bloklar yeniden yazılır, çoğalmaz; ama bu bloklarda sitede yaptığın değişikliklerin üzerine yazar.
+        Sporcu Kartı'ndan aktarılan verilerden program blokları, bireysel antrenman saatleri, güne özel değişiklikler ve
+        gruplar (üyeleri, saatleri ve grup programıyla) oluşturulur. Tekrar çalıştırılırsa kayıtlar çoğalmaz, ama bu kayıtlarda
+        sitede yaptığın değişikliklerin üzerine yazar.
       </p>
       <button className="ikincil" onClick={calistir} disabled={ilerleme !== null}>
-        {ilerleme || 'Program bloklarını aktar'}
+        {ilerleme || 'Aktar'}
       </button>
       {hata && <p className="hata">{hata}</p>}
-      {sonuc && <p className="bilgi">{sonuc.kisi} sporcudan {sonuc.blok} program bloğu aktarıldı.</p>}
+      {sonuc && (
+        <p className="bilgi">
+          Aktarıldı: {sonuc.blok} program bloğu, {sonuc.grup} grup, {sonuc.saat} sporcunun antrenman saatleri, {sonuc.ozel} güne özel değişiklik.
+        </p>
+      )}
     </section>
   );
 }

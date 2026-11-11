@@ -19,6 +19,8 @@ import {
 } from '../veri';
 import { TestlerSekmesi, KayitlarSekmesi } from './KisiKayitlari';
 import ProgramSekmesi from '../program/ProgramSekmesi';
+import { HAFTA_GUNLERI } from '../program/model';
+import { saatOzeti } from './Gruplar';
 
 const BOS = {
   tip: 'sporcu',
@@ -32,6 +34,7 @@ const BOS = {
   hedef: '',
   boy: '',
   kilo: '',
+  haftalikSaatler: {},
   not: '',
 };
 
@@ -94,6 +97,7 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
       hedef: f.tip === 'pt' ? f.hedef : '',
       boy: f.boy === '' || f.boy == null ? null : Number(f.boy),
       kilo: f.kilo === '' || f.kilo == null ? null : Number(f.kilo),
+      haftalikSaatler: f.haftalikSaatler || {},
       not: f.not.trim(),
     };
     if (yonetici) veri.kocIds = f.kocIds;
@@ -196,6 +200,42 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
           secili={f.subeIds}
           onChange={(v) => setF({ ...f, subeIds: v })}
         />
+      </div>
+
+      <div className="alan">
+        <span>Bireysel antrenman günleri ve saatleri</span>
+        <div className="gun-saat-izgara">
+          {HAFTA_GUNLERI.map(([g, ad]) => {
+            const saatler = f.haftalikSaatler || {};
+            const acik = saatler[g] != null;
+            return (
+              <div key={g} className={'gun-saat' + (acik ? ' acik' : '')}>
+                <label className="onay-kutusu">
+                  <input
+                    type="checkbox"
+                    checked={acik}
+                    onChange={(e) => {
+                      const s = { ...saatler };
+                      if (e.target.checked) s[g] = '';
+                      else delete s[g];
+                      setF({ ...f, haftalikSaatler: s });
+                    }}
+                  />
+                  <span>{ad}</span>
+                </label>
+                {acik && (
+                  <input
+                    type="time"
+                    value={saatler[g]}
+                    onChange={(e) => setF({ ...f, haftalikSaatler: { ...saatler, [g]: e.target.value } })}
+                    aria-label={`${ad} saati`}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <small className="ipucu">Bugün ekranında saat sırasına göre görünür. Grup derslerinin saati grup ayarlarından gelir.</small>
       </div>
 
       {yonetici && (
@@ -341,6 +381,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
             <div><dt>Cinsiyet</dt><dd>{{ K: 'Kadın', E: 'Erkek' }[kisi.cinsiyet] || '—'}</dd></div>
             <div><dt>Telefon</dt><dd>{kisi.telefon ? telefonuGoster(kisi.telefon) : '—'}</dd></div>
             <div><dt>Şube</dt><dd>{subeAdlari.join(', ') || '—'}</dd></div>
+            <div><dt>Antrenman saatleri</dt><dd>{saatOzeti(kisi.haftalikSaatler) || '—'}</dd></div>
             <div><dt>Koç</dt><dd>{kocAdlari.join(', ') || (kisi.eskiKoclar?.length ? `Atanmadı (eski kayıtta: ${kisi.eskiKoclar.join(', ')})` : '—')}</dd></div>
             {kisi.not && <div className="genis"><dt>Not</dt><dd>{kisi.not}</dd></div>}
           </dl>

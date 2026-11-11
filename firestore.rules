@@ -33,7 +33,10 @@ service cloud.firestore {
     function yetkisiVar(y) { return yonetici() || (koc() && y in ben().get('ekYetkiler', [])); }
 
     function kisi(id) { return get(/databases/$(database)/documents/kisiler/$(id)).data; }
-    function kisininKocu(id) { return koc() && benimId() in kisi(id).get('kocIds', []); }
+    // Kişinin koçu: doğrudan atanmış ya da kişinin üye olduğu grubun koçu
+    function kisininKocu(id) {
+      return koc() && (benimId() in kisi(id).get('kocIds', []) || benimId() in kisi(id).get('grupKocIds', []));
+    }
     function kisiyeBagli(id) {
       return (rol('ogrenci') || rol('veli')) && id in ben().get('bagliKisiler', []);
     }
@@ -62,11 +65,12 @@ service cloud.firestore {
       // Liste sorgularında da çalışsın diye koç kontrolü belgenin kendi alanından yapılır
       allow read: if yonetici()
         || (koc() && benimId() in resource.data.get('kocIds', []))
+        || (koc() && benimId() in resource.data.get('grupKocIds', []))
         || kisiyeBagli(kisiId);
       allow create: if yonetici();
       // Koç kişi kaydını güncelleyebilir ama koç atamasını, aktifliği ve kurumu değiştiremez
       allow update: if yonetici()
-        || (kisininKocu(kisiId) && !degisenler().hasAny(['kocIds', 'aktif', 'kurumId']));
+        || (kisininKocu(kisiId) && !degisenler().hasAny(['kocIds', 'grupKocIds', 'aktif', 'kurumId']));
       allow delete: if yonetici(); // yalnızca KVKK silme talebinde kullanılır
 
       // Koç/yönetici alanı: sağlık notları, koç iç notları, sakatlık ve fizyo kayıtları
@@ -120,6 +124,11 @@ service cloud.firestore {
     match /programlar/{id} {
       allow read: if ekip();
       allow write: if yetkisiVar('programDuzenle');
+    }
+
+    // ---------- Güne özel değişiklikler (tek günlük seans düzenlemesi) ----------
+    match /gunOzel/{id} {
+      allow read, write: if ekip();
     }
 
     // ---------- Seanslar (dersler) ----------

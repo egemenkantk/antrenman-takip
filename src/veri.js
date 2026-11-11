@@ -55,9 +55,14 @@ export function hesapBaginiKaldir(telefon, kisiId) {
 // ---------- Kişiler ----------
 export async function kisileriGetir(kullanici) {
   const ref = collection(db, 'kisiler');
-  const q =
-    kullanici.rol === 'yonetici' ? ref : query(ref, where('kocIds', 'array-contains', kullanici.id));
-  return sirala(listele(await getDocs(q)));
+  if (kullanici.rol === 'yonetici') return sirala(listele(await getDocs(ref)));
+  // Koç: kendisine atanan kişiler + koçu olduğu grupların üyeleri
+  const [a, b] = await Promise.all([
+    getDocs(query(ref, where('kocIds', 'array-contains', kullanici.id))),
+    getDocs(query(ref, where('grupKocIds', 'array-contains', kullanici.id))),
+  ]);
+  const harita = new Map([...listele(a), ...listele(b)].map((k) => [k.id, k]));
+  return sirala([...harita.values()]);
 }
 export async function kisiEkle(veri, yapan) {
   const r = await addDoc(collection(db, 'kisiler'), {

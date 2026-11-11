@@ -5,15 +5,17 @@ import { cikis } from '../auth/hesap';
 import Kullanicilar from './Kullanicilar';
 import Kisiler from './Kisiler';
 import Ayarlar from './Ayarlar';
+import Gruplar from './Gruplar';
+import Bugun from './Bugun';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
 // Rol bazında ana menü. Bölümler aşama aşama doldurulacak.
 const BOLUMLER = {
   yonetici: [
-    ['Bugün', 'Dersler, yoklama ve uyarılar', 1],
+    ['Bugün', 'Dersler, yoklama, wellness ve RPE', 1, 'bugun'],
     ['Kişiler', 'Sporcular ve PT danışanları', 1, 'kisiler'],
-    ['Gruplar', 'Grup dersleri ve dönemler', 1],
+    ['Gruplar', 'Grup dersleri, üyeler ve grup programı', 1, 'gruplar'],
     ['Takvim', 'Haftalık program, erteleme ve iptal', 1],
     ['Testler', 'Test günü ve Performanz raporları', 1],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
@@ -22,9 +24,9 @@ const BOLUMLER = {
     ['Ayarlar', 'Şubeler', 1, 'ayarlar'],
   ],
   koc: [
-    ['Bugün', 'Derslerin, yoklama ve uyarılar', 1],
+    ['Bugün', 'Derslerin, yoklama, wellness ve RPE', 1, 'bugun'],
     ['Kişilerim', 'Sana atanan sporcu ve danışanlar', 1, 'kisiler'],
-    ['Gruplarım', 'Grup derslerin', 1],
+    ['Gruplarım', 'Grup derslerin', 1, 'gruplar'],
     ['Testler', 'Test günü ve Performanz raporları', 1],
     ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2],
   ],
@@ -65,6 +67,10 @@ export default function Panel() {
           <Kullanicilar onGeri={() => setSayfa(null)} />
         ) : sayfa === 'kisiler' ? (
           <Kisiler onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'gruplar' ? (
+          <Gruplar onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'bugun' ? (
+          <Bugun onGeri={() => setSayfa(null)} />
         ) : sayfa === 'ayarlar' ? (
           <Ayarlar onGeri={() => setSayfa(null)} />
         ) : (
