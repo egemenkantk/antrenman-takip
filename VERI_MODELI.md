@@ -191,6 +191,10 @@ Her kişinin altında kendine ait kayıtlar:
 > Ortak üst kısım tek okuyucuyla, teste özel bölümler test türüne göre okunur. Elimizdeki örnekler: Bosco, Denge (sağ ayak).
 > Denge: puan, bölge dağılımı (A, H, B… yüzdeleri), X-Y eksen eğilimi (ön/arka, sağ/sol %). Sağ ve sol ayak raporları birleştirilip asimetri hesaplanır.
 > Takım karşılaştırmaları (Performanz'ın 'takım' alanına göre) alınmaz; karşılaştırmalar sitede kendi gruplarımızla yapılır.
+> CMJ: sonuç (cm), uçuş süresi, normatif seviye. Rapordaki 'temas süresi' platformda bekleme süresi olduğu için kullanılmaz.
+> Sürat (10 m, Belirsiz Mesafe): toplam süre, ortalama hız, ara süreler (her ara mesafe için süre ve hız).
+> 'Sürat - Belirsiz Mesafe' raporları test adını taşımaz (örn. V-cut 25 m); yüklemede test türü seçilir, aynı mesafe/ayar için seçim hatırlanır. Norm yoksa Performanz'ın normatif seviyesi kaydedilmez.
+> Rapordaki 'Antrenör' alanı kullanılmaz (cihaz hesabı).
 | branslar | Ana kaslar, kas çalışma şekli, enerji sistemleri, riskler, öncelikli testler, sezon yapısı, kaynaklar (Aşama 4) |
 | sakatlikTipleri | Aşamalar, geçiş kriterleri, kaçınılacaklar, koçun yapacakları, kaynaklar (Aşama 4) |
 

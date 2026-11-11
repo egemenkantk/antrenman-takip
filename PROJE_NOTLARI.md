@@ -109,7 +109,12 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Portal her test için PDF rapor veriyor; raporlar aynı mantıkta ve metni okunabilir.
 - Sitede "Performanz raporu yükle": PDF'ler toplu yüklenir, değerler okunur, sporcu ad + doğum tarihiyle eşleşir, önizleme ve onayla kaydedilir; mükerrer yükleme engellenir.
 - Özet değerler, normatif seviye, boy/kilo alınır; grafiklerdeki tek tek değerler alınmaz.
-- Her test türü için örnek rapor gerekli. Elde: Bosco, Denge (sağ ayak). Bekleniyor: diğer test türleri.
+- Her test türü için örnek rapor gerekli. Elde: Bosco, Denge (sağ ayak), CMJ, Sürat 10 m, V-cut (portalda "Sürat - Belirsiz Mesafe", 25 m).
+- V-cut raporda adıyla geçmiyor ("Belirsiz Mesafe"); yüklemede test türü elle seçilir/eşleştirilir. Normu yok, Performanz takım ortalamasını norm diye kullanıyor → bu normatif seviye dikkate alınmaz.
+- CMJ raporundaki "temas süresi" (örn. 8 s) sıçrama öncesi platformda bekleme süresi; analizde kullanılmaz. Uçuş süresi alınır.
+- Raporlardaki "Antrenör" alanı cihaz hesabı sahibini gösteriyor; koç ataması buradan alınmaz.
+- Performanz'ın genel "Öneri" maddeleri programa aktarılmaz, istenirse referans olarak saklanır.
+- Eski raporlar da yüklenerek geçmiş test verisi siteye taşınabilir.
 - Tüm raporlarda üst kısım (sporcu ve test bilgileri) aynı; altta teste özel bölümler var.
 - Denge sağ ve sol ayak ayrı rapor; ikisi birleştirilip sağ-sol farkı (asimetri) hesaplanır.
 - Performanz'ın otomatik yorum metinleri kendi içinde tutarsız olabiliyor; esas alınan ham sayılar, yorum metni ayrıca saklanır.
