@@ -1,29 +1,33 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../firebase';
-import { kullaniciKaydi } from './telefonGiris';
+import { kullaniciKaydi } from './hesap';
 
 const OturumContext = createContext(null);
 
 // Oturum aşamaları: yukleniyor | girisYok | sifreBekliyor | hazir
 export function OturumSaglayici({ children }) {
   const [durum, setDurum] = useState({ asama: 'yukleniyor' });
-  // "Şifremi unuttum" ile SMS'le giren kişi önce yeni şifresini belirler
-  const [sifreYenile, setSifreYenile] = useState(false);
 
   const hesapla = useCallback(async (fbKullanici) => {
-    if (!fbKullanici || !fbKullanici.phoneNumber) {
+    if (!fbKullanici) {
       setDurum({ asama: 'girisYok' });
       return;
     }
     try {
-      const kayit = await kullaniciKaydi(fbKullanici.phoneNumber);
+      const { claims } = await fbKullanici.getIdTokenResult();
+      const telefon = claims.telefon;
+      const kayit = telefon ? await kullaniciKaydi(telefon) : null;
       if (!kayit || kayit.aktif === false) {
+        await signOut(auth);
         setDurum({ asama: 'girisYok' });
         return;
       }
-      const sifresiVar = fbKullanici.providerData.some((p) => p.providerId === 'password');
-      setDurum({ asama: sifresiVar ? 'hazir' : 'sifreBekliyor', fbKullanici, kullanici: kayit });
+      setDurum({
+        asama: kayit.sifreDegismeli ? 'sifreBekliyor' : 'hazir',
+        fbKullanici,
+        kullanici: kayit,
+      });
     } catch {
       setDurum({ asama: 'girisYok' });
     }
@@ -31,17 +35,10 @@ export function OturumSaglayici({ children }) {
 
   useEffect(() => onAuthStateChanged(auth, hesapla), [hesapla]);
 
-  // Şifre belirlendikten sonra durumu tazelemek için
-  const yenile = useCallback(async () => {
-    if (auth.currentUser) await auth.currentUser.reload();
-    await hesapla(auth.currentUser);
-  }, [hesapla]);
+  // Şifre/e-posta değişince kaydı yeniden oku
+  const yenile = useCallback(() => hesapla(auth.currentUser), [hesapla]);
 
-  return (
-    <OturumContext.Provider value={{ durum, sifreYenile, setSifreYenile, yenile }}>
-      {children}
-    </OturumContext.Provider>
-  );
+  return <OturumContext.Provider value={{ durum, yenile }}>{children}</OturumContext.Provider>;
 }
 
 export function useOturum() {

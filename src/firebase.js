@@ -3,6 +3,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyC6kzc7CRGXC6ERMDXdMfsWoOK4uQcRB8U',
@@ -17,3 +18,4 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 auth.languageCode = 'tr';
 export const db = getFirestore(app);
+export const fonksiyonlar = getFunctions(app, 'europe-west3');

@@ -1,32 +1,26 @@
 import { useState } from 'react';
 import { MARKA } from '../config/marka';
-import { useOturum } from '../auth/OturumContext';
-import {
-  telefonuDuzenle,
-  sifreyleGiris,
-  smsGonder,
-  smsDogrula,
-  hataMesaji,
-} from '../auth/telefonGiris';
+import { telefonuDuzenle, girisYap, sifreSifirla, hataMesaji } from '../auth/hesap';
 
-// Ekranlar: sifre (normal giriş) | smsTelefon | smsKod
-// smsAmac: 'ilk' (ilk giriş) | 'unuttum'
+// Ekranlar: giris | unuttum
 export default function Giris() {
-  const { setSifreYenile } = useOturum();
-  const [ekran, setEkran] = useState('sifre');
-  const [smsAmac, setSmsAmac] = useState('ilk');
+  const [ekran, setEkran] = useState('giris');
   const [telefonGirdi, setTelefonGirdi] = useState('');
   const [sifre, setSifre] = useState('');
-  const [kod, setKod] = useState('');
   const [benihatirla, setBenihatirla] = useState(true);
-  const [onay, setOnay] = useState(null);
   const [hata, setHata] = useState('');
+  const [bilgi, setBilgi] = useState('');
   const [bekliyor, setBekliyor] = useState(false);
 
   const telefon = telefonuDuzenle(telefonGirdi);
 
   async function calistir(is) {
     setHata('');
+    setBilgi('');
+    if (!telefon) {
+      setHata('Telefon numarasını 05xx xxx xx xx şeklinde girin.');
+      return;
+    }
     setBekliyor(true);
     try {
       await is();
@@ -37,11 +31,10 @@ export default function Giris() {
     }
   }
 
-  function smsAkisinaGec(amac) {
-    setSmsAmac(amac);
-    setEkran('smsTelefon');
+  function ekranDegistir(e) {
+    setEkran(e);
     setHata('');
-    setKod('');
+    setBilgi('');
   }
 
   const telefonAlani = (
@@ -58,13 +51,6 @@ export default function Giris() {
     </label>
   );
 
-  const hatirla = (
-    <label className="onay-kutusu">
-      <input type="checkbox" checked={benihatirla} onChange={(e) => setBenihatirla(e.target.checked)} />
-      <span>Beni hatırla</span>
-    </label>
-  );
-
   return (
     <main className="giris-sayfa">
       <div className="giris-kart">
@@ -74,12 +60,11 @@ export default function Giris() {
           <p>{MARKA.altBaslik}</p>
         </header>
 
-        {ekran === 'sifre' && (
+        {ekran === 'giris' && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!telefon) return setHata('Telefon numarasını 05xx xxx xx xx şeklinde girin.');
-              calistir(() => sifreyleGiris(telefon, sifre, benihatirla));
+              calistir(() => girisYap(telefon, sifre, benihatirla));
             }}
           >
             {telefonAlani}
@@ -92,85 +77,51 @@ export default function Giris() {
                 onChange={(e) => setSifre(e.target.value)}
               />
             </label>
-            {hatirla}
+            <label className="onay-kutusu">
+              <input type="checkbox" checked={benihatirla} onChange={(e) => setBenihatirla(e.target.checked)} />
+              <span>Beni hatırla</span>
+            </label>
             {hata && <p className="hata">{hata}</p>}
             <button className="birincil" disabled={bekliyor}>
               {bekliyor ? 'Giriş yapılıyor…' : 'Giriş yap'}
             </button>
+            <p className="aciklama kucuk-yazi">
+              İlk kez mi giriyorsun? Koçunun sana gönderdiği geçici şifreyle gir; ardından kendi şifreni belirleyeceksin.
+            </p>
             <div className="baglantilar">
-              <button type="button" className="metin" onClick={() => smsAkisinaGec('ilk')}>
-                İlk kez mi giriyorsunuz?
-              </button>
-              <button type="button" className="metin" onClick={() => smsAkisinaGec('unuttum')}>
+              <button type="button" className="metin" onClick={() => ekranDegistir('unuttum')}>
                 Şifremi unuttum
               </button>
             </div>
           </form>
         )}
 
-        {ekran === 'smsTelefon' && (
+        {ekran === 'unuttum' && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!telefon) return setHata('Telefon numarasını 05xx xxx xx xx şeklinde girin.');
               calistir(async () => {
-                setOnay(await smsGonder(telefon, 'sms-buton', benihatirla));
-                setEkran('smsKod');
+                const sonuc = await sifreSifirla(telefon);
+                setBilgi(
+                  sonuc.durum === 'eposta'
+                    ? `Şifre yenileme bağlantısı ${sonuc.adres} adresine gönderildi. Gelen kutunu (ve gereksiz klasörünü) kontrol et.`
+                    : 'Bu numaraya kayıtlı bir e-posta yok. Yeni şifre için koçunla iletişime geç.'
+                );
               });
             }}
           >
             <p className="aciklama">
-              {smsAmac === 'ilk'
-                ? 'Numaranıza bir doğrulama kodu göndereceğiz. Ardından kendi şifrenizi belirleyeceksiniz.'
-                : 'Numaranıza bir doğrulama kodu göndereceğiz. Ardından yeni şifrenizi belirleyeceksiniz.'}
+              Hesabına e-posta eklediysen şifre yenileme bağlantısı gönderilir. Eklemediysen koçun sana yeni bir geçici şifre verir.
             </p>
             {telefonAlani}
-            {hatirla}
             {hata && <p className="hata">{hata}</p>}
-            <button id="sms-buton" className="birincil" disabled={bekliyor}>
-              {bekliyor ? 'Gönderiliyor…' : 'Kod gönder'}
+            {bilgi && <p className="bilgi">{bilgi}</p>}
+            <button className="birincil" disabled={bekliyor}>
+              {bekliyor ? 'Kontrol ediliyor…' : 'Devam'}
             </button>
             <div className="baglantilar">
-              <button type="button" className="metin" onClick={() => { setEkran('sifre'); setHata(''); }}>
-                ← Şifreyle girişe dön
-              </button>
-            </div>
-          </form>
-        )}
-
-        {ekran === 'smsKod' && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              calistir(async () => {
-                if (smsAmac === 'unuttum') setSifreYenile(true);
-                try {
-                  await smsDogrula(onay, kod, telefon);
-                } catch (err) {
-                  setSifreYenile(false);
-                  throw err;
-                }
-              });
-            }}
-          >
-            <p className="aciklama">{telefonGirdi} numarasına gelen 6 haneli kodu girin.</p>
-            <label className="alan">
-              <span>Doğrulama kodu</span>
-              <input
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={6}
-                value={kod}
-                onChange={(e) => setKod(e.target.value.replace(/\D/g, ''))}
-              />
-            </label>
-            {hata && <p className="hata">{hata}</p>}
-            <button className="birincil" disabled={bekliyor || kod.length < 6}>
-              {bekliyor ? 'Doğrulanıyor…' : 'Doğrula'}
-            </button>
-            <div className="baglantilar">
-              <button type="button" className="metin" onClick={() => setEkran('smsTelefon')}>
-                Kod gelmedi, tekrar gönder
+              <button type="button" className="metin" onClick={() => ekranDegistir('giris')}>
+                ← Girişe dön
               </button>
             </div>
           </form>

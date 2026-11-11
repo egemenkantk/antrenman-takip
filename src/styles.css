@@ -79,3 +79,37 @@ form { display: grid; gap: 14px; }
 .bolum-karti span { color: var(--soluk); font-size: 0.88rem; }
 .bolum-karti em { font-style: normal; font-size: 0.78rem; color: var(--soluk); white-space: nowrap; }
 @media (max-width: 420px) { .kullanici-bilgi small { display: none; } }
+
+/* Ek bileşenler */
+select {
+  font: inherit; padding: 12px 14px; border: 1px solid var(--cizgi); border-radius: var(--yaricap);
+  background: var(--zemin); color: var(--yazi); font-size: 1rem;
+}
+.kucuk-yazi { font-size: 0.84rem; }
+.ipucu { color: var(--soluk); font-size: 0.8rem; }
+.bilgi { margin: 0; font-size: 0.9rem; color: var(--yazi); background: var(--zemin); border-radius: 10px; padding: 10px 12px; }
+.geri { padding-left: 0; margin-bottom: 6px; }
+.ikincil {
+  border: 1px solid var(--cizgi); background: var(--kart); color: var(--yazi);
+  border-radius: 10px; padding: 9px 12px; font-weight: 500;
+}
+.kucuk { padding: 8px 12px; font-size: 0.88rem; }
+a.birincil { text-decoration: none; display: inline-block; text-align: center; }
+.bolum-karti.acik { width: 100%; text-align: left; color: inherit; font: inherit; }
+.bolum-karti.acik em { color: var(--marka); font-weight: 600; }
+.kart-form {
+  background: var(--kart); border: 1px solid var(--cizgi); border-radius: 16px;
+  padding: 16px; margin: 18px 0 26px;
+}
+.kart-form h3 { margin: 0; }
+.form-izgara { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.sifre-kutusu {
+  border: 2px solid var(--marka); border-radius: 16px; padding: 16px; margin: 16px 0;
+  background: var(--kart); display: grid; gap: 10px;
+}
+.sifre-kutusu p { margin: 0; }
+.gecici-sifre {
+  font-size: 1.6rem; letter-spacing: 0.08em; font-weight: 700; padding: 8px 12px;
+  background: var(--zemin); border-radius: 10px; justify-self: start;
+}
+.dugme-satiri { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

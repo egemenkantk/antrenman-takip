@@ -5,3 +5,4 @@ dist/
 .env*
 # Hizmet hesabı anahtarları asla depoya girmez
 *service-account*.json
+functions/node_modules/

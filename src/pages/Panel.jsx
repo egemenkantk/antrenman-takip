@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { MARKA } from '../config/marka';
 import { useOturum } from '../auth/OturumContext';
-import { cikis } from '../auth/telefonGiris';
+import { cikis } from '../auth/hesap';
+import Kullanicilar from './Kullanicilar';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -13,7 +15,7 @@ const BOLUMLER = {
     ['Takvim', 'Haftalık program, erteleme ve iptal', 1],
     ['Testler', 'Test günü ve Performanz raporları', 1],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
-    ['Koçlar ve kullanıcılar', 'Hesaplar ve yetkiler', 1],
+    ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
     ['Kütüphaneler', 'Egzersiz, şablon, branş, sakatlık', 1],
     ['Ayarlar', 'Salonlar, saatler, bildirimler', 1],
   ],
@@ -41,6 +43,7 @@ export default function Panel() {
   const { durum } = useOturum();
   const k = durum.kullanici;
   const bolumler = BOLUMLER[k.rol] || [];
+  const [sayfa, setSayfa] = useState(null);
 
   return (
     <div className="panel">
@@ -56,19 +59,37 @@ export default function Panel() {
         </div>
       </header>
       <main className="icerik">
+        {sayfa === 'kullanicilar' ? (
+          <Kullanicilar onGeri={() => setSayfa(null)} />
+        ) : (
+        <>
         <h2>Merhaba{k.ad ? `, ${k.ad.split(' ')[0]}` : ''}</h2>
         <p className="aciklama">Site kuruluyor. Bölümler aşama aşama açılacak.</p>
         <ul className="bolum-listesi">
-          {bolumler.map(([ad, aciklama, asama]) => (
-            <li key={ad} className="bolum-karti">
-              <div>
-                <strong>{ad}</strong>
-                <span>{aciklama}</span>
-              </div>
-              <em>Aşama {asama}</em>
-            </li>
-          ))}
+          {bolumler.map(([ad, aciklama, asama, hedef]) =>
+            hedef ? (
+              <li key={ad}>
+                <button className="bolum-karti acik" onClick={() => setSayfa(hedef)}>
+                  <div>
+                    <strong>{ad}</strong>
+                    <span>{aciklama}</span>
+                  </div>
+                  <em>Aç →</em>
+                </button>
+              </li>
+            ) : (
+              <li key={ad} className="bolum-karti">
+                <div>
+                  <strong>{ad}</strong>
+                  <span>{aciklama}</span>
+                </div>
+                <em>Aşama {asama}</em>
+              </li>
+            )
+          )}
         </ul>
+        </>
+        )}
       </main>
     </div>
   );

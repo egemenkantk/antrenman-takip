@@ -1,5 +1,5 @@
 # Otomatik yayın
-# - main dalına gelen her değişiklik → canlı site + Firestore kuralları
+# - main dalına gelen her değişiklik → canlı site + sunucu fonksiyonları + Firestore kuralları
 # - Pull request (önerilen değişiklik) → 7 gün geçerli test önizleme adresi
 # Gerekli gizli anahtar: FIREBASE_SERVICE_ACCOUNT (depo ayarlarında, Actions secrets)
 
@@ -26,11 +26,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
 
       - name: Bağımlılıkları kur
-        run: npm ci
+        run: |
+          npm ci
+          npm ci --prefix functions
 
       - name: Derle
         run: npm run build
@@ -56,14 +61,15 @@ jobs:
           projectId: ${{ env.PROJE }}
           expires: 7d
 
-      - name: Firestore kurallarını yayınla (main)
+      - name: Kurallar ve sunucu fonksiyonları (main)
         if: github.event_name == 'push' && steps.anahtar.outputs.var == 'evet'
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          npx --yes firebase-tools@13 deploy --only firestore:rules,firestore:indexes --project "$PROJE" --non-interactive
+          npx --yes firebase-tools@14 deploy --only firestore:rules,firestore:indexes,functions \
+            --project "$PROJE" --non-interactive --force
           rm -f "$RUNNER_TEMP/sa.json"
 
       - name: Canlı siteyi yayınla (main)

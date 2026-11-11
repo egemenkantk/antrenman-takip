@@ -2,8 +2,9 @@ rules_version = '2';
 
 // Antrenman Takip — Firestore güvenlik kuralları
 //
-// Kullanıcı kimliği = doğrulanmış telefon numarası (+90...). "kullanicilar"
-// koleksiyonundaki belge kimliği de bu numaradır. Listede olmayan ya da
+// Kullanıcı kimliği = telefon numarası (+90...). Sunucu, her hesaba "telefon"
+// etiketini (custom claim) kendisi koyar; tarayıcı bunu değiştiremez.
+// "kullanicilar" koleksiyonundaki belge kimliği de bu numaradır. Listede olmayan ya da
 // pasife alınmış numara hiçbir veriye erişemez.
 //
 // Önemli: Firestore bir belgeyi ya tamamen gösterir ya hiç göstermez.
@@ -17,9 +18,9 @@ service cloud.firestore {
 
     // ---------- Yardımcılar ----------
     function girisli() {
-      return request.auth != null && request.auth.token.phone_number is string;
+      return request.auth != null && request.auth.token.telefon is string;
     }
-    function benimId() { return request.auth.token.phone_number; }
+    function benimId() { return request.auth.token.telefon; }
     function benimYol() { return /databases/$(database)/documents/kullanicilar/$(benimId()); }
     function ben() { return get(benimYol()).data; }
     function aktif() {

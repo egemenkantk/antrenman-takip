@@ -1,0 +1,42 @@
+# Tek seferlik: ilk yönetici hesabını kurar.
+# GitHub'da Actions → "Yönetici hesabı kur" → Run workflow ile çalıştırılır.
+# Şifre üretmez; verilen e-postaya "şifreni belirle" bağlantısı gider.
+
+name: Yönetici hesabı kur
+
+on:
+  workflow_dispatch:
+    inputs:
+      telefon:
+        description: 'Telefon numarası (05xx xxx xx xx)'
+        required: true
+      ad:
+        description: 'Ad soyad'
+        required: true
+      eposta:
+        description: 'E-posta (şifre belirleme bağlantısı buraya gelir)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  kur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix functions
+      - name: Yönetici hesabını oluştur
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          TELEFON: ${{ inputs.telefon }}
+          AD: ${{ inputs.ad }}
+          EPOSTA: ${{ inputs.eposta }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node scripts/yonetici-kur.js
+          rm -f "$RUNNER_TEMP/sa.json"
