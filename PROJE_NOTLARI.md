@@ -71,6 +71,15 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Öğrenci görür: aktif paket(ler), kalan ders, ödenen/kalan tutar, ödeme geçmişi.
 - Koçlara yapılan ödemeler / hakediş: kapsam dışı (öğrenciden tahsilat ise kapsamda, koçlar kaydeder).
 
+### Program
+- Sporcular: eski Sporcu Kartı program yapısı aynen taşınır (bloklar, dönemler, A/B/C günleri, bölüm seçimi ve sürükle-sırala, haftalık ilerleme tablosu, güne özel değişiklik, şablonlar, grup programı, maç gününe göre planlama).
+- PT danışanları: blok yerine sade haftalık plan (günler + egzersiz listesi; bölümler ve ilerleme tablosu isteğe bağlı). Varsayılan fazlar Adaptasyon / Temel / İlerleme, ayrıca elle faz eklenebilir. Hedefe göre örnek şablonlar. Ev programı isteğe bağlı, kişi kişi gönderilir.
+- PT danışanlarında test yapılmıyor; yeniden test hatırlatması yok.
+- Pilates şubesi şimdilik sitede kullanılmayacak (pilates ders notu vb. yok).
+
+### Tasarım
+- Şu anki görünüm iskelet; tasarım en sona bırakıldı. Renk, yazı tipi ve boşluklar tek stil dosyasından yönetildiği için sonradan değiştirmek kolay.
+
 ### Erteleme ve iptal
 - Talepler WhatsApp'tan alınır; sitede talep formu yok.
 - Yönetici/koç dersi "ertelendi" / "iptal" / "haber vermeden gelmedi" olarak işaretler; dersin düşüp düşmeyeceğine yönetici karar verir.
