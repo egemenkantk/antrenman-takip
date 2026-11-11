@@ -256,7 +256,7 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Veli doldurmaz, geçmişi görür.
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)
 6. **Paket süresi yok (bireysel/PT):** Geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
+7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.
 8. **Grup dersleri 4 haftalık dönemler:** Ödeme döneme bağlı; derse gelinmese de ücret aynı, aktarım yok. Dönemin son günü gruptaki tüm velilere ödeme hatırlatması ve yöneticiye özet (kim ödedi/ödemedi) gider. İkinci hatırlatma yok. Veliler birbirini ve diğer çocukları görmez.
 9. **Toplu saat değişikliği:** Grubun gün/saati toplu değişebilir; gruptaki herkese bildirim gider.
 10. **Dönem ortası katılım:** Ücret kalan haftalara göre orantılı hesaplanır (katıldığı hafta dahil); yönetici gerekirse değiştirir.
-7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.
