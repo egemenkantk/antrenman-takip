@@ -2,7 +2,7 @@
 // GitHub Actions'taki "Yönetici hesabı kur" akışından çalışır; şifre üretmez,
 // verilen e-postaya Firebase'in "şifreni belirle" e-postasını gönderir.
 //
-// Kullanım: TELEFON=... AD=... EPOSTA=... node scripts/yonetici-kur.js
+// Kullanım: TELEFON=... AD=... EPOSTA=... node scripts/yonetici-kur.cjs
 
 const admin = require('../functions/node_modules/firebase-admin');
 const {

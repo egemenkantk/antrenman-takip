@@ -24,8 +24,8 @@ jobs:
   kur:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - run: npm ci --prefix functions
@@ -38,5 +38,5 @@ jobs:
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          node scripts/yonetici-kur.js
+          node scripts/yonetici-kur.cjs
           rm -f "$RUNNER_TEMP/sa.json"
