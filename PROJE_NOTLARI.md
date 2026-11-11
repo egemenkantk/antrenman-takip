@@ -42,10 +42,11 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Kişi tipi ve hedefe göre otomatik şekillenen: test seti, program şablonu önerisi, uyarı eşikleri, rapor dili.
 - Program önerileri öneri olarak kalır; yönetici/koç onaylamadan atanmaz.
 
-### Giriş
+### Giriş (SMS yok, ücretsiz)
 - Telefon numarası + şifre.
-- Hesabı yönetici açar; dışarıdan kayıt yok.
-- SMS kodu yalnızca ilk girişte (numara doğrulama + şifre belirleme) ve "şifremi unuttum"da.
+- Hesabı yönetici açar; sistem geçici şifre üretir, WhatsApp'tan iletilir. Dışarıdan kayıt yok.
+- İlk girişte kişi kendi şifresini belirler, isteğe bağlı e-posta ekler.
+- Şifremi unuttum: e-postası varsa sıfırlama bağlantısı (Firebase, ücretsiz); yoksa yönetici "geçici şifre ver" der.
 - "Beni hatırla" ile uzun süreli oturum; ana ekrana eklenebilir (uygulama gibi açılır).
 
 ### Paketler ve ödeme
@@ -131,7 +132,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## 3. Teknik yapı (öneri)
 - Firebase projesi: antrenman-takip-e6e4f (Blaze, TRY, bütçe uyarısı). Firestore Standard, europe-west3 (Frankfurt), günlük yedek (7 gün).
 - Arayüz: React + Vite. Hosting, Authentication, Firestore; Storage ileride.
-- Giriş: ilk giriş ve şifremi unuttum Firebase telefon (SMS) doğrulamasıyla; şifre, telefondan türetilen iç adrese bağlanır. Kullanıcı kimliği = telefon numarası (+90...).
+- Giriş: şifre kontrolü sunucu fonksiyonunda (functions/, europe-west3, Node 22); tarayıcıya tek kullanımlık giriş anahtarı döner. Hesabın e-postası gerçek adres ya da telefondan türetilen iç adres. Kullanıcı kimliği = telefon numarası; sunucu her hesaba "telefon" etiketi (custom claim) koyar.
+- İlk yönetici: GitHub Actions → "Yönetici hesabı kur" (tek seferlik).
 - Güvenlik: firestore.rules, rol bazlı. Öğrenci/velinin görmemesi gereken bilgiler (liste fiyatı, koç notları, sağlık, diğer çocuklar) ayrı belgelerde; portal için özetler Aşama 3'te üretilecek.
 - Yayın: GitHub Actions — main → canlı site + kurallar; pull request → 7 günlük test önizlemesi. Anahtar: FIREBASE_SERVICE_ACCOUNT (GitHub secret).
 - Mobil uyumlu; ileride Capacitor ile App Store / Play Store.
@@ -141,9 +143,9 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ### Çağla
 - [x] GitHub hesabı ve boş, özel (private) depo (egemenkantk/antrenman-takip)
 - [x] Firebase projesi (Google hesabıyla); SMS için Blaze planı + bütçe uyarısı
-- [ ] Yayın anahtarını GitHub'a koymak (FIREBASE_SERVICE_ACCOUNT)
-- [ ] Authentication'da Telefon ve E-posta/Şifre girişini açmak; SMS bölge politikası: yalnızca Türkiye
-- [ ] İlk yönetici kaydını Firestore'da oluşturmak
+- [x] Yayın anahtarını GitHub'a koymak (FIREBASE_SERVICE_ACCOUNT) ve yayın hesabına rol eklemek
+- [x] Authentication'da E-posta/Şifre girişini açmak
+- [ ] "Yönetici hesabı kur" akışını çalıştırıp şifre belirlemek
 - [ ] Fitkon logosu ve renkleri
 - [ ] Paket listesi (ad, ders sayısı, süre, fiyat)
 - [ ] Nahit Hoca ile veri sahipliği konuşması
