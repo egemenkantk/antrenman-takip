@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import {
   telefonuDuzenle,
   telefonuGoster,
@@ -204,6 +205,25 @@ export default function Kullanicilar({ onGeri }) {
               </div>
               {k.rol !== 'yonetici' && (
                 <div className="dugme-satiri">
+                  {k.rol === 'koc' && (
+                    <label className="onay-kutusu kucuk-yazi">
+                      <input
+                        type="checkbox"
+                        checked={(k.ekYetkiler || []).includes('programDuzenle')}
+                        onChange={async (e) => {
+                          try {
+                            await updateDoc(doc(db, 'kullanicilar', k.id), {
+                              ekYetkiler: e.target.checked ? arrayUnion('programDuzenle') : arrayRemove('programDuzenle'),
+                            });
+                            await yukle();
+                          } catch (err) {
+                            window.alert(hataMesaji(err));
+                          }
+                        }}
+                      />
+                      <span>Program düzenleyebilir</span>
+                    </label>
+                  )}
                   {k.aktif !== false && (
                     <button className="ikincil kucuk" onClick={() => sifreVer(k)}>
                       Geçici şifre ver

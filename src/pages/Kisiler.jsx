@@ -18,6 +18,7 @@ import {
   tarihGoster,
 } from '../veri';
 import { TestlerSekmesi, KayitlarSekmesi } from './KisiKayitlari';
+import ProgramSekmesi from '../program/ProgramSekmesi';
 
 const BOS = {
   tip: 'sporcu',
@@ -238,7 +239,7 @@ const SEKMELER = [
   ['paket', 'Paket ve ödeme', 2],
 ];
 
-function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGeri, onDegisti }) {
+function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti }) {
   const [sekme, setSekme] = useState('ozet');
   const [duzenle, setDuzenle] = useState(false);
   const [baglaSecim, setBaglaSecim] = useState('');
@@ -290,10 +291,20 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGer
 
       {hata && <p className="hata">{hata}</p>}
 
+      {sekme === 'program' && (
+        <ProgramSekmesi
+          sahipTip="kisi"
+          sahipId={kisi.id}
+          sade={kisi.tip === 'pt'}
+          hedef={kisi.hedef}
+          duzenleyebilir={programYetkisi}
+          yapan={benim}
+        />
+      )}
       {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} />}
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
-      {!['ozet', 'testler', 'kayitlar'].includes(sekme) && (
+      {!['ozet', 'program', 'testler', 'kayitlar'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.
@@ -463,6 +474,7 @@ export default function Kisiler({ onGeri }) {
           kullanicilar={kullanicilar}
           yonetici={yonetici}
           benim={ben.id}
+          programYetkisi={yonetici || (ben.ekYetkiler || []).includes('programDuzenle')}
           onGeri={() => setSecili(null)}
           onDegisti={yukle}
         />

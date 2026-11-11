@@ -3,7 +3,8 @@
 // Tekrar çalıştırılabilir: aynı sporcu ikinci kez aktarılırsa üzerine yazılır, çoğalmaz.
 
 import { useState } from 'react';
-import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, collection, getDocs, getDoc, query, where } from 'firebase/firestore';
+import { eskiBloguDonustur } from '../program/eskiDonustur';
 import { db } from '../firebase';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
@@ -240,6 +241,68 @@ export default function Aktarim({ subeler, koclar }) {
           Bilgisayarındaki aktarım dosyasını artık silebilirsin.
         </p>
       )}
+    </section>
+  );
+}
+
+// Aktarılmış sporcuların saklanan eski program bloklarını yeni program bölümüne dönüştürür.
+export function ProgramAktarimi() {
+  const { durum } = useOturum();
+  const [ilerleme, setIlerleme] = useState(null);
+  const [sonuc, setSonuc] = useState(null);
+  const [hata, setHata] = useState('');
+
+  async function calistir() {
+    setHata('');
+    setSonuc(null);
+    setIlerleme('Kişiler okunuyor…');
+    try {
+      const kisiler = await getDocs(query(collection(db, 'kisiler'), where('kaynak', '==', 'sporcu-karti')));
+      const yazilar = [];
+      for (const k of kisiler.docs) {
+        const eski = await getDoc(doc(db, 'kisiler', k.id, 'ozel', 'eskiKayit'));
+        for (const b of eski.exists() ? eski.data().blocks || [] : []) {
+          if (!b?.start) continue;
+          yazilar.push([
+            doc(db, 'programlar', 'sk_' + b.id),
+            {
+              ...eskiBloguDonustur(b),
+              sahipTip: 'kisi',
+              sahipId: k.id,
+              kurumId: KURUM_ID,
+              kaynak: 'sporcu-karti',
+              olusturan: durum.kullanici.id,
+              olusturma: serverTimestamp(),
+            },
+          ]);
+        }
+      }
+      setIlerleme(`${yazilar.length} blok yazılıyor…`);
+      for (let i = 0; i < yazilar.length; i += 400) {
+        const bt = writeBatch(db);
+        yazilar.slice(i, i + 400).forEach(([r, v]) => bt.set(r, v));
+        await bt.commit();
+      }
+      setSonuc({ blok: yazilar.length, kisi: kisiler.size });
+    } catch (e) {
+      setHata(hataMesaji(e));
+    } finally {
+      setIlerleme(null);
+    }
+  }
+
+  return (
+    <section className="kart-form">
+      <h3>Eski program bloklarını aktar</h3>
+      <p className="aciklama kucuk-yazi">
+        Sporcu Kartı'ndan aktarılan sporcuların program blokları (günler, bölümler, haftalık dozajlar) Program sekmesine dönüştürülür.
+        Tekrar çalıştırılırsa aynı bloklar yeniden yazılır, çoğalmaz; ama bu bloklarda sitede yaptığın değişikliklerin üzerine yazar.
+      </p>
+      <button className="ikincil" onClick={calistir} disabled={ilerleme !== null}>
+        {ilerleme || 'Program bloklarını aktar'}
+      </button>
+      {hata && <p className="hata">{hata}</p>}
+      {sonuc && <p className="bilgi">{sonuc.kisi} sporcudan {sonuc.blok} program bloğu aktarıldı.</p>}
     </section>
   );
 }
