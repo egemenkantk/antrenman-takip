@@ -113,3 +113,10 @@ a.birincil { text-decoration: none; display: inline-block; text-align: center; }
   background: var(--zemin); border-radius: 10px; justify-self: start;
 }
 .dugme-satiri { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.metin.tehlike { color: var(--hata); }
+.bolum-karti .dugme-satiri { justify-content: flex-end; }
+@media (max-width: 560px) {
+  .bolum-listesi .bolum-karti { flex-direction: column; align-items: stretch; }
+  .bolum-karti .dugme-satiri { justify-content: flex-start; }
+}

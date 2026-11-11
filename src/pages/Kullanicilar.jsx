@@ -6,6 +6,8 @@ import {
   telefonuGoster,
   kullaniciOlustur,
   geciciSifreVer,
+  kullaniciDurum,
+  kullaniciSil,
   hataMesaji,
 } from '../auth/hesap';
 import { MARKA } from '../config/marka';
@@ -95,6 +97,30 @@ export default function Kullanicilar({ onGeri }) {
     }
   }
 
+  async function durumDegistir(k) {
+    const pasifeAl = k.aktif !== false;
+    const soru = pasifeAl
+      ? `${k.ad} pasife alınsın mı? Giriş yapamaz ama kayıtları silinmez; istediğinde tekrar aktif edebilirsin.`
+      : `${k.ad} tekrar aktif edilsin mi?`;
+    if (!window.confirm(soru)) return;
+    try {
+      await kullaniciDurum(k.id, !pasifeAl);
+      await yukle();
+    } catch (err) {
+      window.alert(hataMesaji(err));
+    }
+  }
+
+  async function sil(k) {
+    if (!window.confirm(`${k.ad} TAMAMEN silinsin mi?\n\nBu yalnızca yanlış ya da test amaçlı eklenen hesaplar içindir ve geri alınamaz. Ayrılan biri için "Pasife al"ı kullan.`)) return;
+    try {
+      await kullaniciSil(k.id);
+      await yukle();
+    } catch (err) {
+      window.alert(hataMesaji(err));
+    }
+  }
+
   async function sifreVer(k) {
     if (!window.confirm(`${k.ad} için yeni geçici şifre oluşturulsun mu? Mevcut şifresi geçersiz olur.`)) return;
     try {
@@ -177,9 +203,19 @@ export default function Kullanicilar({ onGeri }) {
                 </span>
               </div>
               {k.rol !== 'yonetici' && (
-                <button className="ikincil kucuk" onClick={() => sifreVer(k)}>
-                  Geçici şifre ver
-                </button>
+                <div className="dugme-satiri">
+                  {k.aktif !== false && (
+                    <button className="ikincil kucuk" onClick={() => sifreVer(k)}>
+                      Geçici şifre ver
+                    </button>
+                  )}
+                  <button className="ikincil kucuk" onClick={() => durumDegistir(k)}>
+                    {k.aktif === false ? 'Aktif et' : 'Pasife al'}
+                  </button>
+                  <button className="metin tehlike" onClick={() => sil(k)}>
+                    Sil
+                  </button>
+                </div>
               )}
             </li>
           ))}

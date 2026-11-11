@@ -57,6 +57,8 @@ export const sifremiDegistir = (yeniSifre) => cagir('sifremiDegistir')({ yeniSif
 export const epostaGuncelle = (eposta) => cagir('epostaGuncelle')({ eposta });
 export const kullaniciOlustur = (veri) => cagir('kullaniciOlustur')(veri);
 export const geciciSifreVer = (telefon) => cagir('geciciSifreVer')({ telefon });
+export const kullaniciDurum = (telefon, aktif) => cagir('kullaniciDurum')({ telefon, aktif });
+export const kullaniciSil = (telefon) => cagir('kullaniciSil')({ telefon });
 
 export function cikis() {
   return signOut(auth);

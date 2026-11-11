@@ -201,3 +201,37 @@ exports.geciciSifreVer = onCall(async (request) => {
   await islemKaydet(yapan, 'geciciSifreVer', { telefon });
   return { geciciSifre };
 });
+
+// Pasife al / tekrar aktif et: kayıtlar kalır, pasif kullanıcı giriş yapamaz
+exports.kullaniciDurum = onCall(async (request) => {
+  const { telefon: yapan } = await yoneticiMi(request);
+  const telefon = telefonuDuzenle(request.data?.telefon);
+  const aktif = request.data?.aktif === true;
+  if (telefon === yapan) throw new HttpsError('failed-precondition', 'Kendi hesabını pasife alamazsın.');
+  const kayit = telefon && (await kayitGetir(telefon));
+  if (!kayit) throw new HttpsError('not-found', 'Kullanıcı bulunamadı.');
+  if (kayit.uid) {
+    await admin.auth().updateUser(kayit.uid, { disabled: !aktif }).catch(() => null);
+    if (!aktif) await admin.auth().revokeRefreshTokens(kayit.uid).catch(() => null);
+  }
+  await db.collection('kullanicilar').doc(telefon).update({ aktif });
+  await islemKaydet(yapan, aktif ? 'kullaniciAktif' : 'kullaniciPasif', { telefon });
+  return { tamam: true };
+});
+
+// Tamamen sil: yalnızca yanlış/test amaçlı eklenen hesaplar için
+exports.kullaniciSil = onCall(async (request) => {
+  const { telefon: yapan } = await yoneticiMi(request);
+  const telefon = telefonuDuzenle(request.data?.telefon);
+  if (telefon === yapan) throw new HttpsError('failed-precondition', 'Kendi hesabını silemezsin.');
+  const kayit = telefon && (await kayitGetir(telefon));
+  if (!kayit) throw new HttpsError('not-found', 'Kullanıcı bulunamadı.');
+  if (kayit.uid) {
+    await admin.auth().deleteUser(kayit.uid).catch((e) => {
+      if (e.code !== 'auth/user-not-found') throw e;
+    });
+  }
+  await db.collection('kullanicilar').doc(telefon).delete();
+  await islemKaydet(yapan, 'kullaniciSil', { telefon, rol: kayit.rol });
+  return { tamam: true };
+});
