@@ -3,6 +3,8 @@ import { MARKA } from '../config/marka';
 import { useOturum } from '../auth/OturumContext';
 import { cikis } from '../auth/hesap';
 import Kullanicilar from './Kullanicilar';
+import Kisiler from './Kisiler';
+import Ayarlar from './Ayarlar';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -10,18 +12,18 @@ const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli
 const BOLUMLER = {
   yonetici: [
     ['Bugün', 'Dersler, yoklama ve uyarılar', 1],
-    ['Kişiler', 'Sporcular ve danışanlar', 1],
+    ['Kişiler', 'Sporcular ve PT danışanları', 1, 'kisiler'],
     ['Gruplar', 'Grup dersleri ve dönemler', 1],
     ['Takvim', 'Haftalık program, erteleme ve iptal', 1],
     ['Testler', 'Test günü ve Performanz raporları', 1],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
     ['Kütüphaneler', 'Egzersiz, şablon, branş, sakatlık', 1],
-    ['Ayarlar', 'Salonlar, saatler, bildirimler', 1],
+    ['Ayarlar', 'Şubeler', 1, 'ayarlar'],
   ],
   koc: [
     ['Bugün', 'Derslerin, yoklama ve uyarılar', 1],
-    ['Kişilerim', 'Sana atanan sporcu ve danışanlar', 1],
+    ['Kişilerim', 'Sana atanan sporcu ve danışanlar', 1, 'kisiler'],
     ['Gruplarım', 'Grup derslerin', 1],
     ['Testler', 'Test günü ve Performanz raporları', 1],
     ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2],
@@ -61,6 +63,10 @@ export default function Panel() {
       <main className="icerik">
         {sayfa === 'kullanicilar' ? (
           <Kullanicilar onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'kisiler' ? (
+          <Kisiler onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'ayarlar' ? (
+          <Ayarlar onGeri={() => setSayfa(null)} />
         ) : (
         <>
         <h2>Merhaba{k.ad ? `, ${k.ad.split(' ')[0]}` : ''}</h2>

@@ -21,7 +21,9 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - İlk sürümde kurum seçimi YOK. Siteye giren herkes doğrudan Fitkon'u görür.
 - Arka planda tüm kayıtlar bir kurum etiketiyle (Fitkon) tutulur. Görünmez, ama ileride ikinci kurum eklemeyi kolaylaştırır.
 - Tüm yetki yöneticide (Çağla). Koçlara ek yetkiler tek tek açılabilir.
-- Fitkon'un iki salonu var; gruplar, dersler ve paketler salona bağlı.
+- Fitkon'un iki şubesi var: (1) Sporcu Performans ve Cimnastik Merkezi, (2) Pilates Salonu. Gruplar, dersler ve paket tanımları şubeye bağlı; paket fiyatları şubeye göre farklı.
+- Aynı koçlar iki şubede de çalışıyor; koç erişimi şubeye göre değil, kişi/grup atamasına göre.
+- Bir kişi iki şubede de kayıtlı olabilir; paket ve ödemeleri şube şube ayrı görünür.
 
 ### Hesaplar ve veri saklama
 - Öğrenci hesabında yaş sınırı yok: telefonu olan reşit olmayan sporcu aile onayıyla kendi hesabını kullanabilir.
@@ -38,7 +40,8 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Kişi tipleri
 - **Sporcu:** branş atanır; performans testleri, sezon fazları, veli raporu.
-- **Danışan (sedanter):** hedef seçilir (masa başı, ileri yaş, kilo verme, ağrı yönetimi).
+- **PT danışanı:** çoğunlukla yetişkin; pilates salonu ve birebir danışanlar. Hedef seçilir (masa başı, ileri yaş, kilo verme, ağrı yönetimi). Test/program kullanımı isteğe bağlı.
+- **Cimnastik:** çocuk grupları, yalnızca grup dersleri (4 haftalık dönem, aile ödemesi). Sporcu tipinde, branş: cimnastik.
 - Kişi tipi ve hedefe göre otomatik şekillenen: test seti, program şablonu önerisi, uyarı eşikleri, rapor dili.
 - Program önerileri öneri olarak kalır; yönetici/koç onaylamadan atanmaz.
 
@@ -50,7 +53,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - "Beni hatırla" ile uzun süreli oturum; ana ekrana eklenebilir (uygulama gibi açılır).
 
 ### Paketler ve ödeme
-- Paketler bir kez tanımlanır: ad, salon, tür (grup/bireysel), kitle (sporcu/yetişkin PT danışanı), ders sayısı, fiyat. Fiyatlar aynı paket için herkese aynı; salona, türe ve kitleye göre farklı paketler var.
+- Paketler bir kez tanımlanır: ad, şube, tür (grup/bireysel), kitle (sporcu/PT danışanı), ders sayısı, fiyat. Fiyatlar aynı paket için herkese aynı; şubeye, türe ve kitleye göre farklı paketler var.
 - Bireysel/PT paketlerde süre sınırı YOK; paket dersler bitince biter.
 - Grup dersleri 4 haftalık dönemlerle ilerler; grup ödemesi döneme bağlı, ödemeyi aileler yapar. Derse gelinmese de ücret aynı, aktarım yok.
 - Dönem ortasında gruba katılan çocuğun ilk dönem ücreti kalan haftalara göre orantılı (katıldığı hafta dahil).

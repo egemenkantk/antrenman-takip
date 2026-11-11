@@ -19,13 +19,13 @@ Aşağıdaki her başlık bir "tablo" gibi düşünülebilir. Parantez içindeki
 | haftalikSaatler | Gün gün varsayılan ders/antrenman saatleri |
 | bildirimAyarlari | Hangi otomatik bildirimin açık olduğu |
 
-**salonlar** (Aşama 1) — Fitkon'un iki salonu
+**subeler** (Aşama 1) — Fitkon'un iki şubesi: Sporcu Performans ve Cimnastik Merkezi, Pilates Salonu
 | Alan | Açıklama |
 |---|---|
 | ad, adres | |
-| haftalikSaatler | Salonun ders saatleri |
+| haftalikSaatler | Şubenin ders saatleri |
 
-> Gruplar, seanslar ve paket tanımları bir salona bağlıdır. Fiyatlar salona göre farklı olabilir.
+> Gruplar, seanslar ve paket tanımları bir şubeye bağlıdır. Fiyatlar şubeye göre farklı olabilir. Koçlar iki şubede de çalışır.
 
 **kullanicilar** — siteye giriş yapan herkes (Aşama 1)
 | Alan | Açıklama |
@@ -47,7 +47,8 @@ Aşağıdaki her başlık bir "tablo" gibi düşünülebilir. Parantez içindeki
 **kisiler** (Aşama 1, danışan alanları Aşama 2)
 | Alan | Açıklama |
 |---|---|
-| tip | sporcu / danisan |
+| tip | sporcu / pt (PT danışanı) |
+| subeIds | Kayıtlı olduğu şube(ler) |
 | ad, dogumTarihi, cinsiyet, foto, telefon | |
 | kocIds | Atanmış koçlar (birden fazla olabilir) |
 | grupIds | Üye olduğu gruplar |
@@ -76,7 +77,7 @@ Her kişinin altında kendine ait kayıtlar:
 **gruplar** (Aşama 1)
 | Alan | Açıklama |
 |---|---|
-| ad, salonId, uyeIds, kocIds | |
+| ad, subeId, uyeIds, kocIds | |
 | haftalikSaatler | Grubun ders günleri ve saatleri |
 | aktifProgramId | Grubun ortak programı |
 
@@ -107,7 +108,7 @@ Her kişinin altında kendine ait kayıtlar:
 **seanslar** — her tek ders/antrenman (Aşama 1)
 | Alan | Açıklama |
 |---|---|
-| tarih, saat, salonId | |
+| tarih, saat, subeId | |
 | kisiId veya grupId | |
 | ders turu | grup / bireysel (paketten düşerken eşleşir) |
 | kocId | Dersi alan koç; "yerine bakma"da değişir, asıl koç da saklanır |
@@ -126,9 +127,9 @@ Her kişinin altında kendine ait kayıtlar:
 | Alan | Açıklama |
 |---|---|
 | ad | Örn. "Bireysel 8 ders – sporcu" |
-| salonId | Hangi salonda geçerli |
+| subeId | Hangi şubede geçerli |
 | tur | grup (dönem bazlı) / bireysel (ders sayılı) |
-| kitle | sporcu / yetişkin danışan (PT) |
+| kitle | sporcu / PT danışanı |
 | dersSayisi | Yalnızca bireysel/PT paketlerde; süre sınırı yok, dersler bitince biter |
 | fiyat | Bireysel: paket fiyatı. Grup: 4 haftalık dönem ücreti |
 | aktif | Satıştan kaldırılan paket listede görünmez, eski satışlar bozulmaz |
@@ -232,19 +233,19 @@ Her kişinin altında kendine ait kayıtlar:
 ### Yönetici
 | # | Ekran | İçerik | Aşama |
 |---|---|---|---|
-| 4 | Bugün | Salon seçimi, saat saat dersler, uyarılar (wellness, sakatlık, paket azaldı), hızlı yoklama ve wellness girişi | 1 |
+| 4 | Bugün | Şube seçimi, saat saat dersler, uyarılar (wellness, sakatlık, paket azaldı), hızlı yoklama ve wellness girişi | 1 |
 | 5 | Kişiler | Liste, filtre (tip, branş, hedef, koç, grup, aktif/pasif), arama | 1 |
 | 6 | Kişi kartı | Sekmeler: Özet · Program · Kayıtlar · Testler · Postür · Sağlık/Sakatlık · Paket ve Ödeme · Raporlar | 1 (Sakatlık 4, Paket 2) |
 | 7 | Gruplar | Grup listesi, üyeler, ortak program, birleşik yoklama | 1 |
 | 8 | Takvim | Haftalık/aylık görünüm, erteleme/iptal/yerine bakma | 1 |
 | 9 | Test günü modu | Test seç → kişileri sırayla gir | 1 |
 | 9b | Performanz raporu yükle | PDF'leri toplu sürükle-bırak → okunan değerler ve eşleşmeler önizlenir → onayla kaydet | 1 |
-| 10 | Paketler | Paket tanımları (salon/tür/kitle), satılan paketler, azalan paketler | 2 |
+| 10 | Paketler | Paket tanımları (şube/tür/kitle), satılan paketler, azalan paketler | 2 |
 | 11 | Ödemeler | Tüm ödemeler, koça/tarihe göre filtre, kalan alacaklar | 2 |
 | 12 | Koçlar ve kullanıcılar | Hesap açma, rol ve ek yetkiler, pasife alma | 1 |
 | 13 | Kütüphaneler | Egzersiz, şablon, test, branş, sakatlık | 1 → 4 |
 | 14 | Özetler | Koç bazında devam/gelişim, aylık tahsilat | 2 |
-| 15 | Ayarlar | Logo, renkler, salonlar ve saatleri, bildirim ayarları | 1 |
+| 15 | Ayarlar | Logo, renkler, şubeler ve saatleri, bildirim ayarları | 1 |
 | 16 | Bildirimler | | 2 |
 
 ### Koç
@@ -271,7 +272,7 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 ## Bölüm 4 — Alınan kararlar
 
 1. **Öğrenci hesabı:** Yaş sınırı yok. Telefonu olan reşit olmayan sporcu, aile onayıyla kendi hesabını kullanabilir; onay kaydı tutulur.
-2. **Paketler:** Grup ve bireysel paketler ayrı. Fiyat salona (iki salon) ve kitleye (sporcu / yetişkin PT danışanı) göre değişir.
+2. **Paketler:** Grup ve bireysel paketler ayrı. Fiyat şubeye (iki şube) ve kitleye (sporcu / PT danışanı) göre değişir.
 3. **Birden fazla aktif paket:** Olabilir. Ders, türüne uyan en eski aktif paketten düşer.
 4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Veli doldurmaz, geçmişi görür.
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)

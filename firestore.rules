@@ -47,19 +47,22 @@ service cloud.firestore {
       allow write: if yonetici();
     }
 
-    // ---------- Kurum ve salonlar ----------
+    // ---------- Kurum ve şubeler ----------
     match /kurumlar/{id} {
       allow read: if aktif();
       allow write: if yonetici();
     }
-    match /salonlar/{id} {
+    match /subeler/{id} {
       allow read: if aktif();
       allow write: if yonetici();
     }
 
     // ---------- Kişiler (sporcu / danışan) ----------
     match /kisiler/{kisiId} {
-      allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+      // Liste sorgularında da çalışsın diye koç kontrolü belgenin kendi alanından yapılır
+      allow read: if yonetici()
+        || (koc() && benimId() in resource.data.get('kocIds', []))
+        || kisiyeBagli(kisiId);
       allow create: if yonetici();
       // Koç kişi kaydını güncelleyebilir ama koç atamasını, aktifliği ve kurumu değiştiremez
       allow update: if yonetici()
