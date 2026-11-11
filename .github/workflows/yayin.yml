@@ -68,6 +68,10 @@ jobs:
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
+          gcloud services enable cloudbilling.googleapis.com cloudfunctions.googleapis.com \
+            cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com \
+            eventarc.googleapis.com identitytoolkit.googleapis.com --project "$PROJE" --quiet
           npx --yes firebase-tools@14 deploy --only firestore:rules,firestore:indexes,functions \
             --project "$PROJE" --non-interactive --force
           rm -f "$RUNNER_TEMP/sa.json"
