@@ -79,6 +79,16 @@ Her kişinin altında kendine ait kayıtlar:
 | haftalikSaatler | Grubun ders günleri ve saatleri |
 | aktifProgramId | Grubun ortak programı |
 
+**grupDonemleri** — grup dersleri 4 haftalık dönemlerle ilerler (Aşama 2)
+| Alan | Açıklama |
+|---|---|
+| grupId | |
+| baslangic, bitis | 4 hafta; bir dönem bitince sıradaki otomatik açılır |
+| durum | aktif / bitti |
+
+> Grup dersine gelinmese de dönem ücreti aynıdır; gelinmeyen dersler aktarılmaz.
+> Grubun gün/saati toplu olarak değişebilir: değişiklik gruba bir kez girilir, sonraki seanslar güncellenir ve gruptaki tüm velilere/öğrencilere bildirim gider.
+
 **programlar** — bloklar (Aşama 1)
 | Alan | Açıklama |
 |---|---|
@@ -115,9 +125,10 @@ Her kişinin altında kendine ait kayıtlar:
 |---|---|
 | ad | Örn. "Bireysel 8 ders – sporcu" |
 | salonId | Hangi salonda geçerli |
-| tur | grup / bireysel |
+| tur | grup (dönem bazlı) / bireysel (ders sayılı) |
 | kitle | sporcu / yetişkin danışan (PT) |
-| dersSayisi, fiyat | Süre sınırı yok; paket dersler bitince biter |
+| dersSayisi | Yalnızca bireysel/PT paketlerde; süre sınırı yok, dersler bitince biter |
+| fiyat | Bireysel: paket fiyatı. Grup: 4 haftalık dönem ücreti |
 | aktif | Satıştan kaldırılan paket listede görünmez, eski satışlar bozulmaz |
 
 **satilanPaketler** — bir kişiye atanmış paket
@@ -144,7 +155,8 @@ Her kişinin altında kendine ait kayıtlar:
 
 > Kalan tutar = uygulanan fiyat − ödemeler toplamı (otomatik).
 > Bir kişide aynı anda birden fazla paket olabilir (örn. grup + bireysel, ya da bitmeden alınan yenisi).
-> Ders düşerken: ders türüne uyan paketlerden en eski aktif olandan düşer; o biterse sıradaki devreye girer.
+> Ders düşerken (bireysel): ders türüne uyan paketlerden en eski aktif olandan düşer; o biterse sıradaki devreye girer.
+> Grup öğrencisi: her dönem için bir kayıt açılır (grupDonemId); ödeme o döneme işlenir. Ders sayısı düşülmez.
 
 ### 1.6 Bildirimler (Aşama 2)
 
@@ -152,7 +164,7 @@ Her kişinin altında kendine ait kayıtlar:
 | Alan | Açıklama |
 |---|---|
 | aliciKullaniciId | |
-| tip | paket azaldı (son 2 ders) / ders iptal / yeni test / ödeme kaydedildi / fizyo kontrol / … |
+| tip | paket azaldı (son 2 ders) / grup dönemi ödemesi / grup saati değişti / ders iptal / yeni test / ödeme kaydedildi / fizyo kontrol / … |
 | metin, baglanti | Tıklayınca ilgili sayfaya gider |
 | okundu, tarih | |
 
@@ -242,5 +254,7 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 3. **Birden fazla aktif paket:** Olabilir. Ders, türüne uyan en eski aktif paketten düşer.
 4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Veli doldurmaz, geçmişi görür.
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)
-6. **Paket süresi yok:** Paketlerde geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
+6. **Paket süresi yok (bireysel/PT):** Geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
+8. **Grup dersleri 4 haftalık dönemler:** Ödeme döneme bağlı; derse gelinmese de ücret aynı, aktarım yok. Dönemin son günü gruptaki tüm velilere ödeme hatırlatması ve yöneticiye özet (kim ödedi/ödemedi) gider. İkinci hatırlatma yok. Veliler birbirini ve diğer çocukları görmez.
+9. **Toplu saat değişikliği:** Grubun gün/saati toplu değişebilir; gruptaki herkese bildirim gider.
 7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.

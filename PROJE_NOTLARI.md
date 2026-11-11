@@ -50,7 +50,11 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Paketler ve ödeme
 - Paketler bir kez tanımlanır: ad, salon, tür (grup/bireysel), kitle (sporcu/yetişkin PT danışanı), ders sayısı, fiyat. Fiyatlar aynı paket için herkese aynı; salona, türe ve kitleye göre farklı paketler var.
-- Paketlerde süre sınırı YOK; paket dersler bitince biter.
+- Bireysel/PT paketlerde süre sınırı YOK; paket dersler bitince biter.
+- Grup dersleri 4 haftalık dönemlerle ilerler; grup ödemesi döneme bağlı, ödemeyi aileler yapar. Derse gelinmese de ücret aynı, aktarım yok.
+- Dönemin son günü gruptaki tüm velilere ödeme hatırlatması, yöneticiye kim ödedi/ödemedi özeti. İkinci hatırlatma yok.
+- Grup dersinde her veli yalnızca kendi çocuğunu görür; diğer çocuklar ve aileler görünmez. Grup duyuruları herkese gider.
+- Grubun gün/saati toplu değişebilir; değişiklik gruptaki herkese bildirilir.
 - Bir kişide aynı anda birden fazla paket olabilir; ders, türüne uyan en eski aktif paketten düşer.
 - Fiyat değişikliği yalnızca yeni satışlara yansır.
 - Paket atanırken fiyat liste fiyatından gelir; kişiye özel fiyatı yalnızca yönetici değiştirir (isteğe bağlı neden notuyla).
@@ -69,7 +73,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Bildirimler
 - Şimdilik yalnızca site içi (bildirim alanı + ana sayfada önemli kartlar).
-- Örnekler: paket azaldı (son dersler), ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
+- Örnekler: paket azaldı (son dersler), grup dönemi ödemesi, grup saati değişti, ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
 - Yönetici hangi otomatik bildirimlerin çalışacağını açıp kapatabilir.
 - SMS/WhatsApp bildirimi ileride eklenebilir.
 
