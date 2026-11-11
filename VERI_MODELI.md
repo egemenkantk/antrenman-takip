@@ -55,7 +55,7 @@ Aşağıdaki her başlık bir "tablo" gibi düşünülebilir. Parantez içindeki
 | hedef | Danışanlar için (masa başı, ileri yaş, kilo verme, ağrı yönetimi) |
 | saglikTaramasi | PAR-Q+ cevapları, doktor onayı gerekli mi (Aşama 2) |
 | yasamTarzi | Meslek, oturma süresi, adım, uyku (Aşama 2) |
-| saglikNotlari | Kronik durum, ilaç, alerji — yalnızca yönetici ve atanmış koç |
+| saglikNotlari | Kronik durum, ilaç, alerji — kişinin `ozel` alt belgesinde tutulur; yalnızca yönetici ve atanmış koç |
 | performanzEslestirme | Performanz raporundaki ad/doğum tarihi farklı yazılmışsa eşleştirme bilgisi |
 | aktif | Ayrılan kişi silinmez, pasife alınır |
 

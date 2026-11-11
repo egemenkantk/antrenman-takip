@@ -1,0 +1,76 @@
+# Otomatik yayın
+# - main dalına gelen her değişiklik → canlı site + Firestore kuralları
+# - Pull request (önerilen değişiklik) → 7 gün geçerli test önizleme adresi
+# Gerekli gizli anahtar: FIREBASE_SERVICE_ACCOUNT (depo ayarlarında, Actions secrets)
+
+name: Yayın
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  PROJE: antrenman-takip-e6e4f
+
+jobs:
+  derle-ve-yayinla:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Derle
+        run: npm run build
+
+      - name: Anahtar kontrolü
+        id: anahtar
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "var=hayir" >> "$GITHUB_OUTPUT"
+            echo "::warning::FIREBASE_SERVICE_ACCOUNT tanımlı değil; yayın atlandı."
+          else
+            echo "var=evet" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Test önizlemesi (pull request)
+        if: github.event_name == 'pull_request' && steps.anahtar.outputs.var == 'evet'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ env.PROJE }}
+          expires: 7d
+
+      - name: Firestore kurallarını yayınla (main)
+        if: github.event_name == 'push' && steps.anahtar.outputs.var == 'evet'
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools@13 deploy --only firestore:rules,firestore:indexes --project "$PROJE" --non-interactive
+          rm -f "$RUNNER_TEMP/sa.json"
+
+      - name: Canlı siteyi yayınla (main)
+        if: github.event_name == 'push' && steps.anahtar.outputs.var == 'evet'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ env.PROJE }}
+          channelId: live

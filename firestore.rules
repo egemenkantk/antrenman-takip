@@ -1,0 +1,187 @@
+rules_version = '2';
+
+// Antrenman Takip — Firestore güvenlik kuralları
+//
+// Kullanıcı kimliği = doğrulanmış telefon numarası (+90...). "kullanicilar"
+// koleksiyonundaki belge kimliği de bu numaradır. Listede olmayan ya da
+// pasife alınmış numara hiçbir veriye erişemez.
+//
+// Önemli: Firestore bir belgeyi ya tamamen gösterir ya hiç göstermez.
+// Bu yüzden öğrencinin/velinin görmemesi gereken bilgiler (liste fiyatı,
+// koç notları, sağlık detayları, diğer çocuklar) ayrı belgelerde tutulur ve
+// öğrenci/veli bunlara erişemez. Portal (Aşama 3) için bunların özetleri
+// ayrıca üretilecek.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Yardımcılar ----------
+    function girisli() {
+      return request.auth != null && request.auth.token.phone_number is string;
+    }
+    function benimId() { return request.auth.token.phone_number; }
+    function benimYol() { return /databases/$(database)/documents/kullanicilar/$(benimId()); }
+    function ben() { return get(benimYol()).data; }
+    function aktif() {
+      return girisli() && exists(benimYol()) && ben().get('aktif', true) != false;
+    }
+    function rol(r) { return aktif() && ben().rol == r; }
+    function yonetici() { return rol('yonetici'); }
+    function koc() { return rol('koc'); }
+    function ekip() { return yonetici() || koc(); }
+    function yetkisiVar(y) { return yonetici() || (koc() && y in ben().get('ekYetkiler', [])); }
+
+    function kisi(id) { return get(/databases/$(database)/documents/kisiler/$(id)).data; }
+    function kisininKocu(id) { return koc() && benimId() in kisi(id).get('kocIds', []); }
+    function kisiyeBagli(id) {
+      return (rol('ogrenci') || rol('veli')) && id in ben().get('bagliKisiler', []);
+    }
+    function kisiyiYonetebilir(id) { return yonetici() || kisininKocu(id); }
+
+    function degisenler() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---------- Kullanıcılar ----------
+    match /kullanicilar/{tel} {
+      allow read: if (girisli() && benimId() == tel) || yonetici();
+      allow write: if yonetici();
+    }
+
+    // ---------- Kurum ve salonlar ----------
+    match /kurumlar/{id} {
+      allow read: if aktif();
+      allow write: if yonetici();
+    }
+    match /salonlar/{id} {
+      allow read: if aktif();
+      allow write: if yonetici();
+    }
+
+    // ---------- Kişiler (sporcu / danışan) ----------
+    match /kisiler/{kisiId} {
+      allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+      allow create: if yonetici();
+      // Koç kişi kaydını güncelleyebilir ama koç atamasını, aktifliği ve kurumu değiştiremez
+      allow update: if yonetici()
+        || (kisininKocu(kisiId) && !degisenler().hasAny(['kocIds', 'aktif', 'kurumId']));
+      allow delete: if yonetici(); // yalnızca KVKK silme talebinde kullanılır
+
+      // Koç/yönetici alanı: sağlık notları, koç iç notları, sakatlık ve fizyo kayıtları
+      match /ozel/{belge} {
+        allow read, write: if kisiyiYonetebilir(kisiId);
+      }
+      match /sakatliklar/{belge=**} {
+        allow read, write: if kisiyiYonetebilir(kisiId);
+      }
+
+      // Öğrenci/velinin de görebildiği kayıtlar
+      match /testSonuclari/{belge} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow write: if kisiyiYonetebilir(kisiId);
+      }
+      match /raporlar/{belge} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow write: if kisiyiYonetebilir(kisiId);
+      }
+      match /posturDegerlendirmeleri/{belge} {
+        allow read, write: if kisiyiYonetebilir(kisiId);
+      }
+
+      // Wellness: koç salonda girer; kendi hesabı olan öğrenci/danışan kendisi doldurur.
+      // Veli doldurmaz, sadece görür.
+      match /wellness/{belge} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow create: if kisiyiYonetebilir(kisiId)
+          || (rol('ogrenci') && kisiId in ben().get('bagliKisiler', [])
+              && request.resource.data.dolduran == benimId());
+        allow update, delete: if kisiyiYonetebilir(kisiId);
+      }
+    }
+
+    // ---------- Gruplar ve dönemler ----------
+    // Öğrenci/veli grup belgesini doğrudan okuyamaz (üye listesi diğer çocukları içerir).
+    match /gruplar/{grupId} {
+      allow read: if yonetici() || (koc() && benimId() in resource.data.get('kocIds', []));
+      allow write: if yonetici();
+    }
+    match /grupDonemleri/{id} {
+      allow read: if ekip();
+      allow write: if yonetici();
+    }
+
+    // ---------- Program ----------
+    match /programlar/{id} {
+      allow read: if ekip();
+      allow write: if yetkisiVar('programDuzenle');
+    }
+
+    // ---------- Seanslar (dersler) ----------
+    // Grup seansları diğer çocukların katılımını içerdiği için öğrenci/veliye kapalı.
+    match /seanslar/{id} {
+      allow read: if yonetici()
+        || (koc() && (resource.data.get('kocId', '') == benimId()
+                      || benimId() in resource.data.get('kocIds', [])));
+      allow create, update: if ekip();
+      allow delete: if yonetici();
+    }
+
+    // ---------- Paketler ve ödemeler ----------
+    // Liste fiyatı bu belgelerde durduğu için öğrenci/veli doğrudan okuyamaz.
+    match /paketTanimlari/{id} {
+      allow read: if ekip();
+      allow write: if yonetici();
+    }
+    match /satilanPaketler/{id} {
+      allow read: if yonetici() || kisininKocu(resource.data.kisiId);
+      // Koç paket atayabilir ama kişiye özel fiyat veremez
+      allow create: if yonetici()
+        || (kisininKocu(request.resource.data.kisiId)
+            && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati);
+      allow update: if yonetici()
+        || (kisininKocu(resource.data.kisiId)
+            && !degisenler().hasAny(['uygulananFiyat', 'listeFiyati', 'fiyatNotu', 'kisiId']));
+      allow delete: if yonetici();
+    }
+    match /odemeler/{id} {
+      allow read: if yonetici() || kisininKocu(resource.data.kisiId);
+      allow create: if yonetici()
+        || (kisininKocu(request.resource.data.kisiId)
+            && request.resource.data.tahsilEdenKocId == benimId()
+            && request.resource.data.get('silindi', false) == false);
+      // Koç düzeltebilir (geçmişe kaydedilir) ama silemez; silme yöneticide ve iz bırakır
+      allow update: if yonetici()
+        || (kisininKocu(resource.data.kisiId)
+            && !degisenler().hasAny(['silindi', 'kisiId', 'tahsilEdenKocId']));
+      allow delete: if false;
+    }
+
+    // ---------- Bildirimler ----------
+    match /bildirimler/{id} {
+      allow read: if girisli() && resource.data.aliciKullaniciId == benimId();
+      allow update: if girisli() && resource.data.aliciKullaniciId == benimId()
+        && degisenler().hasOnly(['okundu']);
+      allow create: if ekip();
+      allow delete: if yonetici();
+    }
+
+    // ---------- Performanz yüklemeleri ----------
+    match /performanzYuklemeleri/{id} {
+      allow read, write: if ekip();
+    }
+
+    // ---------- Kütüphaneler ----------
+    match /egzersizler/{id} { allow read: if aktif(); allow write: if yonetici(); }
+    match /programSablonlari/{id} { allow read: if ekip(); allow write: if yonetici(); }
+    match /testTanimlari/{id} { allow read: if aktif(); allow write: if yonetici(); }
+    match /branslar/{id} { allow read: if ekip(); allow write: if yonetici(); }
+    match /sakatlikTipleri/{id} { allow read: if ekip(); allow write: if yonetici(); }
+
+    // ---------- İşlem geçmişi (değiştirilemez) ----------
+    match /islemGecmisi/{id} {
+      allow read: if yonetici();
+      allow create: if ekip() && request.resource.data.yapan == benimId();
+      allow update, delete: if false;
+    }
+
+    // Tanımlanmamış her şey kapalı
+  }
+}

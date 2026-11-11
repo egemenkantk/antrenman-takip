@@ -129,16 +129,21 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Veri yapısı değişikliklerinden önce yedek.
 
 ## 3. Teknik yapı (öneri)
-- Firebase: Hosting, Authentication, Firestore, Storage. Bölge: Avrupa.
-- Giriş: telefon doğrulaması Firebase ile; şifre katmanı üzerine kurulacak.
-- İki ortam: test ve gerçek.
+- Firebase projesi: antrenman-takip-e6e4f (Blaze, TRY, bütçe uyarısı). Firestore Standard, europe-west3 (Frankfurt), günlük yedek (7 gün).
+- Arayüz: React + Vite. Hosting, Authentication, Firestore; Storage ileride.
+- Giriş: ilk giriş ve şifremi unuttum Firebase telefon (SMS) doğrulamasıyla; şifre, telefondan türetilen iç adrese bağlanır. Kullanıcı kimliği = telefon numarası (+90...).
+- Güvenlik: firestore.rules, rol bazlı. Öğrenci/velinin görmemesi gereken bilgiler (liste fiyatı, koç notları, sağlık, diğer çocuklar) ayrı belgelerde; portal için özetler Aşama 3'te üretilecek.
+- Yayın: GitHub Actions — main → canlı site + kurallar; pull request → 7 günlük test önizlemesi. Anahtar: FIREBASE_SERVICE_ACCOUNT (GitHub secret).
 - Mobil uyumlu; ileride Capacitor ile App Store / Play Store.
 
 ## 4. İş bölümü
 
 ### Çağla
 - [x] GitHub hesabı ve boş, özel (private) depo (egemenkantk/antrenman-takip)
-- [ ] Firebase projesi (Google hesabıyla); SMS için Blaze planı + bütçe uyarısı
+- [x] Firebase projesi (Google hesabıyla); SMS için Blaze planı + bütçe uyarısı
+- [ ] Yayın anahtarını GitHub'a koymak (FIREBASE_SERVICE_ACCOUNT)
+- [ ] Authentication'da Telefon ve E-posta/Şifre girişini açmak; SMS bölge politikası: yalnızca Türkiye
+- [ ] İlk yönetici kaydını Firestore'da oluşturmak
 - [ ] Fitkon logosu ve renkleri
 - [ ] Paket listesi (ad, ders sayısı, süre, fiyat)
 - [ ] Nahit Hoca ile veri sahipliği konuşması
@@ -149,7 +154,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ### Claude
 - [x] Proje notları (bu dosya)
 - [x] Veri modeli ve ekran listesi (VERI_MODELI.md)
-- [ ] Kod iskeleti, giriş sistemi, roller, otomatik yayın, test/gerçek ortam
+- [x] Kod iskeleti, giriş sistemi, roller, otomatik yayın, test/gerçek ortam (ilk sürüm)
 - [ ] Mevcut iki sayfadan veri aktarma aracı
 - [ ] Branş ve sakatlık kütüphanesi taslakları
 

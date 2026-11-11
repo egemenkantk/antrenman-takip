@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.firebase/
+*.log
+.env*
+# Hizmet hesabı anahtarları asla depoya girmez
+*service-account*.json
