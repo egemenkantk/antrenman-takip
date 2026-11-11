@@ -56,13 +56,14 @@ Aşağıdaki her başlık bir "tablo" gibi düşünülebilir. Parantez içindeki
 | saglikTaramasi | PAR-Q+ cevapları, doktor onayı gerekli mi (Aşama 2) |
 | yasamTarzi | Meslek, oturma süresi, adım, uyku (Aşama 2) |
 | saglikNotlari | Kronik durum, ilaç, alerji — yalnızca yönetici ve atanmış koç |
+| performanzEslestirme | Performanz raporundaki ad/doğum tarihi farklı yazılmışsa eşleştirme bilgisi |
 | aktif | Ayrılan kişi silinmez, pasife alınır |
 
 Her kişinin altında kendine ait kayıtlar:
 
 | Alt tablo | İçerik | Aşama |
 |---|---|---|
-| testSonuclari | Test adı, tarih, değer(ler), sağ/sol, kaynak (elle / Performanz) | 1 |
+| testSonuclari | Test adı, tarih, değer(ler), sağ/sol, kaynak (elle / Performanz), Performanz normatif seviyesi ve yaş grubu, kaynak rapor dosyası | 1 |
 | posturDegerlendirmeleri | Tarih, bulgular, notlar, fotoğraf | 1 |
 | wellness | Tarih, uyku, yorgunluk, ağrı/kas ağrısı, stres, ruh hali, 0-10 ağrı skoru | 1 |
 | sakatliklar | Bölge, taraf, tarih, tanı, takip eden uzman, belgeler, mevcut aşama | 4 |
@@ -175,7 +176,19 @@ Her kişinin altında kendine ait kayıtlar:
 |---|---|
 | egzersizler | Ad, bölüm (Core, Denge…), video/görsel, ipuçları, sakatlıkta kaçınılacak durumlar |
 | programSablonlari | Kişi tipi/hedef/branşa göre hazır programlar |
-| testTanimlari | Test adı, birim, sağ/sol var mı, hangi kişi tipi/branş/hedef için, norm aralıkları |
+| testTanimlari | Test adı, birim, sağ/sol var mı, hangi kişi tipi/branş/hedef için, norm aralıkları, Performanz rapor türü eşleşmesi |
+
+**performanzYuklemeleri** — yüklenen Performanz PDF raporları (Aşama 1)
+| Alan | Açıklama |
+|---|---|
+| dosya, yukleyen, tarih | Orijinal PDF saklanır |
+| okunanVeriler | Rapordan çıkarılan sporcu bilgileri, test türü, tarih ve tüm özet değerler |
+| eslesenKisiId | Ad + doğum tarihiyle otomatik; emin olunamazsa yöneticiye sorulur |
+| durum | onay bekliyor / kaydedildi / mükerrer / hata |
+
+> Raporlar metin olarak okunur; grafikler (tek tek sıçrama değerleri) resim olduğu için alınmaz.
+> Boy ve kilo rapordan kişi kaydına güncellenebilir (onayla).
+> Her test türü için bir okuyucu tanımlanır; elimizdeki örnekler: Bosco. Bekleniyor: Denge ve diğerleri.
 | branslar | Ana kaslar, kas çalışma şekli, enerji sistemleri, riskler, öncelikli testler, sezon yapısı, kaynaklar (Aşama 4) |
 | sakatlikTipleri | Aşamalar, geçiş kriterleri, kaçınılacaklar, koçun yapacakları, kaynaklar (Aşama 4) |
 
@@ -219,6 +232,7 @@ Her kişinin altında kendine ait kayıtlar:
 | 7 | Gruplar | Grup listesi, üyeler, ortak program, birleşik yoklama | 1 |
 | 8 | Takvim | Haftalık/aylık görünüm, erteleme/iptal/yerine bakma | 1 |
 | 9 | Test günü modu | Test seç → kişileri sırayla gir | 1 |
+| 9b | Performanz raporu yükle | PDF'leri toplu sürükle-bırak → okunan değerler ve eşleşmeler önizlenir → onayla kaydet | 1 |
 | 10 | Paketler | Paket tanımları (salon/tür/kitle), satılan paketler, azalan paketler | 2 |
 | 11 | Ödemeler | Tüm ödemeler, koça/tarihe göre filtre, kalan alacaklar | 2 |
 | 12 | Koçlar ve kullanıcılar | Hesap açma, rol ve ek yetkiler, pasife alma | 1 |

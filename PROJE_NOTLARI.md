@@ -104,6 +104,14 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - İleride: fizyoterapiste gönderilebilir özet sayfası/PDF.
 - Sakatlık kütüphanesi: ön çapraz bağ, ayak bileği burkulması, hamstring, patellar tendinopati, omuz, bel ağrısı.
 
+### Performanz test verileri
+- Testler Performanz cihazlarıyla yapılıyor; sonuçlar Performanz'ın kendi portalına senkronize oluyor.
+- Portal her test için PDF rapor veriyor; raporlar aynı mantıkta ve metni okunabilir.
+- Sitede "Performanz raporu yükle": PDF'ler toplu yüklenir, değerler okunur, sporcu ad + doğum tarihiyle eşleşir, önizleme ve onayla kaydedilir; mükerrer yükleme engellenir.
+- Özet değerler, normatif seviye, boy/kilo alınır; grafiklerdeki tek tek değerler alınmaz.
+- Her test türü için örnek rapor gerekli. Elde: Bosco. Bekleniyor: Denge ve diğer test türleri.
+- İleride Performanz API erişimi verirse otomatik aktarıma geçilir (Performanz'a sorulacak).
+
 ### Mevcut özellikler (taşınacak)
 Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, program blokları (gün bazlı bölüm seçimi, sürükle-sırala), Core ve Denge bölümleri, postür değerlendirmesi, gruplar, çoklu koç ataması, haftalık saatler, fotoğraflar, güne özel değişiklikler, wellness anketi, testler, veli raporu PDF, Performanz testleri.
 
