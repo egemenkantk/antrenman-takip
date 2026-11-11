@@ -1,4 +1,4 @@
-# Sunucu fonksiyonlarının son uyarı/hata kayıtlarını gösterir (sorun giderme için).
+# Sunucu fonksiyonlarının son kayıtlarını gösterir (sorun giderme için).
 # Kayıtlarda şifre bulunmaz; telefon numaralarının yalnızca son 2 hanesi yazılır.
 
 name: Sunucu kayıtları
@@ -9,6 +9,9 @@ on:
       saat:
         description: 'Son kaç saatin kayıtları'
         default: '2'
+      servis:
+        description: 'Fonksiyon adı (küçük harf, örn. girisyap); boşsa hepsi'
+        default: ''
 
 permissions:
   contents: read
@@ -20,10 +23,14 @@ jobs:
       - name: Kayıtları oku
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          SERVIS: ${{ inputs.servis }}
+          SAAT: ${{ inputs.saat }}
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
-          gcloud logging read 'resource.type="cloud_run_revision" AND (textPayload:"reddedildi" OR severity>=WARNING)' \
-            --freshness="${{ inputs.saat }}h" --limit=40 --project antrenman-takip-e6e4f \
-            --format='value(timestamp, resource.labels.service_name, textPayload, jsonPayload.message, jsonPayload)'
+          FILTRE='resource.type="cloud_run_revision"'
+          if [ -n "$SERVIS" ]; then FILTRE="$FILTRE AND resource.labels.service_name=\"$SERVIS\""; fi
+          gcloud logging read "$FILTRE" --freshness="${SAAT}h" --limit=40 \
+            --project antrenman-takip-e6e4f --format=json \
+            | jq -r '.[] | [.timestamp, .resource.labels.service_name, .severity, (.textPayload // (.jsonPayload|tostring) // (.httpRequest|tostring))] | @tsv'
           rm -f "$RUNNER_TEMP/sa.json"
