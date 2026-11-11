@@ -124,8 +124,9 @@ Her kişinin altında kendine ait kayıtlar:
 | Alan | Açıklama |
 |---|---|
 | kisiId, paketTanimId | |
-| fiyat | Satış anındaki fiyatın kopyası (fiyat sonra değişse de bu değişmez) |
-| indirim, not | Kardeş indirimi, hediye ders vb. |
+| listeFiyati | Paket tanımındaki fiyatın satış anındaki kopyası; öğrenci/veli GÖRMEZ |
+| uygulananFiyat | Kişiye özel fiyat; varsayılan liste fiyatı, yalnızca yönetici değiştirir |
+| fiyatNotu | İsteğe bağlı neden (kardeş, hediye ders vb.); öğrenci/veli görmez |
 | baslangic | Satış/başlangıç tarihi (bitiş tarihi yok) |
 | durum | aktif / sirada / bitti |
 | toplamDers | |
@@ -141,7 +142,7 @@ Her kişinin altında kendine ait kayıtlar:
 | duzeltmeGecmisi | Her düzeltmede eski değer, kim, ne zaman |
 | silindi | Yalnızca yönetici "siler"; kayıt gizlenir ama iz kalır |
 
-> Kalan tutar = paket fiyatı − indirim − ödemeler toplamı (otomatik).
+> Kalan tutar = uygulanan fiyat − ödemeler toplamı (otomatik).
 > Bir kişide aynı anda birden fazla paket olabilir (örn. grup + bireysel, ya da bitmeden alınan yenisi).
 > Ders düşerken: ders türüne uyan paketlerden en eski aktif olandan düşer; o biterse sıradaki devreye girer.
 
@@ -180,9 +181,9 @@ Her kişinin altında kendine ait kayıtlar:
 | Koç iç notları | Okur/yazar | Atandığı kişiler | Görmez | Görmez |
 | Program | Okur/yazar | Okur; yetkisi varsa yazar | Kendi programı ve ev egzersizleri | Çocuğunun |
 | Yoklama, RPE | Okur/yazar | Atandığı kişiler/gruplar | Kendi geçmişi | Çocuğunun |
-| Wellness | Okur/yazar | Atandığı kişiler; salonda doldurulur | Kendi geçmişi | Çocuğunun geçmişi |
+| Wellness | Okur/yazar | Atandığı kişiler; eksikse salonda doldurur | Kendi telefonundan doldurur, geçmişini görür | Çocuğunun geçmişi |
 | Testler | Okur/yazar | Atandığı kişiler | Kendi sonuçları | Çocuğunun |
-| Paket ve ödeme | Hepsi | Atandığı kişiler; ödeme kaydeder, düzeltir | Kendi durumu | Çocuğunun durumu |
+| Paket ve ödeme | Hepsi; kişiye özel fiyatı yalnızca o değiştirir | Atandığı kişiler; ödeme kaydeder, düzeltir; fiyatı değiştiremez | Kendi fiyatı ve durumu (liste fiyatını görmez) | Çocuğunun (liste fiyatını görmez) |
 | Ödeme silme | Evet | Hayır | Hayır | Hayır |
 | Kütüphaneler | Okur/yazar | Okur | Ev egzersizi videoları | Ev egzersizi videoları |
 | Kullanıcılar, ayarlar | Evet | Hayır | Hayır | Hayır |
@@ -220,7 +221,8 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 ### Öğrenci / danışan (Aşama 3)
 | # | Ekran | İçerik |
 |---|---|---|
-| 17 | Ana sayfa | Sıradaki ders, kalan ders, önemli bildirimler |
+| 17 | Ana sayfa | Sıradaki ders, kalan ders, ders günü "Bugünkü formunu doldur" kartı, önemli bildirimler |
+| 20 | Bugünkü formum | Wellness formu (kendi hesabı olan öğrenci ve yetişkin danışan) |
 | 18 | Takvimim | Ders günleri ve saatleri, iptal/erteleme bilgisi |
 | 19 | Programım | Ev egzersizleri (video), "yaptım" işareti |
 | 21 | Gelişimim | Test sonuçları, grafikler, başlangıç–şimdi karşılaştırması |
@@ -238,6 +240,7 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 1. **Öğrenci hesabı:** Yaş sınırı yok. Telefonu olan reşit olmayan sporcu, aile onayıyla kendi hesabını kullanabilir; onay kaydı tutulur.
 2. **Paketler:** Grup ve bireysel paketler ayrı. Fiyat salona (iki salon) ve kitleye (sporcu / yetişkin PT danışanı) göre değişir.
 3. **Birden fazla aktif paket:** Olabilir. Ders, türüne uyan en eski aktif paketten düşer.
-4. **Wellness:** Salonda koç/ekip doldurur; öğrenci ve veli formu doldurmaz, sadece geçmişi görür.
+4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Veli doldurmaz, geçmişi görür.
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)
 6. **Paket süresi yok:** Paketlerde geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
+7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.

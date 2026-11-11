@@ -25,7 +25,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Hesaplar ve veri saklama
 - Öğrenci hesabında yaş sınırı yok: telefonu olan reşit olmayan sporcu aile onayıyla kendi hesabını kullanabilir.
-- Wellness formu salonda doldurulur; öğrenci/veli sadece geçmişi görür.
+- Wellness: kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; eksikse koç salonda doldurur. Veli doldurmaz.
 - Ayrılan kişi pasife alınır, silinmez (KVKK silme talebi hariç).
 
 ### Roller
@@ -53,7 +53,8 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Paketlerde süre sınırı YOK; paket dersler bitince biter.
 - Bir kişide aynı anda birden fazla paket olabilir; ders, türüne uyan en eski aktif paketten düşer.
 - Fiyat değişikliği yalnızca yeni satışlara yansır.
-- Paket atanırken isteğe bağlı indirim/not alanı.
+- Paket atanırken fiyat liste fiyatından gelir; kişiye özel fiyatı yalnızca yönetici değiştirir (isteğe bağlı neden notuyla).
+- Öğrenci/veli liste fiyatını hiçbir yerde görmez; sadece kendi fiyatını ve kalan tutarı görür.
 - Ödeme siteden ALINMAZ. Ödemeyi her koç kendi öğrencisinden alır ve sisteme kendisi kaydeder (tutar, tarih, yöntem, tahsil eden koç otomatik); taksitte kalan otomatik hesaplanır.
 - Koç yalnızca kendi öğrencilerinin ödemelerini görür; yönetici hepsini görür, tahsil eden koça göre filtreleyebilir.
 - Kaydedilen ödemede yapılan her düzeltme kim/ne zaman bilgisiyle loglanır; silme yalnızca yöneticide.
