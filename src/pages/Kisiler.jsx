@@ -341,7 +341,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
           yapan={benim}
         />
       )}
-      {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} />}
+      {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
       {!['ozet', 'program', 'testler', 'kayitlar'].includes(sekme) && (

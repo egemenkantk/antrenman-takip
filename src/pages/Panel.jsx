@@ -7,6 +7,7 @@ import Kisiler from './Kisiler';
 import Ayarlar from './Ayarlar';
 import Gruplar from './Gruplar';
 import Bugun from './Bugun';
+import Testler from './Testler';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -17,7 +18,7 @@ const BOLUMLER = {
     ['Kişiler', 'Sporcular ve PT danışanları', 1, 'kisiler'],
     ['Gruplar', 'Grup dersleri, üyeler ve grup programı', 1, 'gruplar'],
     ['Takvim', 'Haftalık program, erteleme ve iptal', 1],
-    ['Testler', 'Test günü ve Performanz raporları', 1],
+    ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
     ['Kütüphaneler', 'Egzersiz, şablon, branş, sakatlık', 1],
@@ -27,7 +28,7 @@ const BOLUMLER = {
     ['Bugün', 'Derslerin, yoklama, wellness ve RPE', 1, 'bugun'],
     ['Kişilerim', 'Sana atanan sporcu ve danışanlar', 1, 'kisiler'],
     ['Gruplarım', 'Grup derslerin', 1, 'gruplar'],
-    ['Testler', 'Test günü ve Performanz raporları', 1],
+    ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2],
   ],
   ogrenci: [
@@ -69,6 +70,8 @@ export default function Panel() {
           <Kisiler onGeri={() => setSayfa(null)} />
         ) : sayfa === 'gruplar' ? (
           <Gruplar onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'testler' ? (
+          <Testler onGeri={() => setSayfa(null)} />
         ) : sayfa === 'bugun' ? (
           <Bugun onGeri={() => setSayfa(null)} />
         ) : sayfa === 'ayarlar' ? (

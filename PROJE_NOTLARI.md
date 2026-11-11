@@ -132,6 +132,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Denge sağ ve sol ayak ayrı rapor; ikisi birleştirilip sağ-sol farkı (asimetri) hesaplanır.
 - Performanz'ın otomatik yorum metinleri kendi içinde tutarsız olabiliyor; esas alınan ham sayılar, yorum metni ayrıca saklanır.
 - İleride Performanz API erişimi verirse otomatik aktarıma geçilir (Performanz'a sorulacak).
+- Durum: PDF okuyucu tarayıcıda çalışıyor (Bosco, CMJ, Denge, 10 m sürat, belirsiz mesafe sürat doğrulandı). Orijinal PDF şimdilik saklanmıyor; rapordaki değerler ve ayrıntılar kaydediliyor. Belirsiz mesafe testlerinin hangi teste karşılık geldiği tarayıcıda hatırlanır.
 
 ### Mevcut özellikler (taşınacak)
 Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, program blokları (gün bazlı bölüm seçimi, sürükle-sırala), Core ve Denge bölümleri, postür değerlendirmesi, gruplar, çoklu koç ataması, haftalık saatler, fotoğraflar, güne özel değişiklikler, wellness anketi, testler, veli raporu PDF, Performanz testleri.
