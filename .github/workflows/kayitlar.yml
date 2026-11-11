@@ -23,7 +23,7 @@ jobs:
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           gcloud auth activate-service-account --key-file="$RUNNER_TEMP/sa.json" --quiet
-          gcloud logging read 'resource.type="cloud_run_revision" AND severity>=WARNING' \
+          gcloud logging read 'resource.type="cloud_run_revision" AND (textPayload:"reddedildi" OR severity>=WARNING)' \
             --freshness="${{ inputs.saat }}h" --limit=40 --project antrenman-takip-e6e4f \
             --format='value(timestamp, resource.labels.service_name, textPayload, jsonPayload.message, jsonPayload)'
           rm -f "$RUNNER_TEMP/sa.json"
