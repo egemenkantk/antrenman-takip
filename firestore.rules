@@ -86,6 +86,10 @@ service cloud.firestore {
         allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
         allow write: if kisiyiYonetebilir(kisiId);
       }
+      match /antrenmanKayitlari/{belge} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow write: if kisiyiYonetebilir(kisiId);
+      }
       match /posturDegerlendirmeleri/{belge} {
         allow read, write: if kisiyiYonetebilir(kisiId);
       }
@@ -178,6 +182,11 @@ service cloud.firestore {
     match /testTanimlari/{id} { allow read: if aktif(); allow write: if yonetici(); }
     match /branslar/{id} { allow read: if ekip(); allow write: if yonetici(); }
     match /sakatlikTipleri/{id} { allow read: if ekip(); allow write: if yonetici(); }
+
+    // ---------- Eski sistemden aktarılan genel veriler (gruplar, takvim) ----------
+    match /aktarim/{id} {
+      allow read, write: if yonetici();
+    }
 
     // ---------- İşlem geçmişi (değiştirilemez) ----------
     match /islemGecmisi/{id} {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { subeleriGetir, subeEkle, subeGuncelle } from '../veri';
+import { subeleriGetir, subeEkle, subeGuncelle, kullanicilariGetir } from '../veri';
+import Aktarim from './Aktarim';
 import { hataMesaji } from '../auth/hesap';
 
 const ONERILEN = [
@@ -53,6 +54,13 @@ export default function Ayarlar({ onGeri }) {
   const [subeler, setSubeler] = useState(null);
   const [yeni, setYeni] = useState({ ad: '', adres: '' });
   const [hata, setHata] = useState('');
+  const [koclar, setKoclar] = useState([]);
+
+  useEffect(() => {
+    kullanicilariGetir()
+      .then((u) => setKoclar(u.filter((k) => (k.rol === 'koc' || k.rol === 'yonetici') && k.aktif !== false)))
+      .catch(() => {});
+  }, []);
 
   const yukle = () => subeleriGetir().then(setSubeler).catch((e) => setHata(hataMesaji(e)));
   useEffect(() => {
@@ -127,6 +135,8 @@ export default function Ayarlar({ onGeri }) {
           <button className="ikincil">Şube ekle</button>
         </form>
       )}
+
+      {subeler && subeler.length > 0 && <Aktarim subeler={subeler} koclar={koclar} />}
     </div>
   );
 }

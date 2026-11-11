@@ -73,8 +73,8 @@ export function kisiGuncelle(id, veri) {
   return updateDoc(doc(db, 'kisiler', id), { ...veri, guncelleme: serverTimestamp() });
 }
 
-export function yasHesapla(dogumTarihi) {
-  if (!dogumTarihi) return null;
+export function yasHesapla(dogumTarihi, dogumYili) {
+  if (!dogumTarihi) return dogumYili ? new Date().getFullYear() - Number(dogumYili) : null;
   const d = new Date(dogumTarihi);
   if (isNaN(d)) return null;
   const b = new Date();

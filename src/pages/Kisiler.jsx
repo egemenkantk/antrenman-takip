@@ -17,6 +17,7 @@ import {
   yasHesapla,
   tarihGoster,
 } from '../veri';
+import { TestlerSekmesi, KayitlarSekmesi } from './KisiKayitlari';
 
 const BOS = {
   tip: 'sporcu',
@@ -28,8 +29,18 @@ const BOS = {
   kocIds: [],
   brans: '',
   hedef: '',
+  boy: '',
+  kilo: '',
   not: '',
 };
+
+function Avatar({ kisi, buyuk }) {
+  return kisi.foto ? (
+    <img className={'avatar' + (buyuk ? '' : ' kucuk-av')} src={kisi.foto} alt="" />
+  ) : (
+    <div className={'avatar' + (buyuk ? '' : ' kucuk-av')} aria-hidden="true">{kisi.ad.charAt(0)}</div>
+  );
+}
 
 function CokluSecim({ secenekler, secili, onChange }) {
   return (
@@ -80,6 +91,8 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
       subeIds: f.subeIds,
       brans: f.tip === 'sporcu' ? f.brans.trim() : '',
       hedef: f.tip === 'pt' ? f.hedef : '',
+      boy: f.boy === '' || f.boy == null ? null : Number(f.boy),
+      kilo: f.kilo === '' || f.kilo == null ? null : Number(f.kilo),
       not: f.not.trim(),
     };
     if (yonetici) veri.kocIds = f.kocIds;
@@ -127,6 +140,14 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
             <option value="K">Kadın</option>
             <option value="E">Erkek</option>
           </select>
+        </label>
+        <label className="alan">
+          <span>Boy (cm)</span>
+          <input type="number" step="0.1" inputMode="decimal" value={f.boy ?? ''} onChange={set('boy')} />
+        </label>
+        <label className="alan">
+          <span>Kilo (kg)</span>
+          <input type="number" step="0.1" inputMode="decimal" value={f.kilo ?? ''} onChange={set('kilo')} />
         </label>
         <label className="alan">
           <span>Telefon (isteğe bağlı)</span>
@@ -222,7 +243,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGer
   const [duzenle, setDuzenle] = useState(false);
   const [baglaSecim, setBaglaSecim] = useState('');
   const [hata, setHata] = useState('');
-  const yas = yasHesapla(kisi.dogumTarihi);
+  const yas = yasHesapla(kisi.dogumTarihi, kisi.dogumYili);
   const subeAdlari = kisi.subeIds?.map((id) => subeler.find((s) => s.id === id)?.ad).filter(Boolean) || [];
   const kocAdlari = (kisi.kocIds || []).map((id) =>
     id === benim ? 'Sen' : koclar.find((k) => k.id === id)?.ad || telefonuGoster(id)
@@ -246,7 +267,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGer
     <div>
       <button className="metin geri" onClick={onGeri}>← Kişiler</button>
       <header className="kisi-baslik">
-        <div className="avatar" aria-hidden="true">{kisi.ad.charAt(0)}</div>
+        <Avatar kisi={kisi} buyuk />
         <div>
           <h2>{kisi.ad}</h2>
           <p className="aciklama">
@@ -269,11 +290,14 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGer
 
       {hata && <p className="hata">{hata}</p>}
 
-      {sekme !== 'ozet' && (
+      {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} />}
+      {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
+
+      {!['ozet', 'testler', 'kayitlar'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.
-            {sekme !== 'paket' && sekme !== 'saglik' ? ' Sporcu Kartı\'ndaki veriler de buraya aktarılacak.' : ''}
+            {sekme === 'program' || sekme === 'postur' ? ' Sporcu Kartı\'ndan aktarılan veriler saklanıyor; bölüm gelince burada görünecek.' : ''}
           </p>
         </div>
       )}
@@ -296,11 +320,17 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, onGer
       {sekme === 'ozet' && !duzenle && (
         <>
           <dl className="bilgi-izgara">
-            <div><dt>Doğum tarihi</dt><dd>{kisi.dogumTarihi ? tarihGoster(kisi.dogumTarihi) : '—'}</dd></div>
+            <div><dt>Doğum tarihi</dt><dd>{kisi.dogumTarihi ? tarihGoster(kisi.dogumTarihi) : kisi.dogumYili ? `${kisi.dogumYili} (yıl)` : '—'}</dd></div>
+            <div><dt>Boy / kilo</dt><dd>{kisi.boy ? `${kisi.boy} cm` : '—'} / {kisi.kilo ? `${String(kisi.kilo).replace('.', ',')} kg` : '—'}</dd></div>
+            {kisi.seviye && <div><dt>Seviye</dt><dd>{kisi.seviye}</dd></div>}
+            {kisi.pozisyon && <div><dt>Pozisyon / disiplin</dt><dd>{kisi.pozisyon}</dd></div>}
+            {kisi.kulup && <div><dt>Kulüp</dt><dd>{kisi.kulup}</dd></div>}
+            {kisi.eskiTelefon && !kisi.telefon && <div><dt>Telefon (eski kayıt)</dt><dd>{kisi.eskiTelefon}</dd></div>}
+            {kisi.hedefNotu && <div className="genis"><dt>Hedef</dt><dd>{kisi.hedefNotu}</dd></div>}
             <div><dt>Cinsiyet</dt><dd>{{ K: 'Kadın', E: 'Erkek' }[kisi.cinsiyet] || '—'}</dd></div>
             <div><dt>Telefon</dt><dd>{kisi.telefon ? telefonuGoster(kisi.telefon) : '—'}</dd></div>
             <div><dt>Şube</dt><dd>{subeAdlari.join(', ') || '—'}</dd></div>
-            <div><dt>Koç</dt><dd>{kocAdlari.join(', ') || '—'}</dd></div>
+            <div><dt>Koç</dt><dd>{kocAdlari.join(', ') || (kisi.eskiKoclar?.length ? `Atanmadı (eski kayıtta: ${kisi.eskiKoclar.join(', ')})` : '—')}</dd></div>
             {kisi.not && <div className="genis"><dt>Not</dt><dd>{kisi.not}</dd></div>}
           </dl>
           <div className="dugme-satiri">
@@ -514,11 +544,12 @@ export default function Kisiler({ onGeri }) {
       )}
       <ul className="bolum-listesi">
         {gorunen.map((k) => {
-          const yas = yasHesapla(k.dogumTarihi);
+          const yas = yasHesapla(k.dogumTarihi, k.dogumYili);
           return (
             <li key={k.id}>
               <button className="bolum-karti acik" onClick={() => setSecili(k.id)}>
-                <div>
+                <Avatar kisi={k} />
+                <div className="esnek">
                   <strong>{k.ad}</strong>
                   <span>
                     {TIP_ADI[k.tip]}
