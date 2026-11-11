@@ -87,6 +87,7 @@ Her kişinin altında kendine ait kayıtlar:
 | durum | aktif / bitti |
 
 > Grup dersine gelinmese de dönem ücreti aynıdır; gelinmeyen dersler aktarılmaz.
+> Dönem ortasında katılan çocuk: ücret kalan haftalara göre orantılı (dönem ücreti × kalan hafta / 4; katıldığı hafta dahil). Hesaplanan tutar önerilir, yönetici değiştirebilir.
 > Grubun gün/saati toplu olarak değişebilir: değişiklik gruba bir kez girilir, sonraki seanslar güncellenir ve gruptaki tüm velilere/öğrencilere bildirim gider.
 
 **programlar** — bloklar (Aşama 1)
@@ -256,5 +257,6 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)
 6. **Paket süresi yok (bireysel/PT):** Geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
 8. **Grup dersleri 4 haftalık dönemler:** Ödeme döneme bağlı; derse gelinmese de ücret aynı, aktarım yok. Dönemin son günü gruptaki tüm velilere ödeme hatırlatması ve yöneticiye özet (kim ödedi/ödemedi) gider. İkinci hatırlatma yok. Veliler birbirini ve diğer çocukları görmez.
+10. **Dönem ortası katılım:** Ücret kalan haftalara göre orantılı hesaplanır (katıldığı hafta dahil); yönetici gerekirse değiştirir.
 9. **Toplu saat değişikliği:** Grubun gün/saati toplu değişebilir; gruptaki herkese bildirim gider.
 7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.
