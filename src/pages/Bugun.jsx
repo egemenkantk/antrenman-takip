@@ -138,7 +138,7 @@ const satirlar = (t) => String(t || '').split('\n').map((s) => s.trim()).filter(
 const KATILIM_ADI = Object.fromEntries(KATILIM);
 
 function Avatar({ k }) {
-  return k.foto ? <img className="avatar kucuk-av" src={k.foto} alt="" /> : <div className="avatar kucuk-av" aria-hidden="true">{k.ad.charAt(0)}</div>;
+  return k.foto ? <img className="avatar kucuk-av" src={k.foto} alt="" /> : <div className="avatar kucuk-av" aria-hidden="true">{k.ad.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR')}</div>;
 }
 
 function Plan({ s }) {
@@ -393,7 +393,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Takvim</button>}
       <div className="bugun-bas">
         <div>
           <h2>{tarih === bugun() ? 'Bugün' : uzunTarih(tarih)}</h2>

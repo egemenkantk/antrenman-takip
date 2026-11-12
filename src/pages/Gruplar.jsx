@@ -369,7 +369,7 @@ export default function Gruplar({ onGeri }) {
   const gorunen = (gruplar || []).filter((x) => (pasifler ? x.aktif === false : x.aktif !== false));
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <div className="baslik-satiri">
         <h2>{yonetici ? 'Gruplar' : 'Gruplarım'}</h2>
         {yonetici && (

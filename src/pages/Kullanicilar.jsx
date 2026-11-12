@@ -134,7 +134,7 @@ export default function Kullanicilar({ onGeri }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Kullanıcılar</h2>
       <p className="aciklama">
         Siteye giriş yapacak kişileri buradan ekle. Eklediğinde bir geçici şifre oluşur; kişiye WhatsApp'tan iletebilirsin.

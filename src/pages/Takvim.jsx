@@ -235,7 +235,7 @@ export default function Takvim({ onGeri, onGunAc }) {
   const bugunT = bugun();
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <div className="bugun-bas">
         <div>
           <h2>Takvim</h2>

@@ -79,7 +79,7 @@ export default function Ayarlar({ onGeri }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Ayarlar</h2>
       <h3>Şubeler</h3>
       <p className="aciklama">Paketler, gruplar ve dersler bir şubeye bağlanır. Koçlar tüm şubelerde çalışabilir.</p>

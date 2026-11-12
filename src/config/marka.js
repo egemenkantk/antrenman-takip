@@ -3,7 +3,7 @@
 export const KURUM_ID = 'fitkon';
 
 export const MARKA = {
-  ad: 'Fitkon',
+  ad: 'Fitkon Athletic',
   altBaslik: 'Antrenman Takip',
   renk: '#e45d2b',
   // Logo: public/logo.png dosyası değiştirilerek güncellenir (saydam zeminli PNG önerilir)

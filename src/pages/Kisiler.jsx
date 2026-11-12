@@ -51,7 +51,9 @@ function Avatar({ kisi, buyuk }) {
   return kisi.foto ? (
     <img className={'avatar' + (buyuk ? '' : ' kucuk-av')} src={kisi.foto} alt="" />
   ) : (
-    <div className={'avatar' + (buyuk ? '' : ' kucuk-av')} aria-hidden="true">{kisi.ad.charAt(0)}</div>
+    <div className={'avatar' + (buyuk ? '' : ' kucuk-av')} aria-hidden="true">
+      {(kisi.ad || '?').trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR')}
+    </div>
   );
 }
 
@@ -77,6 +79,56 @@ function CokluSecim({ secenekler, secili, onChange }) {
 }
 
 // ---------- Kişi ekleme / düzenleme ----------
+// Fotoğrafı kare kırpıp küçültür (yaklaşık 10–20 KB); ayrı dosya deposu gerekmez
+function fotoKucult(dosya, boyut = 240) {
+  return new Promise((tamam, hata) => {
+    const img = new Image();
+    img.onload = () => {
+      const kenar = Math.min(img.width, img.height);
+      const c = document.createElement('canvas');
+      c.width = c.height = boyut;
+      c.getContext('2d').drawImage(img, (img.width - kenar) / 2, (img.height - kenar) / 2, kenar, kenar, 0, 0, boyut, boyut);
+      URL.revokeObjectURL(img.src);
+      tamam(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = hata;
+    img.src = URL.createObjectURL(dosya);
+  });
+}
+
+function FotoAlani({ foto, ad, onChange }) {
+  const [hata, setHata] = useState('');
+  return (
+    <div className="alan">
+      <span>Fotoğraf (isteğe bağlı)</span>
+      <div className="foto-duzen">
+        {foto ? <img className="avatar" src={foto} alt="" /> : <div className="avatar" aria-hidden="true">{(ad || '?').charAt(0)}</div>}
+        <label className="ikincil kucuk dosya-sec">
+          {foto ? 'Değiştir' : 'Fotoğraf seç'}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const d = e.target.files?.[0];
+              e.target.value = '';
+              if (!d) return;
+              setHata('');
+              try {
+                onChange(await fotoKucult(d));
+              } catch {
+                setHata('Fotoğraf okunamadı; JPG ya da PNG dene.');
+              }
+            }}
+          />
+        </label>
+        {foto && <button type="button" className="metin tehlike" onClick={() => onChange('')}>Kaldır</button>}
+      </div>
+      {hata && <p className="hata">{hata}</p>}
+      <small className="ipucu">Telefondan çekilen fotoğraf otomatik kırpılıp küçültülür. Çocukların fotoğrafı için veli onayı alınmalı.</small>
+    </div>
+  );
+}
+
 function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
   const [f, setF] = useState({ ...BOS, ...ilk });
   const [hata, setHata] = useState('');
@@ -108,6 +160,7 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
       kilo: f.kilo === '' || f.kilo == null ? null : Number(f.kilo),
       haftalikSaatler: f.haftalikSaatler || {},
       not: f.not.trim(),
+      foto: f.foto || '',
     };
     if (yonetici) veri.kocIds = f.kocIds;
     setBekliyor(true);
@@ -137,6 +190,8 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
           </button>
         ))}
       </div>
+
+      <FotoAlani foto={f.foto} ad={f.ad} onChange={(foto) => setF({ ...f, foto })} />
 
       <div className="form-izgara">
         <label className="alan">
@@ -492,7 +547,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
 }
 
 // ---------- Liste ----------
-export default function Kisiler({ onGeri }) {
+export default function Kisiler({ onGeri, acilisKisiId }) {
   const { durum } = useOturum();
   const ben = durum.kullanici;
   const yonetici = ben.rol === 'yonetici';
@@ -500,7 +555,7 @@ export default function Kisiler({ onGeri }) {
   const [subeler, setSubeler] = useState([]);
   const [kullanicilar, setKullanicilar] = useState([]);
   const [hata, setHata] = useState('');
-  const [secili, setSecili] = useState(null);
+  const [secili, setSecili] = useState(acilisKisiId || null);
   const [yeni, setYeni] = useState(false);
   const [ara, setAra] = useState('');
   const [tip, setTip] = useState('');
@@ -563,7 +618,7 @@ export default function Kisiler({ onGeri }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <div className="baslik-satiri">
         <h2>{yonetici ? 'Kişiler' : 'Kişilerim'}</h2>
         {yonetici && !yeni && (

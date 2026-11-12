@@ -352,7 +352,7 @@ export default function Kutuphaneler({ onGeri }) {
   const [sekme, setSekme] = useState('egzersiz');
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Kütüphaneler</h2>
       <nav className="sekmeler">
         {[['egzersiz', 'Egzersizler'], ['sablon', 'Program şablonları'], ['brans', 'Branş profilleri'], ['sakatlik', 'Sakatlık ve rehabilitasyon']].map(([id, ad]) => (

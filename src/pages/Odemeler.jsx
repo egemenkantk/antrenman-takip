@@ -357,7 +357,7 @@ export default function Odemeler({ onGeri }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>{yonetici ? 'Paketler ve ödemeler' : 'Ödemeler'}</h2>
       <p className="aciklama">
         {yonetici

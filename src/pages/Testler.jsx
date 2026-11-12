@@ -403,7 +403,7 @@ export default function Testler({ onGeri }) {
 
   return (
     <div>
-      <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>
+      {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Testler</h2>
       <nav className="sekmeler">
         {[['performanz', 'Performanz raporu yükle'], ['gun', 'Test günü (elle giriş)']].map(([id, ad]) => (
