@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SiraliListe from './SiraliListe';
 import {
   BOLUMLER,
@@ -18,9 +18,13 @@ import {
   yeniBlok,
 } from './model';
 import { HEDEFLER } from '../veri';
+import { useKutuphane, EgzersizEkle } from '../kutuphane/bilesenler';
+import { sablonlariGetir } from '../kutuphane/veri';
 
 const GUN_ADI = Object.fromEntries(HAFTA_GUNLERI);
 const kopya = (o) => JSON.parse(JSON.stringify(o));
+const satirEkle = (metin, yeni) => (String(metin || '').trim() ? String(metin).replace(/\s+$/, '') + '\n' : '') + yeni;
+
 
 // Gün sayısı ve hafta sayısı değişince gün/ilerleme dizilerini uyumla
 function uyumla(b) {
@@ -48,11 +52,23 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
   const [hata, setHata] = useState('');
   const [bekliyor, setBekliyor] = useState(false);
   const [ilerlemeAcik, setIlerlemeAcik] = useState(!sade);
+  const kutuphane = useKutuphane();
+  const [kendiSablonlar, setKendiSablonlar] = useState([]);
+  useEffect(() => {
+    sablonlariGetir().then((l) => setKendiSablonlar(l.filter((x) => !!x.sade === !!sade))).catch(() => {});
+  }, [sade]);
   const guncelle = (deg) => setB((x) => uyumla({ ...x, ...deg }));
   const fazlar = sade ? FAZLAR_PT : FAZLAR_SPORCU;
 
   function sablonSec(v) {
     setSablon(v);
+    if (v.startsWith('ozel:')) {
+      const t = kendiSablonlar.find((x) => x.id === v.slice(5));
+      if (!t) return;
+      const { id, ...icerik } = kopya(t);
+      setB(uyumla({ ...icerik, baslangic: b.baslangic }));
+      return;
+    }
     const y = yeniBlok({ sablon: v, sade, baslangic: b.baslangic });
     setB(uyumla(y));
   }
@@ -107,9 +123,16 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
           <label className="alan">
             <span>{sade ? 'Hedefe göre örnek şablon' : 'Hazır şablon'}</span>
             <select value={sablon} onChange={(e) => sablonSec(e.target.value)}>
-              {sade
-                ? [...HEDEFLER, ['bos', 'Boş plan']].map(([v, ad]) => <option key={v} value={v}>{ad}</option>)
-                : SABLON_ADLARI_SPORCU.map(([v, ad]) => <option key={v} value={v}>{ad}</option>)}
+              <optgroup label="Hazır şablonlar">
+                {sade
+                  ? [...HEDEFLER, ['bos', 'Boş plan']].map(([v, ad]) => <option key={v} value={v}>{ad}</option>)
+                  : SABLON_ADLARI_SPORCU.map(([v, ad]) => <option key={v} value={v}>{ad}</option>)}
+              </optgroup>
+              {kendiSablonlar.length > 0 && (
+                <optgroup label="Kendi şablonların">
+                  {kendiSablonlar.map((t) => <option key={t.id} value={'ozel:' + t.id}>{t.ad}</option>)}
+                </optgroup>
+              )}
             </select>
           </label>
         )}
@@ -241,6 +264,7 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
                     value={g.icerik?.liste || ''}
                     onChange={(e) => gunGuncelle(i, { icerik: { ...g.icerik, liste: e.target.value } })}
                   />
+                  <EgzersizEkle kutuphane={kutuphane} onEkle={(ad) => gunGuncelle(i, { icerik: { ...g.icerik, liste: satirEkle(g.icerik?.liste, ad) } })} />
                 </label>
               ) : (
                 <>
@@ -275,6 +299,7 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
                             value={g.icerik?.[k] || ''}
                             onChange={(e) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: e.target.value } })}
                           />
+                          <EgzersizEkle kutuphane={kutuphane} bolum={k} onEkle={(ad) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: satirEkle(g.icerik?.[k], ad) } })} />
                         </div>
                       )}
                     />

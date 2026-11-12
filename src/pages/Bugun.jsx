@@ -33,6 +33,7 @@ import {
 import { WellnessFormu, WellnessRozeti, RpeSecici, KatilimSecici, KATILIM } from '../bugun/Formlar';
 import GunOzelDuzenleyici from '../bugun/GunOzelDuzenleyici';
 import { gununKartlari } from '../takvim/gunHesap';
+import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
 
 const satirlar = (t) => String(t || '').split('\n').map((s) => s.trim()).filter(Boolean);
@@ -43,6 +44,7 @@ function Avatar({ k }) {
 }
 
 function Plan({ s }) {
+  const kutuphane = useKutuphane();
   if (!s) return <p className="aciklama kucuk-yazi">Bu gün için programda seans yok.</p>;
   if (s.dinlenme) {
     return (
@@ -70,7 +72,7 @@ function Plan({ s }) {
       )}
       {s.ozel && <span className="ozel-cip">✎ Bugüne özel{s.ozelNot ? ` · ${s.ozelNot}` : ''}</span>}
       {b?.sade ? (
-        <ul className="egzersizler">{satirlar(s.gun.icerik?.liste).map((x, i) => <li key={i}>{x}</li>)}</ul>
+        <ul className="egzersizler">{satirlar(s.gun.icerik?.liste).map((x, i) => <EgzersizSatiri key={i} satir={x} kutuphane={kutuphane} />)}</ul>
       ) : (
         gunBolumleri(b, s.gun).map((k) => {
           const d = BOLUMLER[k]?.doz ? dozaj(s.rx, s.gunIdx, k) : '';
@@ -79,7 +81,7 @@ function Plan({ s }) {
           return (
             <div key={k} className="bolum" style={{ '--bc': BOLUM_RENK[k] }}>
               <h5>{BOLUMLER[k]?.ad || k}{d && <span className="doz">{d}</span>}</h5>
-              {h.length > 0 && <ul className="egzersizler">{h.map((x, i) => <li key={i}>{x}</li>)}</ul>}
+              {h.length > 0 && <ul className="egzersizler">{h.map((x, i) => <EgzersizSatiri key={i} satir={x} kutuphane={kutuphane} />)}</ul>}
             </div>
           );
         })

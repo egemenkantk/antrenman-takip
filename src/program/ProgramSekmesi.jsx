@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import ProgramDuzenleyici from './ProgramDuzenleyici';
 import { programlariGetir, programEkle, programGuncelle, programSil } from './veri';
 import { sahibinGunOzelleri } from '../bugun/veri';
+import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
+import { sablonKaydet } from '../kutuphane/veri';
 import {
   BOLUMLER,
   BOLUM_RENK,
@@ -24,7 +26,7 @@ import {
 const GUN_ADI = Object.fromEntries(HAFTA_GUNLERI);
 const satirlar = (t) => String(t || '').split('\n').map((s) => s.trim()).filter(Boolean);
 
-function GunKarti({ b, g, i, hafta }) {
+function GunKarti({ b, g, i, hafta, kutuphane }) {
   const bolumler = gunBolumleri(b, g);
   return (
     <div className="gun-karti">
@@ -36,7 +38,7 @@ function GunKarti({ b, g, i, hafta }) {
         </span>
       </h4>
       {b.sade ? (
-        <ul className="egzersizler">{satirlar(g.icerik?.liste).map((s, k) => <li key={k}>{s}</li>)}</ul>
+        <ul className="egzersizler">{satirlar(g.icerik?.liste).map((s, k) => <EgzersizSatiri key={k} satir={s} kutuphane={kutuphane} />)}</ul>
       ) : (
         bolumler.map((k) => {
           const d = BOLUMLER[k]?.doz ? dozaj(hafta, i, k) : '';
@@ -48,7 +50,7 @@ function GunKarti({ b, g, i, hafta }) {
                 {BOLUMLER[k]?.ad || k}
                 {d && <span className="doz">{d}</span>}
               </h5>
-              {hareketler.length > 0 && <ul className="egzersizler">{hareketler.map((s, n) => <li key={n}>{s}</li>)}</ul>}
+              {hareketler.length > 0 && <ul className="egzersizler">{hareketler.map((s, n) => <EgzersizSatiri key={n} satir={s} kutuphane={kutuphane} />)}</ul>}
             </div>
           );
         })
@@ -58,6 +60,7 @@ function GunKarti({ b, g, i, hafta }) {
 }
 
 function BlokGorunumu({ b, ozeller }) {
+  const kutuphane = useKutuphane();
   const t = bugun();
   const durum = blokDurumu(b, t);
   const n = haftaSayisi(b);
@@ -102,7 +105,7 @@ function BlokGorunumu({ b, ozeller }) {
       {rx?.not && <p className="hafta-notu">{hafta + 1}. hafta: {rx.not}</p>}
 
       <div className="gun-izgara">
-        {(b.gunler || []).map((g, i) => <GunKarti key={i} b={b} g={g} i={i} hafta={rx} />)}
+        {(b.gunler || []).map((g, i) => <GunKarti key={i} b={b} g={g} i={i} hafta={rx} kutuphane={kutuphane} />)}
       </div>
       {ozeller.length > 0 && (
         <div className="ozel-liste">
@@ -221,6 +224,22 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
           {b && duzenleyebilir && (
             <div className="dugme-satiri">
               <button className="ikincil kucuk" onClick={() => setMod('duzenle')}>Düzenle</button>
+              <button
+                className="ikincil kucuk"
+                onClick={async () => {
+                  const ad = window.prompt('Şablon adı', b.ad);
+                  if (!ad?.trim()) return;
+                  try {
+                    await sablonKaydet(b, ad.trim(), yapan);
+                    setHata('');
+                    window.alert(`"${ad.trim()}" şablon olarak kaydedildi. Yeni blok oluştururken şablon listesinde görünecek.`);
+                  } catch {
+                    setHata('Şablon kaydedilemedi.');
+                  }
+                }}
+              >
+                Şablon olarak kaydet
+              </button>
               <button
                 className="metin tehlike"
                 onClick={async () => {

@@ -9,6 +9,7 @@ import Gruplar from './Gruplar';
 import Bugun from './Bugun';
 import Testler from './Testler';
 import Takvim from './Takvim';
+import Kutuphaneler from './Kutuphaneler';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -19,10 +20,11 @@ const BOLUMLER = {
     ['Kişiler', 'Sporcular ve PT danışanları', 1, 'kisiler'],
     ['Gruplar', 'Grup dersleri, üyeler ve grup programı', 1, 'gruplar'],
     ['Takvim', 'Haftalık ve aylık görünüm, maç ve etkinlikler', 1, 'takvim'],
+    ['Kütüphaneler', 'Egzersizler ve program şablonları', 1, 'kutuphane'],
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
-    ['Kütüphaneler', 'Egzersiz, şablon, branş, sakatlık', 1],
+    ['Kütüphaneler', 'Egzersizler ve program şablonları', 1, 'kutuphane'],
     ['Ayarlar', 'Şubeler', 1, 'ayarlar'],
   ],
   koc: [
@@ -75,6 +77,8 @@ export default function Panel() {
           <Gruplar onGeri={() => setSayfa(null)} />
         ) : sayfa === 'testler' ? (
           <Testler onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'kutuphane' ? (
+          <Kutuphaneler onGeri={() => setSayfa(null)} />
         ) : sayfa === 'takvim' ? (
           <Takvim onGeri={() => setSayfa(null)} onGunAc={(t) => { setBugunTarihi(t); setSayfa('bugun'); }} />
         ) : sayfa === 'bugun' ? (

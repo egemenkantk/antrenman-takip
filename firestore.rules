@@ -191,8 +191,8 @@ service cloud.firestore {
     }
 
     // ---------- Kütüphaneler ----------
-    match /egzersizler/{id} { allow read: if aktif(); allow write: if yonetici(); }
-    match /programSablonlari/{id} { allow read: if ekip(); allow write: if yonetici(); }
+    match /egzersizler/{id} { allow read: if aktif(); allow write: if yetkisiVar('programDuzenle'); }
+    match /programSablonlari/{id} { allow read: if ekip(); allow write: if yetkisiVar('programDuzenle'); }
     match /testTanimlari/{id} { allow read: if aktif(); allow write: if yonetici(); }
     match /branslar/{id} { allow read: if ekip(); allow write: if yonetici(); }
     match /sakatlikTipleri/{id} { allow read: if ekip(); allow write: if yonetici(); }

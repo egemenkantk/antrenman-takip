@@ -95,6 +95,13 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Etkinlikler: maç, turnuva, test günü, diğer; herkes ya da seçili grup/kişiler. Maç ve turnuvalar "maç gününe göre" (MD) planlanmış blokları besler.
 - Google Takvim bağlantısı: ertelendi (salon tarafında karışıklık olmasın diye); ihtiyaç olursa tek yönlü abonelik (ICS) olarak eklenebilir.
 
+### Kütüphaneler
+- Egzersiz kütüphanesi: ad, bölüm, video bağlantısı, uygulama ipucu, dikkat edilecekler. Mevcut programlardan tek tıkla içe alma.
+- Program düzenleyicide her bölümün altında kütüphaneden öneriyle egzersiz ekleme; programda ve Bugün ekranında kütüphanedeki egzersizlerin yanında ▶ video bağlantısı.
+- Kendi program şablonları: blok "şablon olarak kaydet", yeni blokta "Kendi şablonların" listesinden seçme; kütüphanede yeniden adlandır/sil.
+- Yönetici ve "program düzenleyebilir" yetkili koçlar ekleyip düzenleyebilir; diğer koçlar görür.
+- Branş profilleri ve sakatlık kütüphanesi: Aşama 4.
+
 ### Tasarım
 - Şu anki görünüm iskelet; tasarım en sona bırakıldı. Renk, yazı tipi ve boşluklar tek stil dosyasından yönetildiği için sonradan değiştirmek kolay.
 
