@@ -39,7 +39,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 | Veli | Çocuğunun/çocuklarının sayfası; tek hesaptan birden fazla çocuk |
 
 ### Kişi tipleri
-- **Sporcu:** branş atanır; performans testleri, sezon fazları, veli raporu.
+- **Sporcu:** branş atanır; performans testleri, sezon fazları, gelişim raporu.
 - **PT danışanı:** çoğunlukla yetişkin; pilates salonu ve birebir danışanlar. Hedef seçilir (masa başı, ileri yaş, kilo verme, ağrı yönetimi). Test/program kullanımı isteğe bağlı.
 - **Cimnastik:** çocuk grupları, yalnızca grup dersleri (4 haftalık dönem, aile ödemesi). Sporcu tipinde, branş: cimnastik.
 - Kişi tipi ve hedefe göre otomatik şekillenen: test seti, program şablonu önerisi, uyarı eşikleri, rapor dili.
@@ -76,6 +76,14 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - PT danışanları: blok yerine sade haftalık plan (günler + egzersiz listesi; bölümler ve ilerleme tablosu isteğe bağlı). Varsayılan fazlar Adaptasyon / Temel / İlerleme, ayrıca elle faz eklenebilir. Hedefe göre örnek şablonlar. Ev programı isteğe bağlı, kişi kişi gönderilir.
 - PT danışanlarında test yapılmıyor; yeniden test hatırlatması yok.
 - Pilates şubesi şimdilik sitede kullanılmayacak (pilates ders notu vb. yok).
+
+### Rapor (eski adıyla veli raporu)
+- Adı "Rapor"; kişi kartında sekme. Sporcu ve PT danışanı için aynı sistem, içerik kişi tipine göre değişir.
+- Kime: veliye ya da kişinin kendisine (18 yaş altı sporcuda varsayılan veli).
+- Sporcu: iki test günü karşılaştırma, test açıklamaları, rekorlar, gelişim grafikleri, antrenman özeti, vücut ölçüleri, değerlendirme ve hedefler.
+- PT: tarih aralığına göre antrenman özeti (seans, katılım, dakika, RPE, hazır oluş), vücut ölçüleri, değerlendirme ve hedefler.
+- PDF olarak indir ve yazdır. Rapor başlığı (salon adı, koç, logo) kurum ayarında tutulur.
+- Performanz PDF'lerini sitede saklama/görüntüleme: ertelendi, istenirse sonra eklenir (Storage, europe-west3).
 
 ### Tasarım
 - Şu anki görünüm iskelet; tasarım en sona bırakıldı. Renk, yazı tipi ve boşluklar tek stil dosyasından yönetildiği için sonradan değiştirmek kolay.

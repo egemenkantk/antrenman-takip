@@ -19,6 +19,7 @@ import {
 } from '../veri';
 import { TestlerSekmesi, KayitlarSekmesi } from './KisiKayitlari';
 import ProgramSekmesi from '../program/ProgramSekmesi';
+import RaporSekmesi from '../rapor/RaporSekmesi';
 import { HAFTA_GUNLERI } from '../program/model';
 import { saatOzeti } from './Gruplar';
 
@@ -277,6 +278,7 @@ const SEKMELER = [
   ['postur', 'Postür', 1],
   ['saglik', 'Sağlık', 4],
   ['paket', 'Paket ve ödeme', 2],
+  ['rapor', 'Rapor', null],
 ];
 
 function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti }) {
@@ -344,7 +346,8 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
-      {!['ozet', 'program', 'testler', 'kayitlar'].includes(sekme) && (
+      {sekme === 'rapor' && <RaporSekmesi kisi={kisi} yapan={benim} />}
+      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.
