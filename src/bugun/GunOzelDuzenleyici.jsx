@@ -65,7 +65,7 @@ export default function GunOzelDuzenleyici({ seans, tarih, ad, varMi, onKaydet, 
                 <div className="bolum-duzen-ust"><strong>{BOLUMLER[k].ad}</strong>{tutamac}</div>
                 <div className="iki-sutun">
                   <textarea
-                    rows={2}
+                    rows={3}
                     placeholder="Her satıra bir hareket"
                     value={icerik[k] || ''}
                     onChange={(e) => setIcerik({ ...icerik, [k]: e.target.value })}

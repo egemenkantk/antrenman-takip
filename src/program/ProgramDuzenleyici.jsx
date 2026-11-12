@@ -294,7 +294,7 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
                             {tutamac}
                           </div>
                           <textarea
-                            rows={2}
+                            rows={3}
                             placeholder="Her satıra bir hareket"
                             value={g.icerik?.[k] || ''}
                             onChange={(e) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: e.target.value } })}

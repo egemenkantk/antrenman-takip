@@ -677,3 +677,7 @@ h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-
 /* Logo saydam: açık temada zeminsiz, koyu temada siyah yazı görünsün diye beyaz zeminli */
 .logo-dugme, .logo-buyuk { background: transparent; }
 @media (prefers-color-scheme: dark) { .logo-dugme, .logo-buyuk { background: #fff; } }
+/* Bölüm düzenleme: antrenman içeriği tam genişlik, dozaj altında küçük alan */
+.bolum-duzen textarea { width: 100%; min-width: 0; min-height: 76px; line-height: 1.4; }
+.iki-sutun { grid-template-columns: 1fr; gap: 6px; }
+.iki-sutun input { width: 100%; max-width: 260px; }
