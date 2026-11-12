@@ -7,6 +7,8 @@ import { TIP_ADI, HEDEF_ADI, yasHesapla } from '../veri';
 import { TARAF_ADI, sayiGoster } from '../testler/tanimlar';
 import { testSatirlari, testTarihleri, grafikNoktalari, antrenmanOzeti, degisimMetni, TEST_ACIKLAMA } from './model';
 import { bugun, gunEkle, gunFarki } from '../program/model';
+import { posturleriGetir } from '../postur/PosturSekmesi';
+import { BULGU, POSTUR, bulguMetni, egilim } from '../postur/tanimlar';
 
 const altListe = async (kisiId, ad) =>
   (await getDocs(collection(db, 'kisiler', kisiId, ad))).docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -54,7 +56,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
   const [mod, setMod] = useState(sporcu ? 'test' : 'donem'); // test: iki test günü · donem: tarih aralığı
   const [A, setA] = useState('');
   const [B, setB] = useState('');
-  const [bolum, setBolum] = useState({ testler: sporcu, grafikler: sporcu, antrenman: true, vucut: !sporcu, yorum: true });
+  const [bolum, setBolum] = useState({ testler: sporcu, grafikler: sporcu, antrenman: true, postur: true, vucut: !sporcu, yorum: true });
   const [yorum, setYorum] = useState({ degerlendirme: '', hedefler: '' });
   const [durum, setDurum] = useState('');
   const sayfa = useRef(null);
@@ -67,8 +69,9 @@ export default function RaporSekmesi({ kisi, yapan }) {
       getDoc(doc(db, 'kisiler', kisi.id, 'raporlar', 'taslak')),
       getDoc(doc(db, 'kurumlar', KURUM_ID)).catch(() => null),
       getDoc(doc(db, 'aktarim', 'sporcu-karti')).catch(() => null),
-    ]).then(([testler, kayitlar, wellness, taslak, kurum, eski]) => {
-      setVeri({ testler: testler.filter((t) => typeof t.deger === 'number'), kayitlar, wellness });
+      posturleriGetir(kisi.id).catch(() => []),
+    ]).then(([testler, kayitlar, wellness, taslak, kurum, eski, posturler]) => {
+      setVeri({ testler: testler.filter((t) => typeof t.deger === 'number'), kayitlar, wellness, posturler });
       if (taslak.exists()) setYorum({ degerlendirme: taslak.data().degerlendirme || '', hedefler: taslak.data().hedefler || '' });
       const k = kurum?.exists() ? kurum.data().rapor || {} : {};
       setMarka({ ad: k.ad || MARKA.ad, koc: k.koc || '', logo: k.logo || (eski?.exists() ? eski.data().logo : null) || null });
@@ -215,6 +218,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
           {[
             ...(sporcu ? [['testler', 'Test sonuçları ve açıklamalar'], ['grafikler', 'Gelişim grafikleri']] : []),
             ['antrenman', 'Antrenman özeti'],
+            ['postur', 'Postür özeti'],
             ['vucut', 'Vücut ölçüleri'],
             ['yorum', 'Değerlendirme ve hedefler'],
           ].map(([k, ad]) => (
@@ -377,6 +381,38 @@ export default function RaporSekmesi({ kisi, yapan }) {
               </div>
             </div>
           )}
+
+          {B && bolum.postur && (() => {
+            const ps = (veri.posturler || []).filter((p) => p.tarih <= B);
+            const pc = ps[0], pp = ps[1];
+            if (!pc) return null;
+            const ks = Object.keys(BULGU).filter((k) => pc.bulgular?.[k]?.sev || pp?.bulgular?.[k]?.sev);
+            return (
+              <div className="r-bolum">
+                <h3>Postür değerlendirmesi <small>{kisa(pc.tarih)}{pp ? ` · önceki: ${kisa(pp.tarih)}` : ''}</small></h3>
+                {!ks.length ? (
+                  <p>Değerlendirmede belirgin bir postür bulgusu saptanmadı.</p>
+                ) : (
+                  <>
+                    <ul className="r-liste">
+                      {POSTUR.flatMap((g) => g.ogeler.map(([k]) => k)).filter((k) => ks.includes(k)).map((k) => {
+                        const f = pc.bulgular?.[k];
+                        const e = egilim(f, pp?.bulgular?.[k]);
+                        return (
+                          <li key={k}>
+                            <b>{BULGU[k].ad}</b>: {f?.sev ? bulguMetni(f).toLocaleLowerCase('tr') : 'normal'}
+                            {e === 'duzeldi' && <span className="r-artı"> — düzelme var</span>}
+                            {(e === 'artti' || e === 'yeni') && <span className="r-eksi"> — takip ediliyor</span>}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <p className="r-not">Bulgulara yönelik düzeltici egzersizler antrenman programına eklenmektedir.</p>
+                  </>
+                )}
+              </div>
+            );
+          })()}
 
           {B && bolum.vucut && (vucut.length > 0 || kartOlculeri.length > 0) && (
             <div className="r-bolum">

@@ -381,3 +381,29 @@ select.eksik { border-color: var(--hata); }
   .rapor-sayfa { position: absolute; left: 0; top: 0; box-shadow: none; padding: 24px 28px; width: 100%; min-height: 0; }
   @page { size: A4; margin: 10mm; }
 }
+
+/* Postür */
+.postur-izgara { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.postur-grup { border: 1px solid var(--cizgi); border-radius: 12px; padding: 8px 12px 10px; margin: 0; min-width: 0; display: grid; gap: 2px; }
+.postur-grup legend { font-weight: 600; padding: 0 4px; }
+.postur-satir { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 6px; padding: 6px 0; border-bottom: 1px solid var(--cizgi); }
+.postur-satir > span:first-child { grid-column: 1 / -1; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; }
+.postur-satir select { padding: 6px 8px; font-size: 0.85rem; min-width: 0; }
+.postur-satir .kaldir { margin-left: auto; border: 0; background: none; color: var(--soluk); font-size: 1.1rem; }
+.secmeli-ekle { margin-top: 6px; color: var(--marka); font-weight: 600; font-size: 0.85rem; padding: 6px 8px; }
+.postur-gorunum { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 640px) { .postur-gorunum { grid-template-columns: 1fr; } .vucut-semasi { max-width: 150px; margin: 0 auto; } }
+.vucut-semasi { width: 100%; height: auto; display: block; }
+.bulgu-grubu h4 { margin: 10px 0 2px; }
+.bulgu-listesi { list-style: none; margin: 0; padding: 0; }
+.bulgu-listesi li { padding: 8px 0; border-top: 1px solid var(--cizgi); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.bulgu-rozet { font-size: 0.75rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; color: #fff; }
+.bulgu-rozet.s1 { background: #b7791f; }
+.bulgu-rozet.s2 { background: #c8341f; }
+.bulgu-rozet.s0 { background: #2e7d4f; }
+.egilim { font-size: 0.8rem; font-weight: 600; }
+.egilim.iyi { color: #2e7d4f; }
+.egilim.kotu { color: #c8341f; }
+.yonlendir { color: #c8341f; font-weight: 600; font-size: 0.8rem; }
+.r-liste { margin: 0; padding-left: 18px; }
+.r-liste li { margin: 2px 0; }

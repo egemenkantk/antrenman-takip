@@ -386,3 +386,51 @@ export function ProgramAktarimi({ koclar = [], subeler = [] }) {
     </section>
   );
 }
+
+// Sporcu Kartı'ndan aktarılan sporcuların eski postür değerlendirmeleri
+export function PosturAktarimi() {
+  const { durum } = useOturum();
+  const [ilerleme, setIlerleme] = useState(null);
+  const [sonuc, setSonuc] = useState(null);
+  const [hata, setHata] = useState('');
+
+  async function calistir() {
+    setHata('');
+    setSonuc(null);
+    setIlerleme('Eski kayıtlar okunuyor…');
+    try {
+      const kisiler = await getDocs(query(collection(db, 'kisiler'), where('kaynak', '==', 'sporcu-karti')));
+      const yazilar = [];
+      for (const k of kisiler.docs) {
+        const eski = await getDoc(doc(db, 'kisiler', k.id, 'ozel', 'eskiKayit'));
+        for (const p of eski.exists() ? eski.data().postures || [] : []) {
+          if (!p?.date) continue;
+          yazilar.push([
+            doc(db, 'kisiler', k.id, 'posturDegerlendirmeleri', 'sk_' + (p.id || p.date)),
+            { tarih: p.date, not: p.note || '', bulgular: p.findings || {}, kaynak: 'sporcu-karti', kurumId: KURUM_ID, kaydeden: durum.kullanici.id },
+          ]);
+        }
+      }
+      for (let i = 0; i < yazilar.length; i += 400) {
+        const bt = writeBatch(db);
+        yazilar.slice(i, i + 400).forEach(([r, v]) => bt.set(r, v));
+        await bt.commit();
+      }
+      setSonuc(yazilar.length);
+    } catch (e) {
+      setHata(hataMesaji(e));
+    } finally {
+      setIlerleme(null);
+    }
+  }
+
+  return (
+    <section className="kart-form">
+      <h3>Eski postür değerlendirmelerini aktar</h3>
+      <p className="aciklama kucuk-yazi">Sporcu Kartı'ndaki postür değerlendirmeleri kişi kartlarının Postür sekmesine aktarılır. Tekrar çalıştırılırsa çoğalmaz.</p>
+      <button className="ikincil" onClick={calistir} disabled={ilerleme !== null}>{ilerleme || 'Aktar'}</button>
+      {hata && <p className="hata">{hata}</p>}
+      {sonuc != null && <p className="bilgi">{sonuc} postür değerlendirmesi aktarıldı.</p>}
+    </section>
+  );
+}

@@ -85,6 +85,11 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - PDF olarak indir ve yazdır. Rapor başlığı (salon adı, koç, logo) kurum ayarında tutulur.
 - Performanz PDF'lerini sitede saklama/görüntüleme: ertelendi, istenirse sonra eklenir (Storage, europe-west3).
 
+### Postür
+- Eski Sporcu Kartı modeli aynen: önden/yandan/arkadan bulgular, şiddet (hafif/belirgin), taraf, seçmeli skapula bulguları, vücut şeması, önceki değerlendirmeye göre eğilim, skolyoz şüphesinde uzmana yönlendirme.
+- Düzeltici egzersiz önerileri kişinin aktif/planlı bloğuna (seçilen bölüm ve günlere) ya da PT planına eklenir; grup programı değişmez.
+- Raporda postür özeti bölümü.
+
 ### Tasarım
 - Şu anki görünüm iskelet; tasarım en sona bırakıldı. Renk, yazı tipi ve boşluklar tek stil dosyasından yönetildiği için sonradan değiştirmek kolay.
 
