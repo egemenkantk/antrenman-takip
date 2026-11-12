@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
+import { sonDersKontrol } from '../auth/hesap';
 
 const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
@@ -75,13 +76,15 @@ export function wellnessKaydet(kisiId, tarih, veri, yapan) {
   });
 }
 
-export function antrenmanKaydet(kisiId, kayitId, veri, yapan) {
-  return setDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), {
+export async function antrenmanKaydet(kisiId, kayitId, veri, yapan) {
+  await setDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), {
     ...veri,
     kaydeden: yapan,
     kurumId: KURUM_ID,
     kayit: serverTimestamp(),
   });
+  // Bireysel ders: pakette tek ders kaldıysa öğrenci/veliye bildirim (beklemeden, arka planda)
+  if (!String(kayitId).includes('_')) sonDersKontrol(kisiId);
 }
 
 export async function gunOzelleriAralik(bas, bit) {

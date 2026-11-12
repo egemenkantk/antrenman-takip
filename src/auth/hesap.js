@@ -15,6 +15,8 @@ import { auth, db, fonksiyonlar } from '../firebase';
 
 const cagir = (ad) => async (veri) => (await httpsCallable(fonksiyonlar, ad)(veri)).data;
 export const donemKontrolCalistir = cagir('donemKontrolCalistir');
+// Yoklama sonrası: pakette tek ders kaldıysa öğrenci/veliye bildirim (arka planda, hata yutulur)
+export const sonDersKontrol = (kisiId) => cagir('sonDersKontrol')({ kisiId }).catch(() => {});
 
 // "0532 123 45 67", "532 1234567", "+90 532..." → "+905321234567"
 export function telefonuDuzenle(girdi) {

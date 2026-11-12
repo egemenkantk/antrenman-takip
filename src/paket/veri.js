@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
+import { sonDersKontrol } from '../auth/hesap';
 import { grupKayitKimligi, orantiliUcret } from './model.js';
 
 const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -176,8 +177,9 @@ export async function odemeSil(o, neden, yapan) {
 }
 
 // Gelmedi olarak işaretlenen bireysel dersin paketten düşüp düşmeyeceği (yönetici kararı)
-export function dersDusmeKarari(kisiId, kayitId, dussun) {
-  return updateDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), { derstenDussun: dussun });
+export async function dersDusmeKarari(kisiId, kayitId, dussun) {
+  await updateDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), { derstenDussun: dussun });
+  sonDersKontrol(kisiId);
 }
 export async function bireyselKayitlar(kisiId) {
   return listele(await getDocs(collection(db, 'kisiler', kisiId, 'antrenmanKayitlari')));

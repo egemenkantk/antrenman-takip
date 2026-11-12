@@ -251,11 +251,13 @@ exports.donemKontrolCalistir = onCall(async (request) => {
   return donemKontrolu(db, admin, KURUM_ID);
 });
 
-// ---------- Bireysel paket: son ders bildirimi (yoklama girilince) ----------
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+// ---------- Bireysel paket: son ders bildirimi (koç yoklamayı kaydedince site çağırır) ----------
 const { sonDersKontrolu } = require('./donem');
 
-exports.sonDersBildirimi = onDocumentWritten('kisiler/{kisiId}/antrenmanKayitlari/{kayitId}', async (event) => {
-  if (String(event.params.kayitId).includes('_')) return; // grup dersi kayıtları paketten düşmez
-  await sonDersKontrolu(db, admin, KURUM_ID, event.params.kisiId);
+exports.sonDersKontrol = onCall(async (request) => {
+  const { kayit } = await cagiranKayit(request);
+  if (kayit.rol !== 'yonetici' && kayit.rol !== 'koc') throw new HttpsError('permission-denied', 'Yetki yok.');
+  const kisiId = String(request.data?.kisiId || '');
+  if (!kisiId) throw new HttpsError('invalid-argument', 'Kişi eksik.');
+  return { gonderilen: await sonDersKontrolu(db, admin, KURUM_ID, kisiId) };
 });
