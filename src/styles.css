@@ -4,26 +4,29 @@
   --marka-dolu: #e45d2b; /* logodaki turuncu: HEX #E45D2B · RGB 228, 93, 43 */
   --marka-acik: #fdeee6;
   --sari: #fec15e;
-  --zemin: #fafafa;
-  --kart: #ffffff;
-  --yazi: #161616;
-  --soluk: #6b6b6b;
-  --cizgi: #ebebeb;
+  /* Zemin ve baloncuk tonları Sporcu Kartı'ndan */
+  --zemin: #e9ecef;
+  --kart: #f7f8f9;
+  --yazi: #18212c;
+  --soluk: #5d6b7b;
+  --cizgi: #cbd2da;
+  --cip: #dce3ea;
   --hata: #b42318;
   --yaricap: 12px;
   --yaricap-kart: 16px;
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: Barlow, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--yazi);
   background: var(--zemin);
   -webkit-font-smoothing: antialiased;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --zemin: #121212;
-    --kart: #1c1c1c;
-    --yazi: #f1f1f1;
-    --soluk: #a3a3a3;
-    --cizgi: #2c2c2c;
+    --zemin: #12171e;
+    --kart: #1a212a;
+    --yazi: #e6ebf0;
+    --soluk: #94a2b2;
+    --cizgi: #2c3743;
+    --cip: #26303b;
     --hata: #ff7a6e;
     --marka-acik: rgba(228, 93, 43, 0.16);
   }
@@ -313,7 +316,7 @@ body.siralaniyor { user-select: none; -webkit-user-select: none; }
 .birakma-alani input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 select.eksik { border-color: var(--hata); }
 .tablo select { padding: 6px 8px; font-size: 0.85rem; max-width: 200px; }
-.norm-rozet { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--cizgi); color: var(--yazi); }
+.norm-rozet { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--cip); color: var(--yazi); }
 .norm-rozet.kucuk { margin-left: 6px; font-size: 0.65rem; padding: 0 6px; }
 .n-Desteklenmeli { background: #f6d5cf; color: #8f2414; }
 .n-Geliştirilmeli { background: #fbe5c8; color: #8a5a00; }
@@ -592,15 +595,15 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 @media (prefers-color-scheme: dark) { .sekme.secili { color: #ff9a6b; } }
 
 /* Çipler ve seçim çubuğu */
-.cip { background: var(--kart); }
+.cip { background: var(--cip); border-color: var(--cip); }
 .cip.secili { background: var(--marka-dolu); border-color: var(--marka-dolu); }
 .secim-cubugu { border-radius: 999px; }
 .secim { border-radius: 999px; }
 .secim.secili { background: var(--marka-acik); color: var(--marka-dolu); font-weight: 600; }
 
 /* Avatar: nötr */
-.avatar { background: #efefef; color: #555; }
-@media (prefers-color-scheme: dark) { .avatar { background: #2a2a2a; color: #ddd; } }
+.avatar { background: var(--cip); color: var(--yazi); }
+
 
 /* Turuncu vurgular */
 .ilerleme-cubuk span { background: var(--marka); }
@@ -610,7 +613,7 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 :root { accent-color: var(--marka-dolu); }
 
 /* ================= Sporcu Kartı düzeni: sol menü + kişi listesi ================= */
-.marka-ad { font-family: 'Barlow Condensed', Inter, sans-serif; font-weight: 700; font-size: 1.35rem; letter-spacing: 0.01em; }
+.marka-ad { font-family: 'Barlow Condensed', Barlow, sans-serif; font-weight: 700; font-size: 1.35rem; letter-spacing: 0.01em; }
 .menu-dugme { display: none; background: none; border: 1px solid var(--cizgi); border-radius: 10px; width: 40px; height: 40px; font-size: 1.2rem; color: var(--yazi); }
 .uygulama { display: grid; grid-template-columns: 260px minmax(0, 1fr); max-width: 1400px; margin: 0 auto; }
 .uygulama .icerik { max-width: 1080px; width: 100%; margin: 0; padding: 22px clamp(16px, 3vw, 36px) 48px; }
@@ -621,7 +624,7 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 .yan-nav { display: grid; gap: 4px; }
 .yan-nav button {
   display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; border: 0; background: none; color: var(--yazi);
-  padding: 9px 12px; border-radius: 12px; font: 600 1.05rem 'Barlow Condensed', Inter, sans-serif; letter-spacing: 0.01em;
+  padding: 9px 12px; border-radius: 12px; font: 600 1.05rem 'Barlow Condensed', Barlow, sans-serif; letter-spacing: 0.01em;
 }
 .yan-nav button:hover { background: var(--kart); }
 .yan-nav button[aria-current='true'] { background: var(--marka-dolu); color: #fff; }
@@ -633,7 +636,7 @@ h1, h2, h3 { letter-spacing: -0.015em; }
 .yan-kisiler .esnek { display: grid; min-width: 0; }
 .yan-kisiler strong { font-size: 0.92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .yan-kisiler small { color: var(--soluk); font-size: 0.78rem; }
-.avatar.kucuk-av { width: 36px; height: 36px; font: 700 0.95rem 'Barlow Condensed', Inter, sans-serif; }
+.avatar.kucuk-av { width: 36px; height: 36px; font: 700 0.95rem 'Barlow Condensed', Barlow, sans-serif; }
 img.avatar { object-fit: cover; }
 .yan-perde { display: none; }
 @media (max-width: 900px) {
@@ -650,14 +653,14 @@ img.avatar { object-fit: cover; }
 
 /* ================= Sporcu Kartı'ndan: dar başlık yazısı, koyu saat kutusu, belirgin kişi başlığı ================= */
 h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-sayac strong {
-  font-family: 'Barlow Condensed', Inter, sans-serif; letter-spacing: 0.01em;
+  font-family: 'Barlow Condensed', Barlow, sans-serif; letter-spacing: 0.01em;
 }
 .icerik h2 { font-size: clamp(1.9rem, 4vw, 2.4rem); line-height: 1; font-weight: 700; margin-bottom: 8px; }
 .icerik h3 { font-size: 1.35rem; font-weight: 700; }
 .bugun-bas h2 { font-size: clamp(2.6rem, 7vw, 4rem); line-height: 0.9; }
 .sekme { font-size: 1.08rem; font-weight: 600; }
 .saat-kutu { font-size: 1.35rem; line-height: 1; padding: 7px 9px; border-radius: 12px; }
-.saat-kutu small { font-family: Inter, sans-serif; margin-top: 3px; }
+.saat-kutu small { font-family: Barlow, sans-serif; margin-top: 3px; }
 .seans-bas h3 { font-size: 1.45rem; line-height: 1; }
 .harf { background: var(--marka-dolu); font-size: 1.1rem; }
 .seans-karti { border-radius: 18px; }
@@ -668,6 +671,9 @@ h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-
 .foto-duzen .avatar { width: 64px; height: 64px; }
 .dosya-sec { position: relative; overflow: hidden; display: inline-flex; align-items: center; cursor: pointer; color: var(--yazi); }
 .dosya-sec input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.harf { line-height: 1; padding-top: 1px; }
+.harf { line-height: 1; padding-top: 0; }
 .faz { white-space: nowrap; }
 @media (max-width: 420px) { .kullanici-bilgi > span:first-child { display: none; } }
+/* Logo saydam: açık temada zeminsiz, koyu temada siyah yazı görünsün diye beyaz zeminli */
+.logo-dugme, .logo-buyuk { background: transparent; }
+@media (prefers-color-scheme: dark) { .logo-dugme, .logo-buyuk { background: #fff; } }

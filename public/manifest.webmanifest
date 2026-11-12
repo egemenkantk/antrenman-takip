@@ -3,7 +3,7 @@
   "short_name": "Fitkon Athletic",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fafafa",
+  "background_color": "#e9ecef",
   "theme_color": "#ffffff",
   "lang": "tr",
   "icons": [
