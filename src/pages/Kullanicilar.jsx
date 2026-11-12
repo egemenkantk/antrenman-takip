@@ -178,7 +178,7 @@ export default function Kullanicilar({ onGeri }) {
         </div>
         {form.rol === 'ogrenci' || form.rol === 'veli' ? (
           <p className="aciklama kucuk-yazi">
-            Öğrenci/veli hesabını sporcu kartlarına bağlama, kişiler bölümü gelince eklenecek.
+            Hesabı ekledikten sonra Kişiler → kişinin kartı → Özet sekmesinin altındaki "Siteye giriş yapan hesaplar" bölümünden bu kişiye bağla. Bir veli birden fazla çocuğa bağlanabilir.
           </p>
         ) : null}
         {hata && <p className="hata">{hata}</p>}
