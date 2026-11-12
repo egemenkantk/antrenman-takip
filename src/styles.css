@@ -1,15 +1,21 @@
 :root {
-  --marka: #d7262e;
-  --zemin: #f4f3f1;
+  /* Fitkon Athletic: logodaki turuncu ve sarı. Sade zemin, yuvarlak hatlar. */
+  --marka: #e45d2b;
+  --marka-dolu: #cc4c1b; /* beyaz yazılı düğmeler için (okunabilirlik) */
+  --marka-acik: #fdeee6;
+  --sari: #fec15e;
+  --zemin: #fafafa;
   --kart: #ffffff;
-  --yazi: #141414;
-  --soluk: #6b6a68;
-  --cizgi: #e2e0dc;
+  --yazi: #161616;
+  --soluk: #6b6b6b;
+  --cizgi: #ebebeb;
   --hata: #b42318;
   --yaricap: 12px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --yaricap-kart: 16px;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--yazi);
   background: var(--zemin);
+  -webkit-font-smoothing: antialiased;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -17,8 +23,9 @@
     --kart: #1c1c1c;
     --yazi: #f1f1f1;
     --soluk: #a3a3a3;
-    --cizgi: #2e2e2e;
+    --cizgi: #2c2c2c;
     --hata: #ff7a6e;
+    --marka-acik: rgba(228, 93, 43, 0.16);
   }
 }
 * { box-sizing: border-box; }
@@ -544,3 +551,60 @@ small.sakatlik-uyari { cursor: default; }
 .eksik-test { color: #b7791f; }
 .asama-alan { border: 1px solid var(--cizgi); border-radius: 10px; padding: 8px 12px; margin: 10px 0; }
 .asama-alan legend { font-weight: 700; padding: 0 6px; }
+
+
+/* ================= Tema: A'nın sadeliği + B'nin yuvarlak hatları ================= */
+.logo-dugme { background: #fff; border: 0; padding: 4px 8px; border-radius: 12px; display: flex; }
+.logo-kucuk { height: 34px; width: auto; display: block; }
+.logo-buyuk { width: 170px; height: auto; display: block; margin: 0 auto 6px; background: #fff; border-radius: 16px; padding: 6px; }
+.ust-bar { position: sticky; top: 0; z-index: 20; padding: 8px 16px; }
+h1, h2, h3 { letter-spacing: -0.015em; }
+.icerik h2 { font-size: 1.6rem; font-weight: 700; }
+
+/* Düğmeler: hap şeklinde */
+.birincil { background: var(--marka-dolu); border-radius: 999px; padding: 12px 20px; font-weight: 600; }
+.birincil.kucuk, .ikincil.kucuk { padding: 8px 14px; }
+.birincil:hover:not(:disabled) { filter: brightness(1.06); }
+.ikincil { border-radius: 999px; padding: 9px 16px; }
+.ikincil:hover { border-color: #d6d6d6; }
+.metin { text-decoration: none; }
+.metin:hover { color: var(--yazi); text-decoration: underline; }
+.metin.geri { color: var(--soluk); }
+
+/* Kartlar: yuvarlak, ince çizgi, gölge yok */
+.bolum-karti, .kart-form, .seans-karti, .paket-karti, .portal-kart, .sakatlik-karti, .egzersiz-listesi li,
+.secim-cubugu-satir, .ev-portal-listesi li, .brans-test { border-radius: var(--yaricap-kart); }
+.bolum-karti.acik { transition: border-color 0.15s; }
+.bolum-karti.acik:hover { border-color: var(--marka); }
+.bos-durum { border-radius: var(--yaricap-kart); background: var(--kart); border-style: solid; }
+
+/* Form alanları: beyaz zemin, yumuşak köşe */
+.alan input, select, textarea, .filtreler input[type='search'] { background: var(--kart); border-radius: var(--yaricap); }
+.alan input:focus, select:focus, textarea:focus, .filtreler input[type='search']:focus {
+  outline: 2px solid var(--marka); outline-offset: 1px; border-color: transparent;
+}
+
+/* Sekmeler: hap; seçili olan açık turuncu */
+.sekmeler { border-bottom: 0; gap: 6px; padding-bottom: 2px; }
+.sekme { border: 0; border-radius: 999px; padding: 8px 14px; margin: 0; color: var(--soluk); font-weight: 500; }
+.sekme:hover { color: var(--yazi); background: var(--kart); }
+.sekme.secili { background: var(--marka-acik); color: var(--marka-dolu); font-weight: 600; }
+@media (prefers-color-scheme: dark) { .sekme.secili { color: #ff9a6b; } }
+
+/* Çipler ve seçim çubuğu */
+.cip { background: var(--kart); }
+.cip.secili { background: var(--marka-dolu); border-color: var(--marka-dolu); }
+.secim-cubugu { border-radius: 999px; }
+.secim { border-radius: 999px; }
+.secim.secili { background: var(--marka-acik); color: var(--marka-dolu); font-weight: 600; }
+
+/* Avatar: nötr */
+.avatar { background: #efefef; color: #555; }
+@media (prefers-color-scheme: dark) { .avatar { background: #2a2a2a; color: #ddd; } }
+
+/* Turuncu vurgular */
+.ilerleme-cubuk span { background: var(--marka); }
+.bildirim-sayi { background: var(--marka-dolu); }
+.bolum-karti.acik em { color: var(--marka-dolu); }
+
+:root { accent-color: var(--marka-dolu); }

@@ -55,8 +55,7 @@ export default function Giris() {
     <main className="giris-sayfa">
       <div className="giris-kart">
         <header className="giris-baslik">
-          <div className="logo-isaret" aria-hidden="true">{MARKA.ad.charAt(0)}</div>
-          <h1>{MARKA.ad}</h1>
+          <img className="logo-buyuk" src={MARKA.logo} alt={MARKA.ad} />
           <p>{MARKA.altBaslik}</p>
         </header>
 

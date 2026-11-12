@@ -1,9 +1,13 @@
 {
-  "name": "Fitkon",
+  "name": "Fitkon Athletic",
   "short_name": "Fitkon",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
-  "lang": "tr"
+  "background_color": "#fafafa",
+  "theme_color": "#ffffff",
+  "lang": "tr",
+  "icons": [
+    { "src": "/simge-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/simge-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
 }

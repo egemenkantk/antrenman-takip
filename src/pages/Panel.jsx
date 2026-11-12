@@ -61,8 +61,9 @@ export default function Panel() {
     <div className="panel">
       <header className="ust-bar">
         <div className="marka">
-          <span className="logo-isaret kucuk" aria-hidden="true">{MARKA.ad.charAt(0)}</span>
-          <strong>{MARKA.ad}</strong>
+          <button className="logo-dugme" onClick={() => { setBugunTarihi(null); setSayfa(null); }} aria-label={`${MARKA.ad} ana sayfa`}>
+            <img className="logo-kucuk" src={MARKA.logo} alt="" />
+          </button>
         </div>
         <div className="kullanici-bilgi">
           <span>{k.ad || k.id}</span>

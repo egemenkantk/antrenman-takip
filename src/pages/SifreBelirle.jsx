@@ -35,7 +35,7 @@ export default function SifreBelirle() {
     <main className="giris-sayfa">
       <div className="giris-kart">
         <header className="giris-baslik">
-          <div className="logo-isaret" aria-hidden="true">{MARKA.ad.charAt(0)}</div>
+          <img className="logo-buyuk" src={MARKA.logo} alt={MARKA.ad} />
           <h1>Hoş geldin{k?.ad ? ', ' + k.ad.split(' ')[0] : ''}</h1>
           <p>Kendi şifreni belirle. Bundan sonra telefon numaran ve bu şifreyle gireceksin.</p>
         </header>
