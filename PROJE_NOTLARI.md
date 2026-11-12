@@ -96,8 +96,9 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Google Takvim bağlantısı: ertelendi (salon tarafında karışıklık olmasın diye); ihtiyaç olursa tek yönlü abonelik (ICS) olarak eklenebilir.
 
 ### Kütüphaneler
-- Egzersiz kütüphanesi: ad, bölüm, video bağlantısı, uygulama ipucu, dikkat edilecekler. Mevcut programlardan tek tıkla içe alma.
-- Program düzenleyicide her bölümün altında kütüphaneden öneriyle egzersiz ekleme; programda ve Bugün ekranında kütüphanedeki egzersizlerin yanında ▶ video bağlantısı.
+- Egzersiz kütüphanesi: ad, isteğe bağlı hareket kalıbı (squat, menteşe, tek bacak, itme, çekme, core, sıçrama…), video bağlantısı, uygulama ipucu, dikkat edilecekler. Mevcut programlardan tek tıkla içe alma; seçerek toplu silme.
+- Egzersiz bir bölüme/niteliğe bağlı değil: kuvvet, kuvvette devamlılık, power gibi nitelikleri set/tekrar, yük ve hız belirler. Aynı hareket her bölümde kullanılabilir.
+- Program düzenleyicide her bölümün altında tüm kütüphaneden öneriyle egzersiz ekleme; programda ve Bugün ekranında kütüphanedeki egzersizlerin yanında ▶ video bağlantısı.
 - Kendi program şablonları: blok "şablon olarak kaydet", yeni blokta "Kendi şablonların" listesinden seçme; kütüphanede yeniden adlandır/sil.
 - Yönetici ve "program düzenleyebilir" yetkili koçlar ekleyip düzenleyebilir; diğer koçlar görür.
 - Branş profilleri ve sakatlık kütüphanesi: Aşama 4.

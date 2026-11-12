@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 
@@ -6,6 +6,25 @@ const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 const sirala = (l) => l.sort((a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr'));
 
 // ---------- Egzersizler ----------
+// Egzersiz bir niteliğe (kuvvet, power…) bağlı değildir; bunu set/tekrar, yük ve hız belirler.
+// Hareket kalıbı yalnızca kütüphanede bulmayı kolaylaştırmak için, isteğe bağlı.
+export const KALIPLAR = [
+  ['squat', 'Squat'],
+  ['mentese', 'Kalça menteşe (hinge)'],
+  ['tekbacak', 'Tek bacak / lunge'],
+  ['itme', 'Üst vücut itme'],
+  ['cekme', 'Üst vücut çekme'],
+  ['core', 'Core / gövde'],
+  ['sicrama', 'Sıçrama / pliometri'],
+  ['sprint', 'Sprint / çeviklik'],
+  ['tasima', 'Taşıma'],
+  ['mobilite', 'Mobilite / esneme'],
+  ['denge', 'Denge'],
+  ['kardiyo', 'Kardiyo'],
+  ['diger', 'Diğer'],
+];
+export const KALIP_ADI = Object.fromEntries(KALIPLAR);
+
 let onbellek = null;
 export async function egzersizleriGetir(tazele = false) {
   if (onbellek && !tazele) return onbellek;
@@ -14,12 +33,20 @@ export async function egzersizleriGetir(tazele = false) {
 }
 export async function egzersizKaydet(eski, veri, yapan) {
   onbellek = null;
-  if (eski?.id) return updateDoc(doc(db, 'egzersizler', eski.id), { ...veri, guncelleyen: yapan, guncelleme: serverTimestamp() });
+  if (eski?.id) return updateDoc(doc(db, 'egzersizler', eski.id), { ...veri, bolum: deleteField(), guncelleyen: yapan, guncelleme: serverTimestamp() });
   return addDoc(collection(db, 'egzersizler'), { ...veri, kurumId: KURUM_ID, olusturan: yapan, olusturma: serverTimestamp() });
 }
 export async function egzersizSil(id) {
   onbellek = null;
   return deleteDoc(doc(db, 'egzersizler', id));
+}
+export async function egzersizleriTopluSil(idler) {
+  onbellek = null;
+  for (let i = 0; i < idler.length; i += 400) {
+    const b = writeBatch(db);
+    idler.slice(i, i + 400).forEach((id) => b.delete(doc(db, 'egzersizler', id)));
+    await b.commit();
+  }
 }
 export async function egzersizleriTopluEkle(liste, yapan) {
   onbellek = null;

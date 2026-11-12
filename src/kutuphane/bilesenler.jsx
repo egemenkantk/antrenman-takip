@@ -31,10 +31,10 @@ export function EgzersizSatiri({ satir, kutuphane }) {
 }
 
 // Düzenleyicide: kütüphaneden öneriyle satır ekleme kutusu
-export function EgzersizEkle({ kutuphane, bolum, onEkle }) {
+export function EgzersizEkle({ kutuphane, onEkle }) {
   const id = useId();
   const [v, setV] = useState('');
-  const liste = kutuphane.filter((e) => !bolum || e.bolum === bolum);
+  const liste = kutuphane;
   if (!kutuphane.length) return null;
   const ekle = () => {
     if (!v.trim()) return;

@@ -299,7 +299,7 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
                             value={g.icerik?.[k] || ''}
                             onChange={(e) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: e.target.value } })}
                           />
-                          <EgzersizEkle kutuphane={kutuphane} bolum={k} onEkle={(ad) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: satirEkle(g.icerik?.[k], ad) } })} />
+                          <EgzersizEkle kutuphane={kutuphane} onEkle={(ad) => gunGuncelle(i, { icerik: { ...g.icerik, [k]: satirEkle(g.icerik?.[k], ad) } })} />
                         </div>
                       )}
                     />

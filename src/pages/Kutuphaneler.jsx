@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
-import { BOLUMLER, BOLUM_SIRASI, BOLUM_RENK, fazAdi } from '../program/model';
+import { fazAdi } from '../program/model';
 import { tumProgramlar } from '../bugun/veri';
 import {
   egzersizleriGetir,
   egzersizKaydet,
   egzersizSil,
   egzersizleriTopluEkle,
+  egzersizleriTopluSil,
+  KALIPLAR,
+  KALIP_ADI,
   satirdanAd,
   normal,
   sablonlariGetir,
@@ -18,7 +21,7 @@ import {
 const videoGecerli = (u) => !u || /^https?:\/\/\S+$/i.test(u.trim());
 
 function EgzersizFormu({ ilk, onKaydet, onSil, onVazgec }) {
-  const [f, setF] = useState({ ad: ilk?.ad || '', bolum: ilk?.bolum || 'kuvvet', video: ilk?.video || '', ipucu: ilk?.ipucu || '', dikkat: ilk?.dikkat || '' });
+  const [f, setF] = useState({ ad: ilk?.ad || '', kalip: ilk?.kalip || '', video: ilk?.video || '', ipucu: ilk?.ipucu || '', dikkat: ilk?.dikkat || '' });
   const [hata, setHata] = useState('');
   const [bekliyor, setBekliyor] = useState(false);
   return (
@@ -42,9 +45,10 @@ function EgzersizFormu({ ilk, onKaydet, onSil, onVazgec }) {
       <div className="form-izgara">
         <label className="alan"><span>Egzersiz adı</span><input value={f.ad} onChange={(e) => setF({ ...f, ad: e.target.value })} /></label>
         <label className="alan">
-          <span>Bölüm</span>
-          <select value={f.bolum} onChange={(e) => setF({ ...f, bolum: e.target.value })}>
-            {BOLUM_SIRASI.map((k) => <option key={k} value={k}>{BOLUMLER[k].ad}</option>)}
+          <span>Hareket kalıbı (isteğe bağlı)</span>
+          <select value={f.kalip} onChange={(e) => setF({ ...f, kalip: e.target.value })}>
+            <option value="">Seçilmedi</option>
+            {KALIPLAR.map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
           </select>
         </label>
         <label className="alan">
@@ -85,14 +89,13 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
       const bulunan = new Map();
       for (const p of programlar) {
         for (const g of p.gunler || []) {
-          const parcalar = p.sade ? [['kuvvet', g.icerik?.liste]] : Object.entries(g.icerik || {});
-          for (const [bolum, metin] of parcalar) {
+          const parcalar = p.sade ? [g.icerik?.liste] : Object.values(g.icerik || {});
+          for (const metin of parcalar) {
             for (const satir of String(metin || '').split('\n')) {
               const ad = satirdanAd(satir);
               const n = normal(ad);
               if (!ad || ad.length < 3 || var_.has(n)) continue;
-              const k = bulunan.get(n) || { ad, bolumler: {}, sayi: 0 };
-              k.bolumler[bolum] = (k.bolumler[bolum] || 0) + 1;
+              const k = bulunan.get(n) || { ad, sayi: 0 };
               k.sayi++;
               bulunan.set(n, k);
             }
@@ -100,8 +103,7 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
         }
       }
       const l = [...bulunan.values()]
-        .map((k) => ({ ad: k.ad, bolum: Object.entries(k.bolumler).sort((a, b) => b[1] - a[1])[0][0], sayi: k.sayi }))
-        .filter((k) => BOLUMLER[k.bolum])
+        .map((k) => ({ ad: k.ad, kalip: '', sayi: k.sayi }))
         .sort((a, b) => b.sayi - a.sayi || a.ad.localeCompare(b.ad, 'tr'));
       setOneriler(l);
       setSecili(Object.fromEntries(l.map((k) => [k.ad, true])));
@@ -130,7 +132,7 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
         <>
           <div className="tablo-kap">
             <table className="tablo">
-              <thead><tr><th></th><th>Egzersiz</th><th>Bölüm</th><th>Geçtiği yer</th></tr></thead>
+              <thead><tr><th></th><th>Egzersiz</th><th>Hareket kalıbı</th><th>Geçtiği yer</th></tr></thead>
               <tbody>
                 {oneriler.map((k, i) => (
                   <tr key={k.ad}>
@@ -139,8 +141,9 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
                       <input className="tablo-girdi" value={k.ad} onChange={(e) => setOneriler(oneriler.map((x, j) => (j === i ? { ...x, ad: e.target.value } : x)))} />
                     </td>
                     <td>
-                      <select value={k.bolum} onChange={(e) => setOneriler(oneriler.map((x, j) => (j === i ? { ...x, bolum: e.target.value } : x)))}>
-                        {BOLUM_SIRASI.map((b) => <option key={b} value={b}>{BOLUMLER[b].ad}</option>)}
+                      <select value={k.kalip} onChange={(e) => setOneriler(oneriler.map((x, j) => (j === i ? { ...x, kalip: e.target.value } : x)))}>
+                        <option value="">—</option>
+                        {KALIPLAR.map(([b, ad]) => <option key={b} value={b}>{ad}</option>)}
                       </select>
                     </td>
                     <td>{k.sayi} kez</td>
@@ -156,7 +159,7 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
               onClick={async () => {
                 setBekliyor(true);
                 try {
-                  await egzersizleriTopluEkle(secilenler.map((k) => ({ ad: k.ad.trim(), bolum: k.bolum, video: '', ipucu: '', dikkat: '' })), yapan);
+                  await egzersizleriTopluEkle(secilenler.map((k) => ({ ad: k.ad.trim(), kalip: k.kalip, video: '', ipucu: '', dikkat: '' })), yapan);
                   onBitti();
                 } catch (e) {
                   setHata(hataMesaji(e));
@@ -178,17 +181,22 @@ function ProgramdanIceAl({ kutuphane, yapan, onBitti }) {
 function Egzersizler({ yazabilir, yapan }) {
   const [liste, setListe] = useState(null);
   const [ara, setAra] = useState('');
-  const [bolum, setBolum] = useState('');
+  const [kalip, setKalip] = useState('');
   const [form, setForm] = useState(null);
   const [iceAl, setIceAl] = useState(false);
+  const [secim, setSecim] = useState(null); // null: seçim kapalı, Set: seçili id'ler
+  const [hata, setHata] = useState('');
   const yukle = () => egzersizleriGetir(true).then(setListe).catch(() => setListe([]));
   useEffect(() => {
     yukle();
   }, []);
 
   const gorunen = useMemo(
-    () => (liste || []).filter((e) => (!bolum || e.bolum === bolum) && (!ara.trim() || normal(e.ad).includes(normal(ara)))),
-    [liste, ara, bolum]
+    () =>
+      (liste || []).filter(
+        (e) => (!kalip || (kalip === '-' ? !e.kalip : e.kalip === kalip)) && (!ara.trim() || normal(e.ad).includes(normal(ara)))
+      ),
+    [liste, ara, kalip]
   );
 
   if (form) {
@@ -208,17 +216,51 @@ function Egzersizler({ yazabilir, yapan }) {
   }
   if (iceAl) return <ProgramdanIceAl kutuphane={liste || []} yapan={yapan} onBitti={() => { setIceAl(false); yukle(); }} />;
 
+  const sec = (id) => setSecim((s) => {
+    const y = new Set(s);
+    y.has(id) ? y.delete(id) : y.add(id);
+    return y;
+  });
+
   return (
     <div>
       <div className="filtreler">
         <input type="search" placeholder="Egzersiz ara" value={ara} onChange={(e) => setAra(e.target.value)} aria-label="Egzersiz ara" />
-        <select value={bolum} onChange={(e) => setBolum(e.target.value)} aria-label="Bölüm">
-          <option value="">Tüm bölümler</option>
-          {BOLUM_SIRASI.map((k) => <option key={k} value={k}>{BOLUMLER[k].ad}</option>)}
+        <select value={kalip} onChange={(e) => setKalip(e.target.value)} aria-label="Hareket kalıbı">
+          <option value="">Tüm hareketler</option>
+          {KALIPLAR.map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
+          <option value="-">Kalıbı seçilmemiş</option>
         </select>
-        {yazabilir && <button className="birincil kucuk" onClick={() => setForm({})}>+ Egzersiz</button>}
-        {yazabilir && <button className="ikincil kucuk" onClick={() => setIceAl(true)}>Programlardan içe al</button>}
+        {yazabilir && !secim && <button className="birincil kucuk" onClick={() => setForm({})}>+ Egzersiz</button>}
+        {yazabilir && !secim && <button className="ikincil kucuk" onClick={() => setIceAl(true)}>Programlardan içe al</button>}
+        {yazabilir && !secim && liste?.length > 0 && <button className="ikincil kucuk" onClick={() => setSecim(new Set())}>Seç ve sil</button>}
       </div>
+      {secim && (
+        <div className="secim-cubugu-satir">
+          <span>{secim.size} seçili</span>
+          <button className="metin" onClick={() => setSecim(new Set(gorunen.map((e) => e.id)))}>Görünenlerin hepsini seç</button>
+          <button className="metin" onClick={() => setSecim(new Set())}>Seçimi temizle</button>
+          <button
+            className="birincil kucuk tehlike-dolu"
+            disabled={!secim.size}
+            onClick={async () => {
+              if (!window.confirm(`${secim.size} egzersiz kütüphaneden silinsin mi? Programlardaki satırlar etkilenmez.`)) return;
+              setHata('');
+              try {
+                await egzersizleriTopluSil([...secim]);
+                setSecim(null);
+                await yukle();
+              } catch (e) {
+                setHata(hataMesaji(e));
+              }
+            }}
+          >
+            Seçilenleri sil
+          </button>
+          <button className="metin" onClick={() => setSecim(null)}>Vazgeç</button>
+        </div>
+      )}
+      {hata && <p className="hata">{hata}</p>}
       {liste === null && <p className="aciklama">Yükleniyor…</p>}
       {liste && liste.length === 0 && (
         <div className="bos-durum">
@@ -227,13 +269,18 @@ function Egzersizler({ yazabilir, yapan }) {
       )}
       <ul className="egzersiz-listesi">
         {gorunen.map((e) => (
-          <li key={e.id} style={{ '--bc': BOLUM_RENK[e.bolum] || '#6b7785' }}>
+          <li key={e.id}>
+            {secim && (
+              <input type="checkbox" checked={secim.has(e.id)} onChange={() => sec(e.id)} aria-label={`${e.ad} seç`} />
+            )}
             <div className="esnek">
               <strong>{e.ad}</strong>
-              <span className="aciklama kucuk-yazi">{BOLUMLER[e.bolum]?.ad || e.bolum}{e.ipucu ? ` · ${e.ipucu}` : ''}</span>
+              <span className="aciklama kucuk-yazi">
+                {[KALIP_ADI[e.kalip], e.ipucu].filter(Boolean).join(' · ') || 'Video ve ipucu eklenmemiş'}
+              </span>
             </div>
             {e.video && <a href={e.video} target="_blank" rel="noreferrer" className="video-bag" aria-label={`${e.ad} videosu`}>▶ Video</a>}
-            {yazabilir && <button className="metin" onClick={() => setForm(e)}>Düzenle</button>}
+            {yazabilir && !secim && <button className="metin" onClick={() => setForm(e)}>Düzenle</button>}
           </li>
         ))}
       </ul>

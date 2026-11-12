@@ -24,7 +24,6 @@ const BOLUMLER = {
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
-    ['Kütüphaneler', 'Egzersizler ve program şablonları', 1, 'kutuphane'],
     ['Ayarlar', 'Şubeler', 1, 'ayarlar'],
   ],
   koc: [
