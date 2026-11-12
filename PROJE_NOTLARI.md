@@ -76,6 +76,9 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Bireysel/PT: kişinin kartı → Paket ve ödeme → "Bireysel paket ata". Başlangıç tarihinden sonraki "geldi" işaretli bireysel dersler en eski dolmamış paketten düşer; "gelmedi" düşmez, yönetici isterse ders bazında "dersten düşsün" işaretler. Pakete düşmeyen dersler uyarı olarak görünür.
 - Grup: grubun ayarında dönem ücreti paketi + ilk dönem başlangıcı seçilir; dönemler 28 günde bir ilerler. Kayıtlar her sabah 08:00'de otomatik açılır (yönetici "şimdi kontrol et" de diyebilir ya da grubun Ödemeler sekmesinden açabilir).
 - Sonradan eklenen üyenin katılım tarihi saklanır; ilk dönemi kalan haftalara göre orantılı açılır.
+- Düet ve trio: Gruplar'da ders türü "Düet"/"Trio" seçilen küçük grup (saat, yoklama, ortak program). Herkes kendi ders sayılı düet/trio paketini alır (kişi başı, süresiz). Yoklamada "geldi" olanın kendi paketinden ders düşer; gelmeyenden düşmez (istenirse "dersten düşsün").
+- Düet/trioda eksik katılım: o gün kaç kişi geldiyse o ücret uygulanır (velilere baştan söyleniyor). Site gelenlere otomatik fark hesaplamaz; yönetici yoklamadan sonra çıkan kutuya kişi başı fark tutarını girer (ya da "fark ücreti yok"). Koç yoklama girdiyse eksik dersler kişinin Paket ve ödeme sekmesinde yöneticiye listelenir.
+- Ek ücret: kişi kartından tek seferlik tutar (açıklamasını öğrenci/veli görür); yalnızca yönetici.
 - Kişiye özel grup ücreti (kardeş indirimi vb.) grupta kişi bazında saklanır ve sonraki dönemlere de uygulanır.
 - Dönemin son günü 08:00'de: gruba bağlı öğrenci/veli hesaplarına hatırlatma, yöneticilere ödedi/ödemedi özeti (site içi bildirim).
 - Ödeme silme: kayıt yok olmaz, "silindi" işaretlenir ve işlem geçmişine yazılır; düzeltmelerin eski değerleri saklanır.

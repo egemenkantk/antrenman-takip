@@ -35,6 +35,77 @@ import GunOzelDuzenleyici from '../bugun/GunOzelDuzenleyici';
 import { gununKartlari } from '../takvim/gunHesap';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
+import { ekUcretEkle, farkKarari } from '../paket/veri';
+import { TUR_KISA } from '../paket/model.js';
+
+// Düet/trioda eksik katılım: gelenlere fark ücreti (tutarı yönetici girer)
+function FarkKutusu({ fark, ben, onBitti }) {
+  const [tutar, setTutar] = useState('');
+  const [aciklama, setAciklama] = useState(
+    `Fark ücreti – ${fark.grupAdi}, ${fark.gelenler.length} kişi katıldı`
+  );
+  const [hata, setHata] = useState('');
+  const kayitId = grupKayitId(fark.tarih, fark.grupId);
+  if (!fark.yonetici) {
+    return (
+      <p className="uyari-kutu kucuk-yazi">
+        {TUR_KISA[fark.dersTuru]} dersine {fark.gelenler.length}/{fark.grupBoyu} kişi geldi. Ders gelenlerin paketinden düştü; fark ücretini yönetici ekler.{' '}
+        <button className="metin" onClick={onBitti}>Tamam</button>
+      </p>
+    );
+  }
+  return (
+    <div className="uyari-kutu">
+      <strong>{TUR_KISA[fark.dersTuru]} dersine {fark.gelenler.length}/{fark.grupBoyu} kişi geldi.</strong>
+      <p className="kucuk-yazi">Ders gelenlerin paketinden düştü. Fark ücreti eklemek istersen kişi başı tutarı gir:</p>
+      <div className="form-izgara">
+        <label className="alan">
+          <span>Kişi başı fark (₺)</span>
+          <input type="number" min="0" inputMode="decimal" value={tutar} onChange={(e) => setTutar(e.target.value)} />
+        </label>
+        <label className="alan">
+          <span>Açıklama (öğrenci/veli görür)</span>
+          <input value={aciklama} onChange={(e) => setAciklama(e.target.value)} />
+        </label>
+      </div>
+      <p className="kucuk-yazi aciklama">Gelenler: {fark.gelenler.map((k) => k.ad).join(', ')}</p>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button
+          className="birincil kucuk"
+          onClick={async () => {
+            if (!(Number(tutar) > 0)) return setHata('Tutar girilmeli.');
+            setHata('');
+            try {
+              for (const k of fark.gelenler) {
+                await ekUcretEkle({ kisiId: k.id, tarih: fark.tarih, tutar: Number(tutar), aciklama, ilgiliKayitId: kayitId }, ben.id);
+              }
+              onBitti();
+            } catch (e) {
+              setHata(hataMesaji(e));
+            }
+          }}
+        >
+          Fark ücretini ekle
+        </button>
+        <button
+          className="metin"
+          onClick={async () => {
+            try {
+              for (const k of fark.gelenler) await farkKarari(k.id, kayitId);
+              onBitti();
+            } catch (e) {
+              setHata(hataMesaji(e));
+            }
+          }}
+        >
+          Fark ücreti yok
+        </button>
+        <button className="metin" onClick={onBitti}>Sonra karar ver</button>
+      </div>
+    </div>
+  );
+}
 
 const satirlar = (t) => String(t || '').split('\n').map((s) => s.trim()).filter(Boolean);
 const KATILIM_ADI = Object.fromEntries(KATILIM);
@@ -209,6 +280,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
   const [sube, setSube] = useState('');
   const [sadeceBenim, setSadeceBenim] = useState(!yonetici);
   const [acik, setAcik] = useState(null);
+  const [fark, setFark] = useState(null);
   const [hata, setHata] = useState('');
 
   useEffect(() => {
@@ -400,10 +472,14 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                           await antrenmanKaydet(c.id, bireyselKayitId(tarih), kayit, ben.id);
                           guncelleGunluk('b:' + c.id, kayit);
                           setAcik(null);
+                          if (dersTuru && gelenler.length > 0 && gelenler.length < c.uyeler.length) {
+                            setFark({ grupId: c.id, grupAdi: c.ad, tarih, dersTuru, gelenler, grupBoyu: c.uyeler.length, yonetici });
+                          }
                         })
                       }
                     />
                   )}
+                  {fark?.grupId === c.id && fark.tarih === tarih && <FarkKutusu fark={fark} ben={ben} onBitti={() => setFark(null)} />}
                 </div>
               )}
 
@@ -455,6 +531,9 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                             gunIdx: c.s?.gunIdx ?? null,
                             not,
                           };
+                          const dersTuru = c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio' ? c.g.dersTuru : null;
+                          const gelenler = c.uyeler.filter((k) => satir[k.id].katilim === 'geldi');
+                          if (dersTuru) Object.assign(ortak, { dersTuru, gelenSayisi: gelenler.length, grupBoyu: c.uyeler.length });
                           await Promise.all(
                             c.uyeler.map((k) => {
                               const r = {
@@ -469,10 +548,14 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                             })
                           );
                           setAcik(null);
+                          if (dersTuru && gelenler.length > 0 && gelenler.length < c.uyeler.length) {
+                            setFark({ grupId: c.id, grupAdi: c.ad, tarih, dersTuru, gelenler, grupBoyu: c.uyeler.length, yonetici });
+                          }
                         })
                       }
                     />
                   )}
+                  {fark?.grupId === c.id && fark.tarih === tarih && <FarkKutusu fark={fark} ben={ben} onBitti={() => setFark(null)} />}
                 </div>
               )}
             </article>

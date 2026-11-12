@@ -69,7 +69,7 @@ export async function tumPaketVerisi() {
 export function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu }, yapan) {
   return addDoc(collection(db, 'satilanPaketler'), {
     kisiId: kisi.id,
-    tur: 'bireysel',
+    tur: tanim.tur || 'bireysel',
     paketTanimId: tanim.id,
     paketAdi: tanim.ad,
     subeId: tanim.subeId || '',
@@ -89,6 +89,27 @@ export async function paketGuncelle(p, veri, yapan) {
   if ('uygulananFiyat' in veri && Number(veri.uygulananFiyat) !== Number(p.uygulananFiyat)) {
     await gecmiseYaz(yapan, 'fiyat-degisti', { paketId: p.id, kisiId: p.kisiId, eski: p.uygulananFiyat, yeni: veri.uygulananFiyat });
   }
+}
+
+// Ek ücret: düet/trioda eksik katılım farkı gibi tek seferlik tutarlar (yalnızca yönetici).
+// Bir yoklama kaydına bağlıysa kimliği sabittir; aynı ders için iki kez eklenmez.
+export function ekUcretEkle({ kisiId, tarih, tutar, aciklama, ilgiliKayitId }, yapan) {
+  const veri = {
+    kisiId,
+    tur: 'ek',
+    paketAdi: aciklama || 'Ek ücret',
+    listeFiyati: Number(tutar) || 0,
+    uygulananFiyat: Number(tutar) || 0,
+    fiyatNotu: '',
+    baslangic: tarih,
+    ilgiliKayitId: ilgiliKayitId || null,
+    durum: 'aktif',
+    kurumId: KURUM_ID,
+    olusturan: yapan,
+    olusturma: serverTimestamp(),
+  };
+  if (ilgiliKayitId) return setDoc(doc(db, 'satilanPaketler', `ek_${kisiId}_${ilgiliKayitId}`), veri);
+  return addDoc(collection(db, 'satilanPaketler'), veri);
 }
 
 // ---------- Grup dönemleri ----------
@@ -180,6 +201,10 @@ export async function odemeSil(o, neden, yapan) {
 export async function dersDusmeKarari(kisiId, kayitId, dussun) {
   await updateDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), { derstenDussun: dussun });
   sonDersKontrol(kisiId);
+}
+// Eksik katılımlı düet/trio dersi için "fark ücreti gerek yok" kararı
+export function farkKarari(kisiId, kayitId) {
+  return updateDoc(doc(db, 'kisiler', kisiId, 'antrenmanKayitlari', kayitId), { farkGerekYok: true });
 }
 export async function bireyselKayitlar(kisiId) {
   return listele(await getDocs(collection(db, 'kisiler', kisiId, 'antrenmanKayitlari')));

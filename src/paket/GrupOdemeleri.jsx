@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
-import { donemBul, donemNo, odemeDurumu, tl } from './model.js';
-import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, odemeEkle, grupOzelFiyat, paketGuncelle } from './veri';
+import { donemBul, donemNo, odemeDurumu, tl, dersleriDagit, TUR_KISA } from './model.js';
+import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bireyselKayitlar, odemeEkle, grupOzelFiyat, paketGuncelle } from './veri';
 import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 
@@ -234,6 +234,51 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
         Dönemin son günü ({kisaTarih(donem.bit)}) gruptaki öğrenci/veli hesaplarına ödeme hatırlatması, sana da kim ödedi/ödemedi özeti gider.
         Kişiye özel fiyatı yönetici kişinin "Paket ve ödeme" sekmesinden değiştirir.
       </p>
+    </div>
+  );
+}
+
+// Düet/trio: herkesin kendi ders sayılı paketi; burada sadece özet görünür
+export function DuetOdemeleri({ grup, kisiler }) {
+  const [satirlar, setSatirlar] = useState(null);
+  useEffect(() => {
+    Promise.all(
+      (grup.uyeIds || []).map(async (id) => {
+        const [paketler, odemeler, kayitlar] = await Promise.all([
+          kisiPaketleri(id).catch(() => []),
+          kisiOdemeleri(id).catch(() => []),
+          bireyselKayitlar(id).catch(() => []),
+        ]);
+        const d = dersleriDagit(paketler, kayitlar);
+        const ilgili = paketler.filter((p) => p.tur === grup.dersTuru && p.durum !== 'iptal');
+        const kalanDers = ilgili.reduce((t, p) => t + (d.paketler[p.id]?.kalan || 0), 0);
+        const borc = paketler
+          .filter((p) => p.durum !== 'iptal' && (p.tur === grup.dersTuru || p.tur === 'ek'))
+          .reduce((t, p) => t + odemeDurumu(p, odemeler).kalan, 0);
+        return { id, ad: kisiler.find((k) => k.id === id)?.ad || 'Kişi', paketVar: ilgili.length > 0, kalanDers, borc };
+      })
+    ).then(setSatirlar);
+  }, [grup.id]);
+  if (!satirlar) return <p className="aciklama">Yükleniyor…</p>;
+  return (
+    <div>
+      <p className="aciklama">
+        Her üye kendi {TUR_KISA[grup.dersTuru].toLowerCase()} paketini alır; paket atama ve ödeme almak için kişinin kartındaki "Paket ve ödeme" sekmesini kullan.
+      </p>
+      <ul className="paket-listesi">
+        {satirlar.map((x) => (
+          <li key={x.id} className="paket-karti">
+            <div className="paket-ust">
+              <strong className="esnek">{x.ad}</strong>
+              {!x.paketVar && <span className="odeme-rozet odenmedi">Paket yok</span>}
+            </div>
+            <span className="kucuk-yazi">
+              {x.paketVar ? `${x.kalanDers} ders kaldı` : `${TUR_KISA[grup.dersTuru]} paketi atanmamış`}
+              {x.borc > 0 ? ` · Kalan ödeme ${tl(x.borc)}` : ''}
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

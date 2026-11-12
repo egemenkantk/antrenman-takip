@@ -47,5 +47,7 @@ await t('öğrenci ev programını değiştiremez', assertFails(setDoc(doc(ogr, 
 await t('öğrenci "yaptım" işaretler', assertSucceeds(setDoc(doc(ogr, 'kisiler', 'k1', 'evYapilan', '2026-11-12'), { dolduran: '+904', yapilanlar: [0] })));
 await t('öğrenci koç notlarını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'ozel', 'notlar'))));
 await t('öğrenci grubu okuyamaz', assertFails(getDocs(collection(ogr, 'gruplar'))));
+await t('koç düet paketi atar', assertSucceeds(addDoc(collection(koc, 'satilanPaketler'), { kisiId: 'k1', tur: 'duet', listeFiyati: 100, uygulananFiyat: 100 })));
+await t('koç ek ücret açamaz (yönetici girer)', assertFails(setDoc(doc(koc, 'satilanPaketler', 'ek_k1_x'), { kisiId: 'k1', tur: 'ek', listeFiyati: 100, uygulananFiyat: 100 })));
 await env.cleanup();
 if (hata) process.exit(1);

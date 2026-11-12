@@ -171,10 +171,10 @@ service cloud.firestore {
     match /satilanPaketler/{id} {
       allow read: if yonetici() || kisininKocu(resource.data.kisiId);
       // Koç paket atayabilir ama kişiye özel fiyat veremez
-      // Grup dönem kayıtlarını yalnızca yönetici (ve her sabahki otomatik kontrol) açar
+      // Grup dönem kayıtlarını ve ek ücretleri yalnızca yönetici (ve her sabahki otomatik kontrol) açar
       allow create: if yonetici()
         || (kisininKocu(request.resource.data.kisiId)
-            && request.resource.data.tur == 'bireysel'
+            && request.resource.data.tur in ['bireysel', 'duet', 'trio']
             && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati);
       allow update: if yonetici()
         || (kisininKocu(resource.data.kisiId)

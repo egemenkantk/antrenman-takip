@@ -3,7 +3,7 @@ import { useOturum } from '../auth/OturumContext';
 import { hataMesaji, donemKontrolCalistir } from '../auth/hesap';
 import { subeleriGetir, kullanicilariGetir, kisileriGetir, tarihGoster } from '../veri';
 import { bugun, kisaTarih } from '../program/model';
-import { odemeDurumu, dersleriDagit, tl, TUR_ADI, KITLE_ADI, YONTEM_ADI, YONTEMLER } from '../paket/model.js';
+import { odemeDurumu, dersleriDagit, tl, TUR_ADI, TUR_KISA, KITLE_ADI, YONTEM_ADI, YONTEMLER, dersSayili } from '../paket/model.js';
 import { paketTanimlariGetir, paketTanimKaydet, tumPaketVerisi, cokluKisiVerisi, bireyselKayitlar } from '../paket/veri';
 import { DurumRozeti, kocAdi } from '../paket/bilesenler';
 
@@ -25,7 +25,7 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
         e.preventDefault();
         if (!f.ad.trim()) return setHata('Paket adı gerekli.');
         if (!(Number(f.fiyat) >= 0) || f.fiyat === '') return setHata('Fiyat girilmeli.');
-        if (f.tur === 'bireysel' && !(Number(f.dersSayisi) > 0)) return setHata('Ders sayısı girilmeli.');
+        if (dersSayili(f.tur) && !(Number(f.dersSayisi) > 0)) return setHata('Ders sayısı girilmeli.');
         setHata('');
         try {
           await onKaydet({
@@ -33,7 +33,7 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             subeId: f.subeId,
             tur: f.tur,
             kitle: f.kitle,
-            dersSayisi: f.tur === 'bireysel' ? Number(f.dersSayisi) : null,
+            dersSayisi: dersSayili(f.tur) ? Number(f.dersSayisi) : null,
             fiyat: Number(f.fiyat),
           });
         } catch (err) {
@@ -65,14 +65,14 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             {Object.entries(KITLE_ADI).map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
           </select>
         </label>
-        {f.tur === 'bireysel' && (
+        {dersSayili(f.tur) && (
           <label className="alan">
             <span>Ders sayısı</span>
             <input type="number" min="1" value={f.dersSayisi} onChange={(e) => setF({ ...f, dersSayisi: e.target.value })} />
           </label>
         )}
         <label className="alan">
-          <span>{f.tur === 'grup' ? '4 haftalık dönem ücreti (₺)' : 'Paket fiyatı (₺)'}</span>
+          <span>{f.tur === 'grup' ? '4 haftalık dönem ücreti (₺)' : f.tur === 'bireysel' ? 'Paket fiyatı (₺)' : 'Kişi başı paket fiyatı (₺)'}</span>
           <input type="number" min="0" value={f.fiyat} onChange={(e) => setF({ ...f, fiyat: e.target.value })} />
         </label>
       </div>
@@ -131,7 +131,7 @@ function Tanimlar({ subeler, yapan }) {
       {bilgi && <p className="aciklama">{bilgi}</p>}
       {liste === null && <p className="aciklama">Yükleniyor…</p>}
       {liste && liste.length === 0 && (
-        <div className="bos-durum"><p>Henüz paket yok. Bireysel/PT paketler ders sayılıdır ve süresi yoktur; grup paketi 4 haftalık dönem ücretidir ve gruba bağlanır.</p></div>
+        <div className="bos-durum"><p>Henüz paket yok. Bireysel/PT, düet ve trio paketleri ders sayılıdır (kişi başı) ve süresi yoktur; grup paketi 4 haftalık dönem ücretidir ve gruba bağlanır.</p></div>
       )}
       {subeler.map((s) => {
         const grup = (liste || []).filter((t) => (t.subeId || '') === s.id);
@@ -146,7 +146,7 @@ function Tanimlar({ subeler, yapan }) {
                   {grup.map((t) => (
                     <tr key={t.id} className={t.aktif === false ? 'soluk' : ''}>
                       <th>{t.ad}{t.aktif === false ? ' (satıştan kalktı)' : ''}</th>
-                      <td>{t.tur === 'grup' ? 'Grup' : 'Bireysel'}</td>
+                      <td>{TUR_KISA[t.tur]}</td>
                       <td>{KITLE_ADI[t.kitle]}</td>
                       <td>{t.tur === 'grup' ? '4 hafta' : t.dersSayisi}</td>
                       <td>{tl(t.fiyat)}</td>
@@ -188,6 +188,9 @@ function Alacaklar({ veri, kisiler }) {
           <option value="">Grup ve bireysel</option>
           <option value="grup">Grup dönemleri</option>
           <option value="bireysel">Bireysel / PT</option>
+          <option value="duet">Düet</option>
+          <option value="trio">Trio</option>
+          <option value="ek">Ek ücretler</option>
         </select>
         <span className="aciklama">Toplam bekleyen <strong>{tl(toplam)}</strong> · {satirlar.length} kayıt</span>
       </div>
@@ -201,7 +204,7 @@ function Alacaklar({ veri, kisiler }) {
               {satirlar.map(({ p, od }) => (
                 <tr key={p.id}>
                   <th>{kisiAdi(p.kisiId)}</th>
-                  <td>{p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.paketAdi}</td>
+                  <td>{p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? `${p.paketAdi} · ${kisaTarih(p.baslangic)}` : `${TUR_KISA[p.tur]} · ${p.paketAdi}`}</td>
                   <td>{tl(p.uygulananFiyat)}</td>
                   <td>{tl(od.odenen)}</td>
                   <td><strong>{tl(od.kalan)}</strong></td>
@@ -220,12 +223,12 @@ function Alacaklar({ veri, kisiler }) {
 function AzalanPaketler({ veri, kisiler }) {
   const [liste, setListe] = useState(null);
   useEffect(() => {
-    const ids = [...new Set(veri.paketler.filter((p) => p.tur === 'bireysel' && p.durum !== 'iptal').map((p) => p.kisiId))];
+    const ids = [...new Set(veri.paketler.filter((p) => dersSayili(p.tur) && p.durum !== 'iptal').map((p) => p.kisiId))];
     Promise.all(
       ids.map(async (id) => {
         const kayitlar = await bireyselKayitlar(id).catch(() => []);
         const d = dersleriDagit(veri.paketler.filter((p) => p.kisiId === id), kayitlar);
-        const aktif = veri.paketler.filter((p) => p.kisiId === id && p.tur === 'bireysel' && p.durum !== 'iptal');
+        const aktif = veri.paketler.filter((p) => p.kisiId === id && dersSayili(p.tur) && p.durum !== 'iptal');
         const kalan = aktif.reduce((t, p) => t + (d.paketler[p.id]?.kalan || 0), 0);
         return { id, kalan, paketsiz: d.paketsizDersler.length };
       })

@@ -2,7 +2,17 @@
 import { gunEkle, gunFarki } from '../program/model.js';
 
 export const DONEM_GUN = 28; // grup dersleri 4 haftalık dönemlerle ilerler
-export const TUR_ADI = { grup: 'Grup (4 haftalık dönem)', bireysel: 'Bireysel / PT (ders sayılı)' };
+export const TUR_ADI = {
+  bireysel: 'Bireysel / PT (ders sayılı)',
+  duet: 'Düet (ders sayılı, kişi başı)',
+  trio: 'Trio (ders sayılı, kişi başı)',
+  grup: 'Grup (4 haftalık dönem)',
+};
+export const TUR_KISA = { bireysel: 'Bireysel', duet: 'Düet', trio: 'Trio', grup: 'Grup', ek: 'Ek ücret' };
+// Ders sayılı paket türleri: yoklamada "geldi" olan ders paketten düşer
+export const DERS_SAYILI = ['bireysel', 'duet', 'trio'];
+export const dersSayili = (tur) => DERS_SAYILI.includes(tur);
+export const GRUP_DERS_TURU = { grup: 'Grup dersi (4 haftalık dönem)', duet: 'Düet', trio: 'Trio' };
 export const KITLE_ADI = { sporcu: 'Sporcu', pt: 'PT danışanı' };
 export const YONTEMLER = [
   ['nakit', 'Nakit'],
@@ -55,30 +65,42 @@ export function odemeDurumu(paket, odemeler) {
 }
 export const DURUM_ADI = { odendi: 'Ödendi', kismi: 'Kısmi', odenmedi: 'Ödenmedi', iptal: 'İptal' };
 
-// ---------- Bireysel derslerin paketlere dağıtımı ----------
-// Sayılan ders: bireysel kayıt (grup kaydı değil), "geldi" ya da yöneticinin "dersten düşsün" dediği "gelmedi".
-// Her ders, tarihi paketin başlangıcından sonra olan en eski, dolmamış pakete yazılır.
+// ---------- Ders sayılı paketlere (bireysel, düet, trio) ders dağıtımı ----------
+// Kaydın türü: bireysel kayıt (kimliği yalnızca tarih) ya da düet/trio grubunun kaydı (dersTuru alanı).
+// Sayılan ders: "geldi" ya da yöneticinin "dersten düşsün" dediği "gelmedi". Düet/trioda gelmeyenden düşmez.
+// Her ders, aynı türdeki, başlangıcı dersten önce olan en eski dolmamış pakete yazılır.
+export function kayitTuru(kayit) {
+  const id = String(kayit?.id || '');
+  if (!kayit?.tarih || id.startsWith('sk_')) return null;
+  if (kayit.dersTuru === 'duet' || kayit.dersTuru === 'trio') return kayit.dersTuru;
+  return id.includes('_') ? null : 'bireysel';
+}
 export function sayilanDers(kayit) {
-  if (!kayit?.tarih || String(kayit.id || '').startsWith('sk_') || String(kayit.id || '').includes('_')) return false;
+  if (!kayitTuru(kayit)) return false;
   if (kayit.katilim === 'geldi') return true;
   return kayit.katilim === 'gelmedi' && kayit.derstenDussun === true;
 }
 export function dersleriDagit(paketler, kayitlar) {
-  const bireysel = paketler
-    .filter((p) => p.tur === 'bireysel' && p.durum !== 'iptal')
+  const sayili = paketler
+    .filter((p) => dersSayili(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || (a.id || '').localeCompare(b.id || ''));
-  const sonuc = Object.fromEntries(bireysel.map((p) => [p.id, { kullanilan: 0, dersler: [] }]));
+  const sonuc = Object.fromEntries(sayili.map((p) => [p.id, { kullanilan: 0, dersler: [] }]));
   const disarida = [];
   const dersler = kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih));
   for (const d of dersler) {
-    const p = bireysel.find((x) => (x.baslangic || '') <= d.tarih && sonuc[x.id].kullanilan < (Number(x.dersSayisi) || 0));
+    const tur = kayitTuru(d);
+    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && sonuc[x.id].kullanilan < (Number(x.dersSayisi) || 0));
     if (!p) {
-      disarida.push(d);
+      disarida.push({ ...d, tur });
       continue;
     }
     sonuc[p.id].kullanilan++;
     sonuc[p.id].dersler.push(d);
   }
-  for (const p of bireysel) sonuc[p.id].kalan = Math.max(0, (Number(p.dersSayisi) || 0) - sonuc[p.id].kullanilan);
+  for (const p of sayili) sonuc[p.id].kalan = Math.max(0, (Number(p.dersSayisi) || 0) - sonuc[p.id].kullanilan);
   return { paketler: sonuc, paketsizDersler: disarida };
 }
+
+// Düet/trio dersinde eksik katılım: kayıtta gelen sayısı grup boyundan azsa
+export const eksikKatilim = (kayit) =>
+  (kayit?.dersTuru === 'duet' || kayit?.dersTuru === 'trio') && kayit.katilim === 'geldi' && kayit.gelenSayisi < kayit.grupBoyu;

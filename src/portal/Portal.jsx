@@ -90,7 +90,7 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
   const plan = dersPlani(v);
   const siradaki = siradakiDersler(plan);
   const bugunDers = siradaki.some((d) => d.tarih === bugun());
-  const bireysel = v.paketler.filter((p) => p.tur === 'bireysel' && p.kalanDers > 0);
+  const bireysel = v.paketler.filter((p) => p.kalanDers > 0);
   const borc = v.paketler.reduce((t, p) => t + p.kalan, 0);
   return (
     <div className="portal-izgara">
@@ -234,7 +234,7 @@ function Programim({ kisiId, ben, salt }) {
 }
 
 function Paketim({ v }) {
-  const aktif = v.paketler.filter((p) => p.kalan > 0 || (p.tur === 'bireysel' && p.kalanDers > 0) || (p.tur === 'grup' && p.donemBit >= bugun()));
+  const aktif = v.paketler.filter((p) => p.kalan > 0 || p.kalanDers > 0 || (p.tur === 'grup' && p.donemBit >= bugun()));
   const eski = v.paketler.filter((p) => !aktif.includes(p));
   const kart = (p) => (
     <li key={p.id} className="paket-karti">
@@ -242,11 +242,11 @@ function Paketim({ v }) {
         <div className="esnek">
           <strong>{p.ad}</strong>
           <span className="aciklama kucuk-yazi">
-            {p.tur === 'grup' ? `Dönem ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}` : `${tarihGoster(p.baslangic)} başlangıç`}
+            {p.tur === 'grup' ? `Dönem ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? tarihGoster(p.baslangic) : `${tarihGoster(p.baslangic)} başlangıç`}
           </span>
         </div>
       </div>
-      {p.tur === 'bireysel' && (
+      {p.dersSayisi != null && (
         <div className="ders-sayac">
           <div className="ilerleme-cubuk" aria-hidden="true">
             <span style={{ width: `${Math.min(100, ((p.kullanilan || 0) / (p.dersSayisi || 1)) * 100)}%` }} />

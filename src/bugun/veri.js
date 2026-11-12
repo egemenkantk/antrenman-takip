@@ -84,7 +84,7 @@ export async function antrenmanKaydet(kisiId, kayitId, veri, yapan) {
     kayit: serverTimestamp(),
   });
   // Bireysel ders: pakette tek ders kaldıysa öğrenci/veliye bildirim (beklemeden, arka planda)
-  if (!String(kayitId).includes('_')) sonDersKontrol(kisiId);
+  if (!String(kayitId).includes('_') || veri.dersTuru) sonDersKontrol(kisiId);
 }
 
 export async function gunOzelleriAralik(bas, bit) {

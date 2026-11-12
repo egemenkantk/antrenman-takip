@@ -49,7 +49,7 @@ async function donemKontrolu(db, admin, KURUM_ID, bugun = istanbulBugun()) {
   for (const gd of gs.docs) {
     const g = { id: gd.id, ...gd.data() };
     const tanim = tanimlar[g.paketTanimId];
-    if (g.aktif === false || !tanim || !g.donemBaslangic) continue;
+    if (g.aktif === false || !tanim || !g.donemBaslangic || (g.dersTuru && g.dersTuru !== 'grup')) continue;
     const donem = donemBul(g.donemBaslangic, bugun);
     if (!donem) continue;
     const uyeler = g.uyeIds || [];
@@ -170,21 +170,28 @@ module.exports = { donemKontrolu, donemBul, orantili, istanbulBugun };
 // ---------- Bireysel paket: son ders bildirimi ----------
 // Yoklama kaydı değişince kişinin bireysel paketleri yeniden hesaplanır; bir pakette tek ders kaldıysa
 // kişiye bağlı öğrenci/veli hesaplarına bir kez bildirim gider (belge kimliği sabit, tekrar gitmez).
-function sayilanDers(k) {
+const DERS_SAYILI = ['bireysel', 'duet', 'trio'];
+function kayitTuru(k) {
   const id = String(k.id || '');
-  if (!k.tarih || id.startsWith('sk_') || id.includes('_')) return false;
+  if (!k.tarih || id.startsWith('sk_')) return null;
+  if (k.dersTuru === 'duet' || k.dersTuru === 'trio') return k.dersTuru;
+  return id.includes('_') ? null : 'bireysel';
+}
+function sayilanDers(k) {
+  if (!kayitTuru(k)) return false;
   return k.katilim === 'geldi' || (k.katilim === 'gelmedi' && k.derstenDussun === true);
 }
 function kalanDersler(paketler, kayitlar) {
-  const bireysel = paketler
-    .filter((p) => p.tur === 'bireysel' && p.durum !== 'iptal')
+  const sayili = paketler
+    .filter((p) => DERS_SAYILI.includes(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || a.id.localeCompare(b.id));
-  const kullanilan = Object.fromEntries(bireysel.map((p) => [p.id, 0]));
+  const kullanilan = Object.fromEntries(sayili.map((p) => [p.id, 0]));
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
-    const p = bireysel.find((x) => (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
+    const tur = kayitTuru(d);
+    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
     if (p) kullanilan[p.id]++;
   }
-  return bireysel.map((p) => ({ p, kullanilan: kullanilan[p.id], kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
+  return sayili.map((p) => ({ p, kullanilan: kullanilan[p.id], kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
 }
 async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
   const [ps, ks] = await Promise.all([
@@ -192,7 +199,7 @@ async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
     db.collection('kisiler').doc(kisiId).collection('antrenmanKayitlari').get(),
   ]);
   const paketler = ps.docs.map((d) => ({ id: d.id, ...d.data() }));
-  if (!paketler.some((p) => p.tur === 'bireysel')) return 0;
+  if (!paketler.some((p) => DERS_SAYILI.includes(p.tur))) return 0;
   const sonDers = kalanDersler(paketler, ks.docs.map((d) => ({ id: d.id, ...d.data() }))).filter((x) => x.kalan === 1);
   if (!sonDers.length) return 0;
   const us = await db.collection('kullanicilar').where('bagliKisiler', 'array-contains', kisiId).get();

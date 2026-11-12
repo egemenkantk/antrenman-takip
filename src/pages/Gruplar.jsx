@@ -5,9 +5,9 @@ import { subeleriGetir, kullanicilariGetir, kisileriGetir, TIP_ADI } from '../ve
 import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
-import GrupOdemeleri from '../paket/GrupOdemeleri';
+import GrupOdemeleri, { DuetOdemeleri } from '../paket/GrupOdemeleri';
 import { paketTanimlariGetir, grupKaydiOlustur, grupDonemKayitlari } from '../paket/veri';
-import { donemBul, tl } from '../paket/model.js';
+import { donemBul, tl, GRUP_DERS_TURU, TUR_KISA } from '../paket/model.js';
 import { bugun } from '../program/model';
 
 const GUN_ADI = Object.fromEntries(HAFTA_GUNLERI);
@@ -25,6 +25,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
     sure: ilk?.sure || 60,
     not: ilk?.not || '',
     uyeIds: ilk?.uyeIds || [],
+    dersTuru: ilk?.dersTuru || 'grup',
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
   });
@@ -46,6 +47,10 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
     if (!Object.keys(f.saatler).length) return setHata('En az bir ders günü seç.');
     setBekliyor(true);
     try {
+      if (f.dersTuru !== 'grup') {
+        f.paketTanimId = '';
+        f.donemBaslangic = '';
+      }
       if (f.paketTanimId && !f.donemBaslangic) {
         setBekliyor(false);
         return setHata('Dönem ücreti seçildiyse ilk dönemin başlangıç tarihi de girilmeli.');
@@ -80,6 +85,18 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
         </label>
       </div>
 
+      <label className="alan">
+        <span>Ders türü</span>
+        <select value={f.dersTuru} onChange={(e) => setF({ ...f, dersTuru: e.target.value })}>
+          {Object.entries(GRUP_DERS_TURU).map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
+        </select>
+      </label>
+      {f.dersTuru !== 'grup' ? (
+        <small className="ipucu">
+          {TUR_KISA[f.dersTuru]}: herkes kendi {TUR_KISA[f.dersTuru].toLowerCase()} paketini alır (kişi kartından). Yoklamada gelenlerin paketinden ders düşer; eksik katılımda fark ücretini sen eklersin.
+        </small>
+      ) : (
+      <>
       <div className="form-izgara">
         <label className="alan">
           <span>Dönem ücreti (4 hafta)</span>
@@ -96,6 +113,8 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
         </label>
       </div>
       <small className="ipucu">Dönemler bu tarihten itibaren 4'er hafta ilerler. Grup paketlerini "Paketler ve ödemeler → Paket tanımları"ndan eklersin.</small>
+      </>
+      )}
 
       <div className="alan">
         <span>Ders günleri ve saatleri</span>
@@ -278,7 +297,7 @@ export default function Gruplar({ onGeri }) {
         <button className="metin geri" onClick={() => setSecili(null)}>← Gruplar</button>
         <h2>{g.ad}{g.aktif === false ? ' (pasif)' : ''}</h2>
         <p className="aciklama">
-          {saatOzeti(g.saatler)} · {g.sure} dk
+          {g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk
           {g.kocIds?.length ? ` · ${g.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
           {subeler.length > 1 ? ` · ${subeler.find((s) => s.id === g.subeId)?.ad || ''}` : ''}
         </p>
@@ -313,7 +332,10 @@ export default function Gruplar({ onGeri }) {
         {sekme === 'program' && (
           <ProgramSekmesi sahipTip="grup" sahipId={g.id} sade={false} duzenleyebilir={programYetkisi} yapan={ben.id} />
         )}
-        {sekme === 'odeme' && (
+        {sekme === 'odeme' && g.dersTuru && g.dersTuru !== 'grup' && (
+          <DuetOdemeleri grup={g} kisiler={kisiler} />
+        )}
+        {sekme === 'odeme' && (!g.dersTuru || g.dersTuru === 'grup') && (
           <GrupOdemeleri
             grup={g}
             kisiler={kisiler}
@@ -368,7 +390,7 @@ export default function Gruplar({ onGeri }) {
               <div className="esnek">
                 <strong>{x.ad}</strong>
                 <span>
-                  {saatOzeti(x.saatler)} · {(x.uyeIds || []).length} üye
+                  {x.dersTuru && x.dersTuru !== 'grup' ? `${TUR_KISA[x.dersTuru]} · ` : ''}{saatOzeti(x.saatler)} · {(x.uyeIds || []).length} üye
                   {x.kocIds?.length ? ` · ${x.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
                 </span>
               </div>
