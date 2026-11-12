@@ -472,14 +472,10 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                           await antrenmanKaydet(c.id, bireyselKayitId(tarih), kayit, ben.id);
                           guncelleGunluk('b:' + c.id, kayit);
                           setAcik(null);
-                          if (dersTuru && gelenler.length > 0 && gelenler.length < c.uyeler.length) {
-                            setFark({ grupId: c.id, grupAdi: c.ad, tarih, dersTuru, gelenler, grupBoyu: c.uyeler.length, yonetici });
-                          }
                         })
                       }
                     />
                   )}
-                  {fark?.grupId === c.id && fark.tarih === tarih && <FarkKutusu fark={fark} ben={ben} onBitti={() => setFark(null)} />}
                 </div>
               )}
 
