@@ -1,7 +1,7 @@
 :root {
   /* Fitkon Athletic: logodaki turuncu ve sarı. Sade zemin, yuvarlak hatlar. */
   --marka: #e45d2b;
-  --marka-dolu: #cc4c1b; /* beyaz yazılı düğmeler için (okunabilirlik) */
+  --marka-dolu: #e45d2b; /* logodaki turuncu: HEX #E45D2B · RGB 228, 93, 43 */
   --marka-acik: #fdeee6;
   --sari: #fec15e;
   --zemin: #fafafa;
