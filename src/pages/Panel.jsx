@@ -12,6 +12,7 @@ import Takvim from './Takvim';
 import Kutuphaneler from './Kutuphaneler';
 import Odemeler from './Odemeler';
 import Bildirimler from '../paket/Bildirimler';
+import Portal from '../portal/Portal';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -93,10 +94,11 @@ export default function Panel() {
           <Odemeler onGeri={() => setSayfa(null)} />
         ) : sayfa === 'ayarlar' ? (
           <Ayarlar onGeri={() => setSayfa(null)} />
+        ) : k.rol === 'ogrenci' || k.rol === 'veli' ? (
+          <Portal ben={k} />
         ) : (
         <>
         <h2>Merhaba{k.ad ? `, ${k.ad.split(' ')[0]}` : ''}</h2>
-        <p className="aciklama">Site kuruluyor. Bölümler aşama aşama açılacak.</p>
         <ul className="bolum-listesi">
           {bolumler.map(([ad, aciklama, asama, hedef]) =>
             hedef ? (

@@ -22,6 +22,8 @@ import ProgramSekmesi from '../program/ProgramSekmesi';
 import RaporSekmesi from '../rapor/RaporSekmesi';
 import PosturSekmesi from '../postur/PosturSekmesi';
 import PaketSekmesi from '../paket/PaketSekmesi';
+import EvProgramiSekmesi from '../portal/EvProgramiSekmesi';
+import Portal from '../portal/Portal';
 import { HAFTA_GUNLERI } from '../program/model';
 import { saatOzeti } from './Gruplar';
 
@@ -275,12 +277,14 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
 const SEKMELER = [
   ['ozet', 'Özet', null],
   ['program', 'Program', 1],
+  ['ev', 'Ev programı', null],
   ['kayitlar', 'Kayıtlar', 1],
   ['testler', 'Testler', 1],
   ['postur', 'Postür', 1],
   ['saglik', 'Sağlık', 4],
   ['paket', 'Paket ve ödeme', null],
   ['rapor', 'Rapor', null],
+  ['portal', 'Portal görünümü', null],
 ];
 
 function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti }) {
@@ -326,7 +330,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       </header>
 
       <nav className="sekmeler" aria-label="Kişi kartı bölümleri">
-        {SEKMELER.map(([id, ad]) => (
+        {SEKMELER.filter(([id]) => id !== 'portal' || yonetici).map(([id, ad]) => (
           <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>
             {ad}
           </button>
@@ -349,9 +353,11 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
       {sekme === 'rapor' && <RaporSekmesi kisi={kisi} yapan={benim} />}
+      {sekme === 'portal' && yonetici && <Portal ben={{ id: benim, rol: 'yonetici' }} onizlemeKisiId={kisi.id} />}
+      {sekme === 'ev' && <EvProgramiSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
       {sekme === 'paket' && <PaketSekmesi kisi={kisi} yonetici={yonetici} benim={benim} koclar={koclar} />}
       {sekme === 'postur' && <PosturSekmesi kisi={kisi} yapan={benim} programYetkisi={programYetkisi} />}
-      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket'].includes(sekme) && (
+      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.

@@ -184,7 +184,7 @@ function kalanDersler(paketler, kayitlar) {
     const p = bireysel.find((x) => (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
     if (p) kullanilan[p.id]++;
   }
-  return bireysel.map((p) => ({ p, kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
+  return bireysel.map((p) => ({ p, kullanilan: kullanilan[p.id], kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
 }
 async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
   const [ps, ks] = await Promise.all([
@@ -223,3 +223,4 @@ async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
 }
 
 module.exports.sonDersKontrolu = sonDersKontrolu;
+module.exports.kalanDersleriHesapla = kalanDersler;

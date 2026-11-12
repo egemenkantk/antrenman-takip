@@ -32,5 +32,20 @@ await t('koç ödemeyi silemez', assertFails(updateDoc(doc(koc, 'odemeler', 'o1'
 await t('veli paketi doğrudan okuyamaz (liste fiyatı)', assertFails(getDocs(query(collection(veli, 'satilanPaketler'), where('kisiId', '==', 'k1')))));
 await t('veli kendi bildirimlerini sıralı sorgular', assertSucceeds(getDocs(query(collection(veli, 'bildirimler'), where('aliciKullaniciId', '==', '+903'), orderBy('tarih', 'desc')))));
 await t('veli bildirimi okundu yapar', assertSucceeds(updateDoc(doc(veli, 'bildirimler', 'b1'), { okundu: true })));
+const ogr = env.authenticatedContext('u4', { telefon: '+904' }).firestore();
+await env.withSecurityRulesDisabled(async (c) => {
+  await setDoc(doc(c.firestore(), 'kullanicilar', '+904'), { rol: 'ogrenci', bagliKisiler: ['k1'] });
+  await setDoc(doc(c.firestore(), 'kisiler', 'k1', 'evProgrami', 'aktif'), { egzersizler: [] });
+});
+await t('veli çocuğu için wellness doldurur', assertSucceeds(setDoc(doc(veli, 'kisiler', 'k1', 'wellness', '2026-11-12'), { dolduran: '+903', uyku: 4 })));
+await t('veli aynı gün kendi formunu düzeltir', assertSucceeds(setDoc(doc(veli, 'kisiler', 'k1', 'wellness', '2026-11-12'), { dolduran: '+903', uyku: 5 })));
+await t('öğrenci velinin formunu değiştiremez', assertFails(setDoc(doc(ogr, 'kisiler', 'k1', 'wellness', '2026-11-12'), { dolduran: '+904', uyku: 1 })));
+await t('veli başka çocuğa wellness giremez', assertFails(setDoc(doc(veli, 'kisiler', 'k2', 'wellness', '2026-11-12'), { dolduran: '+903', uyku: 4 })));
+await t('veli başkası adına dolduramaz', assertFails(setDoc(doc(veli, 'kisiler', 'k1', 'wellness', '2026-11-13'), { dolduran: '+904', uyku: 4 })));
+await t('öğrenci ev programını okur', assertSucceeds(getDoc(doc(ogr, 'kisiler', 'k1', 'evProgrami', 'aktif'))));
+await t('öğrenci ev programını değiştiremez', assertFails(setDoc(doc(ogr, 'kisiler', 'k1', 'evProgrami', 'aktif'), { egzersizler: [1] })));
+await t('öğrenci "yaptım" işaretler', assertSucceeds(setDoc(doc(ogr, 'kisiler', 'k1', 'evYapilan', '2026-11-12'), { dolduran: '+904', yapilanlar: [0] })));
+await t('öğrenci koç notlarını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'ozel', 'notlar'))));
+await t('öğrenci grubu okuyamaz', assertFails(getDocs(collection(ogr, 'gruplar'))));
 await env.cleanup();
 if (hata) process.exit(1);

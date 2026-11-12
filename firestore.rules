@@ -98,14 +98,30 @@ service cloud.firestore {
         allow read, write: if kisiyiYonetebilir(kisiId);
       }
 
-      // Wellness: koç salonda girer; kendi hesabı olan öğrenci/danışan kendisi doldurur.
-      // Veli doldurmaz, sadece görür.
+      // Wellness: koç salonda girer; öğrenci/danışan kendi telefonundan, telefonu olmayan çocuk
+      // velisinin telefonundan doldurur. Kimin hesabından doldurulduğu "dolduran"da saklanır.
       match /wellness/{belge} {
         allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
         allow create: if kisiyiYonetebilir(kisiId)
-          || (rol('ogrenci') && kisiId in ben().get('bagliKisiler', [])
+          || (kisiyeBagli(kisiId) && request.resource.data.dolduran == benimId());
+        // Aynı gün düzeltme: yalnızca kendi doldurduğu formu
+        allow update: if kisiyiYonetebilir(kisiId)
+          || (kisiyeBagli(kisiId) && resource.data.dolduran == benimId()
               && request.resource.data.dolduran == benimId());
-        allow update, delete: if kisiyiYonetebilir(kisiId);
+        allow delete: if kisiyiYonetebilir(kisiId);
+      }
+
+      // Ev programı: koç hazırlar, öğrenci/veli görür
+      match /evProgrami/{belge} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow write: if kisiyiYonetebilir(kisiId);
+      }
+      // Ev programında "yaptım" işaretleri (gün başına bir belge)
+      match /evYapilan/{tarih} {
+        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow create, update: if kisiyiYonetebilir(kisiId)
+          || (kisiyeBagli(kisiId) && request.resource.data.dolduran == benimId());
+        allow delete: if kisiyiYonetebilir(kisiId);
       }
     }
 

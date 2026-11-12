@@ -261,3 +261,18 @@ exports.sonDersKontrol = onCall(async (request) => {
   if (!kisiId) throw new HttpsError('invalid-argument', 'Kişi eksik.');
   return { gonderilen: await sonDersKontrolu(db, admin, KURUM_ID, kisiId) };
 });
+
+// ---------- Öğrenci/veli portalı ----------
+const { portalVerisi } = require('./portal');
+
+exports.portalVerisi = onCall(async (request) => {
+  const { kayit } = await cagiranKayit(request);
+  const kisiId = String(request.data?.kisiId || '');
+  if (!kisiId) throw new HttpsError('invalid-argument', 'Kişi eksik.');
+  // Öğrenci/veli yalnızca bağlı olduğu kişiyi; yönetici herkesi (portal önizlemesi) görebilir
+  const bagli = (kayit.bagliKisiler || []).includes(kisiId) && (kayit.rol === 'ogrenci' || kayit.rol === 'veli');
+  if (!bagli && kayit.rol !== 'yonetici') throw new HttpsError('permission-denied', 'Bu kişiyi görme yetkin yok.');
+  const v = await portalVerisi(db, kisiId);
+  if (!v) throw new HttpsError('not-found', 'Kişi bulunamadı.');
+  return v;
+});
