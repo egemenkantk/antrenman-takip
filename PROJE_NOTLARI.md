@@ -235,3 +235,13 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## 6. Açık konular
 - Ürün ve site ismi
 - KVKK: verilerin yurt dışı sunucuda tutulması için gereken rıza/sözleşme
+
+## 7. Anlaşma sonrası yapılacak
+### Tenis kulübü hizmeti (kulüp antrenörü rolü)
+- Durum: tenis kulübüyle anlaşma kesinleşince yapılacak; şimdilik bir şey eklenmedi.
+- Hizmet: kulübün öğrencilerine genel aylık program ve testler; kulübün kendi hocaları sonuçları görür.
+- Çözüm: yeni rol "kulüp antrenörü" — veli portalı gibi kısıtlı ekran. Yönetici hesabı açar ve hocayı kulübün öğrencilerine bağlar (bagliKisiler mantığı).
+- Görür: bağlı öğrencilerin aylık programı (egzersiz, set/tekrar, notlar), test sonuçları ve raporları; birden fazla öğrencide öğrenci seçici.
+- Görmez: kütüphane, şablonlar, sakatlık rehberleri, faz/otomatik program mantığı, ödemeler, koç notları, diğer sporcular. Veri sunucuda süzülerek verilir (portalVerisi gibi).
+- Kulübün öğrencileri sistemde normal sporcu olarak durur, "Tenis Kulübü" gibi bir kurum/kulüp etiketiyle ayrılır.
+- Anlaşmada karar verilecekler: egzersiz videoları görünsün mü, sakatlık kısıtları görünsün mü, kulüp hocası kort programını yazabilsin mi, kulüp dışına veri açılması için veli onayı nasıl alınacak.
