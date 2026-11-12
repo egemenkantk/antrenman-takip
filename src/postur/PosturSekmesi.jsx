@@ -3,6 +3,7 @@ import { collection, doc, getDocs, setDoc, deleteDoc, serverTimestamp } from 'fi
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { tarihGoster } from '../veri';
+import Iskelet from './Iskelet';
 import { POSTUR, BULGU, SECMELI, TARAF, SIDDET, BOLGE, bulguMetni, egilim } from './tanimlar';
 import { programlariGetir, programGuncelle } from '../program/veri';
 import { BOLUMLER, BOLUM_SIRASI, HARF, bugun, blokDurumu, gunBolumleri } from '../program/model';
@@ -31,19 +32,9 @@ export function VucutSemasi({ bulgular }) {
   }
   return (
     <svg viewBox="0 0 140 300" className="vucut-semasi" role="img" aria-label="Postür bulguları vücut şeması">
-      <g fill="#dce3ea" stroke="#cbd2da" strokeWidth="1.5" strokeLinecap="round">
-        <circle cx="70" cy="24" r="16" />
-        <rect x="63" y="38" width="14" height="12" rx="3" />
-        <rect x="42" y="50" width="56" height="100" rx="16" />
-        <path d="M44 58 L28 148" stroke="#dce3ea" strokeWidth="11" fill="none" />
-        <path d="M96 58 L112 148" stroke="#dce3ea" strokeWidth="11" fill="none" />
-        <path d="M58 148 L56 278" stroke="#dce3ea" strokeWidth="15" fill="none" />
-        <path d="M82 148 L84 278" stroke="#dce3ea" strokeWidth="15" fill="none" />
-        <ellipse cx="54" cy="286" rx="11" ry="5" />
-        <ellipse cx="86" cy="286" rx="11" ry="5" />
-      </g>
-      <text x="22" y="16" fontSize="10" fill="#5d6b7b">Sağ</text>
-      <text x="104" y="16" fontSize="10" fill="#5d6b7b">Sol</text>
+      <Iskelet />
+      <text x="6" y="14" fontSize="9" fill="#5d6b7b">Sağ</text>
+      <text x="134" y="14" fontSize="9" fill="#5d6b7b" textAnchor="end">Sol</text>
       {isaretler}
     </svg>
   );
