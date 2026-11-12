@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { subeleriGetir, subeEkle, subeGuncelle, kullanicilariGetir } from '../veri';
-import Aktarim, { ProgramAktarimi, PosturAktarimi } from './Aktarim';
+import Aktarim, { ProgramAktarimi, PosturAktarimi, EtkinlikAktarimi } from './Aktarim';
 import { hataMesaji } from '../auth/hesap';
 
 const ONERILEN = [
@@ -139,6 +139,7 @@ export default function Ayarlar({ onGeri }) {
       {subeler && subeler.length > 0 && <Aktarim subeler={subeler} koclar={koclar} />}
       {subeler && subeler.length > 0 && <ProgramAktarimi koclar={koclar} subeler={subeler} />}
       {subeler && subeler.length > 0 && <PosturAktarimi />}
+      {subeler && subeler.length > 0 && <EtkinlikAktarimi />}
     </div>
   );
 }

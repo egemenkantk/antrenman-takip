@@ -126,6 +126,11 @@ service cloud.firestore {
       allow write: if yetkisiVar('programDuzenle');
     }
 
+    // ---------- Etkinlikler (maç, turnuva, test günü) ----------
+    match /etkinlikler/{id} {
+      allow read, write: if ekip();
+    }
+
     // ---------- Güne özel değişiklikler (tek günlük seans düzenlemesi) ----------
     match /gunOzel/{id} {
       allow read, write: if ekip();

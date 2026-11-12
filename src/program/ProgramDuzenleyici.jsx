@@ -147,30 +147,67 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
         </label>
       </div>
 
-      <div className="alan">
-        <span>Antrenman günleri</span>
-        <div className="cip-grubu">
-          {HAFTA_GUNLERI.map(([v, ad]) => {
-            const acik = b.haftaGunleri.includes(v);
-            return (
+      {!b.sade && (
+        <div className="alan">
+          <span>Seanslar neye göre planlansın?</span>
+          <div className="secim-cubugu" role="radiogroup" aria-label="Planlama">
+            {[['hafta', 'Haftanın sabit günleri'], ['mac', 'Maç gününe göre (MD-4, MD-2…)']].map(([v, ad]) => (
               <button
                 type="button"
                 key={v}
-                className={'cip' + (acik ? ' secili' : '')}
-                aria-pressed={acik}
-                onClick={() =>
-                  guncelle({ haftaGunleri: acik ? b.haftaGunleri.filter((x) => x !== v) : [...b.haftaGunleri, v] })
-                }
+                role="radio"
+                aria-checked={(b.plan || 'hafta') === v}
+                className={'secim' + ((b.plan || 'hafta') === v ? ' secili' : '')}
+                onClick={() => guncelle({ plan: v })}
               >
                 {ad}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-        {b.plan === 'mac' && (
-          <small className="ipucu">Bu blok maç gününe göre planlanmıştı; maç takvimi bölümü gelene kadar haftanın günlerine göre gösterilir.</small>
-        )}
-      </div>
+      )}
+
+      {b.plan === 'mac' && !b.sade ? (
+        <div className="alan">
+          <span>Maçlar arasındaki seans sayısı</span>
+          <div className="cip-grubu">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                type="button"
+                key={n}
+                className={'cip' + (b.gunler.length === n ? ' secili' : '')}
+                aria-pressed={b.gunler.length === n}
+                onClick={() => guncelle({ haftaGunleri: HAFTA_GUNLERI.slice(0, n).map(([g]) => g) })}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <small className="ipucu">Her seansın maça göre gününü aşağıda seç. Maç ve turnuvalar Takvim bölümünden girilir.</small>
+        </div>
+      ) : (
+        <div className="alan">
+          <span>Antrenman günleri</span>
+          <div className="cip-grubu">
+            {HAFTA_GUNLERI.map(([v, ad]) => {
+              const acik = b.haftaGunleri.includes(v);
+              return (
+                <button
+                  type="button"
+                  key={v}
+                  className={'cip' + (acik ? ' secili' : '')}
+                  aria-pressed={acik}
+                  onClick={() =>
+                    guncelle({ haftaGunleri: acik ? b.haftaGunleri.filter((x) => x !== v) : [...b.haftaGunleri, v] })
+                  }
+                >
+                  {ad}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="gun-duzen-izgara">
         {b.gunler.map((g, i) => {
@@ -178,7 +215,19 @@ export default function ProgramDuzenleyici({ ilk, sade, varsayilanBaslangic, hed
           return (
             <fieldset key={i} className="gun-duzen">
               <legend>
-                <span className="harf">{HARF[i]}</span> {GUN_ADI[gunHaftaGunu(b, i)] || ''}
+                <span className="harf">{HARF[i]}</span>{' '}
+                {b.plan === 'mac' && !b.sade ? (
+                  <select
+                    value={g.md ?? ''}
+                    onChange={(e) => gunGuncelle(i, { md: e.target.value === '' ? null : Number(e.target.value) })}
+                    aria-label={`${HARF[i]} seansının maça göre günü`}
+                  >
+                    <option value="">Maç gününü seç</option>
+                    {[-5, -4, -3, -2, -1, 1, 2].map((v) => <option key={v} value={v}>{v > 0 ? `MD+${v}` : `MD${v}`}</option>)}
+                  </select>
+                ) : (
+                  GUN_ADI[gunHaftaGunu(b, i)] || ''
+                )}
               </legend>
               <label className="alan">
                 <span>Başlık</span>

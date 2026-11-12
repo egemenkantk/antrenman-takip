@@ -73,14 +73,33 @@ export function dozaj(hafta, gunIdx, bolum) {
 const siraliGunler = (b) => [...(b.haftaGunleri || [1, 3, 5])].sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7));
 export const gunHaftaGunu = (b, i) => siraliGunler(b)[i];
 
-// Bir tarihte bloktaki planlı seans (maç gününe göre planlama takvim bölümüyle gelecek)
-export function planliSeans(bloklar, tarih) {
+// Maç gününe göre konum: MD0 maç günü, MD-n maçtan n gün önce, MD+n maçtan n gün sonra
+export function macGunu(maclar, tarih) {
+  if (!maclar?.length) return null;
+  if (maclar.includes(tarih)) return { md: 0, etiket: 'Maç günü' };
+  const sonraki = maclar.find((d) => d > tarih);
+  const onceki = [...maclar].reverse().find((d) => d < tarih);
+  const kalan = sonraki ? gunFarki(tarih, sonraki) : null;
+  const gecen = onceki ? gunFarki(onceki, tarih) : null;
+  const etiket = kalan != null && kalan <= 6 ? `MD-${kalan}` : gecen != null && gecen <= 2 ? `MD+${gecen}` : null;
+  return { kalan, gecen, etiket };
+}
+
+// Bir tarihte bloktaki planlı seans. maclar: sahibin maç/turnuva tarihleri (sıralı)
+export function planliSeans(bloklar, tarih, maclar = []) {
   const b = bloklar.find((x) => x.baslangic <= tarih && tarih < blokBitis(x));
   if (!b) return null;
   const hafta = Math.floor(gunFarki(b.baslangic, tarih) / 7);
   const rx = (b.ilerleme || [])[hafta] || null;
   if (b.plan === 'mac') {
-    return { blok: b, dinlenme: true, macTakvimi: true };
+    const m = macGunu(maclar, tarih);
+    if (!m) return { blok: b, dinlenme: true, macTakvimi: true };
+    if (m.md === 0) return { blok: b, dinlenme: true, macGunu: true, md: m };
+    const i = (b.gunler || []).findIndex(
+      (g) => g.md != null && g.md !== '' && ((+g.md < 0 && m.kalan === -g.md) || (+g.md > 0 && m.gecen === +g.md))
+    );
+    if (i < 0) return { blok: b, dinlenme: true, md: m };
+    return { blok: b, hafta, gunIdx: i, gun: b.gunler[i], rx, md: m };
   }
   const gunler = siraliGunler(b);
   const idx = gunler.indexOf(coz(tarih).getDay());
@@ -295,8 +314,8 @@ export function eskiBloguDonustur(b) {
 }
 
 // Güne özel değişiklik uygulanmış seans. ozel: gunOzel belgesi (yoksa null)
-export function gununSeansi(bloklar, tarih, ozel) {
-  const s = planliSeans(bloklar, tarih);
+export function gununSeansi(bloklar, tarih, ozel, maclar = []) {
+  const s = planliSeans(bloklar, tarih, maclar);
   if (!ozel) return s;
   if (ozel.dinlenme) return { blok: s?.blok || null, dinlenme: true, ozel: true, ozelNot: ozel.not || '' };
   const gun = { baslik: ozel.baslik || '', bolumler: ozel.bolumler || [], icerik: ozel.icerik || {} };

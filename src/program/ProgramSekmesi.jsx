@@ -31,7 +31,7 @@ function GunKarti({ b, g, i, hafta }) {
       <h4>
         <span className="harf">{HARF[i]}</span>
         <span>
-          {GUN_ADI[gunHaftaGunu(b, i)]}
+          {b.plan === 'mac' && g.md != null ? (g.md > 0 ? `MD+${g.md}` : `MD${g.md}`) : GUN_ADI[gunHaftaGunu(b, i)]}
           {g.baslik ? <small> · {g.baslik}</small> : null}
         </span>
       </h4>
@@ -74,7 +74,7 @@ function BlokGorunumu({ b, ozeller }) {
           </h3>
           <p className="aciklama">
             {kisaTarih(b.baslangic)} – {kisaTarih(gunEkle(blokBitis(b), -1))} · {n} hafta ·{' '}
-            {(b.haftaGunleri || []).length} gün/hafta
+            {b.plan === 'mac' ? 'maç gününe göre' : `${(b.haftaGunleri || []).length} gün/hafta`}
             {durum === 'simdi' && ` · şu an ${buHafta + 1}. hafta`}
             {durum === 'planli' && ' · planlandı'}
             {durum === 'bitti' && ' · tamamlandı'}

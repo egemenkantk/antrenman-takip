@@ -90,6 +90,11 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Düzeltici egzersiz önerileri kişinin aktif/planlı bloğuna (seçilen bölüm ve günlere) ya da PT planına eklenir; grup programı değişmez.
 - Raporda postür özeti bölümü.
 
+### Takvim
+- Haftalık ve aylık görünüm; bireysel ve grup dersleri, güne özel değişiklikler, etkinlikler. Gün/derse tıklayınca Bugün ekranı o tarihte açılır.
+- Etkinlikler: maç, turnuva, test günü, diğer; herkes ya da seçili grup/kişiler. Maç ve turnuvalar "maç gününe göre" (MD) planlanmış blokları besler.
+- Google Takvim bağlantısı: ertelendi (salon tarafında karışıklık olmasın diye); ihtiyaç olursa tek yönlü abonelik (ICS) olarak eklenebilir.
+
 ### Tasarım
 - Şu anki görünüm iskelet; tasarım en sona bırakıldı. Renk, yazı tipi ve boşluklar tek stil dosyasından yönetildiği için sonradan değiştirmek kolay.
 

@@ -83,3 +83,8 @@ export function antrenmanKaydet(kisiId, kayitId, veri, yapan) {
     kayit: serverTimestamp(),
   });
 }
+
+export async function gunOzelleriAralik(bas, bit) {
+  const q = query(collection(db, 'gunOzel'), where('tarih', '>=', bas), where('tarih', '<=', bit));
+  return listele(await getDocs(q));
+}

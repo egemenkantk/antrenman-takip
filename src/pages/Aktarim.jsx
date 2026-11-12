@@ -434,3 +434,67 @@ export function PosturAktarimi() {
     </section>
   );
 }
+
+// Sporcu Kartı'ndaki maç / turnuva / test günü etkinlikleri
+export function EtkinlikAktarimi() {
+  const { durum } = useOturum();
+  const [ilerleme, setIlerleme] = useState(false);
+  const [sonuc, setSonuc] = useState(null);
+  const [hata, setHata] = useState('');
+
+  async function calistir() {
+    setHata('');
+    setSonuc(null);
+    setIlerleme(true);
+    try {
+      const genel = await getDoc(doc(db, 'aktarim', 'sporcu-karti'));
+      const eskiler = genel.exists() ? genel.data().events || [] : [];
+      const kisiler = (await getDocs(query(collection(db, 'kisiler'), where('kaynak', '==', 'sporcu-karti')))).docs.map((d) => ({ id: d.id, ...d.data() }));
+      const bt = writeBatch(db);
+      let n = 0;
+      for (const e of eskiler) {
+        if (!e?.date) continue;
+        let kapsam = 'herkes';
+        let kisiIds = [];
+        if (e.athleteId) {
+          kapsam = 'secili';
+          kisiIds = ['sk_' + e.athleteId];
+        } else if (e.team) {
+          kapsam = 'secili';
+          kisiIds = kisiler.filter((k) => (k.kulup || '') === e.team).map((k) => k.id);
+        }
+        bt.set(doc(db, 'etkinlikler', 'sk_' + e.id), {
+          tur: ['mac', 'turnuva', 'test', 'diger'].includes(e.kind) ? e.kind : 'diger',
+          ad: e.title || e.name || '',
+          tarih: e.date,
+          saat: e.time || '',
+          yer: e.place || '',
+          kapsam,
+          kisiIds,
+          grupIds: [],
+          not: e.note || (e.team ? `Eski kayıtta takım: ${e.team}` : ''),
+          kaynak: 'sporcu-karti',
+          kurumId: KURUM_ID,
+          olusturan: durum.kullanici.id,
+        });
+        n++;
+      }
+      if (n) await bt.commit();
+      setSonuc(n);
+    } catch (e) {
+      setHata(hataMesaji(e));
+    } finally {
+      setIlerleme(false);
+    }
+  }
+
+  return (
+    <section className="kart-form">
+      <h3>Eski maç ve etkinlikleri aktar</h3>
+      <p className="aciklama kucuk-yazi">Sporcu Kartı'ndaki maç, turnuva ve test günleri Takvim'e aktarılır. Tekrar çalıştırılırsa çoğalmaz.</p>
+      <button className="ikincil" onClick={calistir} disabled={ilerleme}>{ilerleme ? 'Aktarılıyor…' : 'Aktar'}</button>
+      {hata && <p className="hata">{hata}</p>}
+      {sonuc != null && <p className="bilgi">{sonuc} etkinlik aktarıldı.</p>}
+    </section>
+  );
+}

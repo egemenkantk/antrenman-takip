@@ -32,6 +32,8 @@ import {
 } from '../bugun/veri';
 import { WellnessFormu, WellnessRozeti, RpeSecici, KatilimSecici, KATILIM } from '../bugun/Formlar';
 import GunOzelDuzenleyici from '../bugun/GunOzelDuzenleyici';
+import { gununKartlari } from '../takvim/gunHesap';
+import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
 
 const satirlar = (t) => String(t || '').split('\n').map((s) => s.trim()).filter(Boolean);
 const KATILIM_ADI = Object.fromEntries(KATILIM);
@@ -45,7 +47,8 @@ function Plan({ s }) {
   if (s.dinlenme) {
     return (
       <p className="dinlenme">
-        {s.ozel ? 'Bugüne özel: dinlenme günü' : s.macTakvimi ? 'Maç gününe göre planlı blok (takvim bölümüyle gelecek)' : 'Dinlenme günü'}
+        {s.ozel ? 'Bugüne özel: dinlenme günü' : s.macGunu ? '🏟 Maç günü' : s.macTakvimi ? 'Maç gününe göre planlı blok; yakında maç yok' : 'Dinlenme günü'}
+        {!s.ozel && !s.macGunu && s.md?.etiket ? ` · ${s.md.etiket}` : ''}
         {s.ozelNot ? ` · ${s.ozelNot}` : ''}
       </p>
     );
@@ -192,13 +195,14 @@ function KayitOzeti({ r }) {
   );
 }
 
-export default function Bugun({ onGeri }) {
+export default function Bugun({ onGeri, baslangicTarihi }) {
   const { durum } = useOturum();
   const ben = durum.kullanici;
   const yonetici = ben.rol === 'yonetici';
-  const [tarih, setTarih] = useState(bugun());
+  const [tarih, setTarih] = useState(baslangicTarihi || bugun());
   const [temel, setTemel] = useState(null); // { kisiler, gruplar, programlar, subeler }
   const [ozeller, setOzeller] = useState([]);
+  const [etkinlikler, setEtkinlikler] = useState([]);
   const [gunluk, setGunluk] = useState({}); // anahtar → belge
   const [sube, setSube] = useState('');
   const [sadeceBenim, setSadeceBenim] = useState(!yonetici);
@@ -215,32 +219,8 @@ export default function Bugun({ onGeri }) {
 
   const kartlar = useMemo(() => {
     if (!temel) return [];
-    const blokları = (id) => temel.programlar.filter((p) => p.sahipId === id).sort((a, b) => a.baslangic.localeCompare(b.baslangic));
-    const ozelOf = (id) => ozeller.find((o) => o.sahipId === id) || null;
-    const sonuc = [];
-    for (const g of temel.gruplar) {
-      if (g.aktif === false) continue;
-      if (sube && g.subeId !== sube) continue;
-      if (sadeceBenim && !(g.kocIds || []).includes(ben.id)) continue;
-      const ozel = ozelOf(g.id);
-      const s = gununSeansi(blokları(g.id), tarih, ozel);
-      const saat = g.saatler?.[hg];
-      if (saat == null && !ozel && !(s && !s.dinlenme && s.gun)) continue;
-      const uyeler = (g.uyeIds || []).map((id) => temel.kisiler.find((k) => k.id === id)).filter((k) => k && k.aktif !== false);
-      sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: saat || '', sure: g.sure, s, ozel, uyeler, g });
-    }
-    for (const k of temel.kisiler) {
-      if (k.aktif === false) continue;
-      if (sube && !(k.subeIds || []).includes(sube)) continue;
-      if (sadeceBenim && !(k.kocIds || []).includes(ben.id)) continue;
-      const ozel = ozelOf(k.id);
-      const s = gununSeansi(blokları(k.id), tarih, ozel);
-      const saat = k.haftalikSaatler?.[hg];
-      if (saat == null && !ozel && !(s && !s.dinlenme && s.gun)) continue;
-      sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: saat || '', s, ozel, k });
-    }
-    return sonuc.sort((a, b) => (a.saat || '99').localeCompare(b.saat || '99') || a.ad.localeCompare(b.ad, 'tr'));
-  }, [temel, ozeller, tarih, sube, sadeceBenim]);
+    return gununKartlari({ ...temel, ozeller, etkinlikler, tarih, sube, benimId: sadeceBenim ? ben.id : null });
+  }, [temel, ozeller, etkinlikler, tarih, sube, sadeceBenim]);
 
   // Tarih değişince güne özel değişiklikleri ve günlük kayıtları yükle
   async function gunuYukle() {
@@ -249,6 +229,8 @@ export default function Bugun({ onGeri }) {
     } catch {
       setOzeller([]);
     }
+    // Maç gününe göre planlama için ±7 gün etkinlikler
+    etkinlikleriGetir(gunEkle(tarih, -7), gunEkle(tarih, 7)).then(setEtkinlikler).catch(() => setEtkinlikler([]));
   }
   useEffect(() => {
     setAcik(null);
@@ -328,6 +310,15 @@ export default function Bugun({ onGeri }) {
         </label>
       </div>
       {hata && <p className="hata">{hata}</p>}
+      {etkinlikler.some((e) => e.tarih === tarih) && (
+        <div className="etkinlik-bandi">
+          {etkinlikler.filter((e) => e.tarih === tarih).map((e) => (
+            <span key={e.id} className="etkinlik-cip">
+              {ETKINLIK_SIMGE[e.tur]} {e.saat ? e.saat + ' · ' : ''}{e.ad || ETKINLIK_TURU[e.tur]}
+            </span>
+          ))}
+        </div>
+      )}
       {!temel && !hata && <p className="aciklama">Yükleniyor…</p>}
       {temel && kartlar.length === 0 && (
         <div className="bos-durum">

@@ -8,6 +8,7 @@ import Ayarlar from './Ayarlar';
 import Gruplar from './Gruplar';
 import Bugun from './Bugun';
 import Testler from './Testler';
+import Takvim from './Takvim';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -17,7 +18,7 @@ const BOLUMLER = {
     ['Bugün', 'Dersler, yoklama, wellness ve RPE', 1, 'bugun'],
     ['Kişiler', 'Sporcular ve PT danışanları', 1, 'kisiler'],
     ['Gruplar', 'Grup dersleri, üyeler ve grup programı', 1, 'gruplar'],
-    ['Takvim', 'Haftalık program, erteleme ve iptal', 1],
+    ['Takvim', 'Haftalık ve aylık görünüm, maç ve etkinlikler', 1, 'takvim'],
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
@@ -28,6 +29,7 @@ const BOLUMLER = {
     ['Bugün', 'Derslerin, yoklama, wellness ve RPE', 1, 'bugun'],
     ['Kişilerim', 'Sana atanan sporcu ve danışanlar', 1, 'kisiler'],
     ['Gruplarım', 'Grup derslerin', 1, 'gruplar'],
+    ['Takvim', 'Haftalık ve aylık görünüm, maç ve etkinlikler', 1, 'takvim'],
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
     ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2],
   ],
@@ -49,6 +51,7 @@ export default function Panel() {
   const k = durum.kullanici;
   const bolumler = BOLUMLER[k.rol] || [];
   const [sayfa, setSayfa] = useState(null);
+  const [bugunTarihi, setBugunTarihi] = useState(null);
 
   return (
     <div className="panel">
@@ -72,8 +75,14 @@ export default function Panel() {
           <Gruplar onGeri={() => setSayfa(null)} />
         ) : sayfa === 'testler' ? (
           <Testler onGeri={() => setSayfa(null)} />
+        ) : sayfa === 'takvim' ? (
+          <Takvim onGeri={() => setSayfa(null)} onGunAc={(t) => { setBugunTarihi(t); setSayfa('bugun'); }} />
         ) : sayfa === 'bugun' ? (
-          <Bugun onGeri={() => setSayfa(null)} />
+          <Bugun
+            key={bugunTarihi || 'bugun'}
+            baslangicTarihi={bugunTarihi}
+            onGeri={() => { const geri = bugunTarihi ? 'takvim' : null; setBugunTarihi(null); setSayfa(geri); }}
+          />
         ) : sayfa === 'ayarlar' ? (
           <Ayarlar onGeri={() => setSayfa(null)} />
         ) : (
@@ -84,7 +93,7 @@ export default function Panel() {
           {bolumler.map(([ad, aciklama, asama, hedef]) =>
             hedef ? (
               <li key={ad}>
-                <button className="bolum-karti acik" onClick={() => setSayfa(hedef)}>
+                <button className="bolum-karti acik" onClick={() => { setBugunTarihi(null); setSayfa(hedef); }}>
                   <div>
                     <strong>{ad}</strong>
                     <span>{aciklama}</span>
