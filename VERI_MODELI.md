@@ -66,7 +66,9 @@ Her kişinin altında kendine ait kayıtlar:
 |---|---|---|
 | testSonuclari | Test adı, tarih, değer(ler), sağ/sol, kaynak (elle / Performanz), Performanz normatif seviyesi ve yaş grubu, kaynak rapor dosyası | 1 |
 | posturDegerlendirmeleri | Tarih, bulgular, notlar, fotoğraf | 1 |
-| wellness | Tarih, uyku, yorgunluk, ağrı/kas ağrısı, stres, ruh hali, 0-10 ağrı skoru | 1 |
+| wellness | Tarih, uyku, yorgunluk, ağrı/kas ağrısı, stres, ruh hali, 0-10 ağrı skoru; dolduran (hesap), dolduranRol | 1 |
+| evProgrami/aktif | Ev programı: egzersizler [{ad, doz, not}], haftalikGun, not, aktif | 3 |
+| evYapilan/{tarih} | Öğrencinin "yaptım" işaretleri: yapilanlar [egzersiz adı], dolduran | 3 |
 | sakatliklar | Bölge, taraf, tarih, tanı, takip eden uzman, belgeler, mevcut aşama | 4 |
 | sakatliklar → fizyoGorusmeleri | Tarih, ne söylendi, verilen kısıtlar, sonraki kontrol | 4 |
 | sakatliklar → asamaGecisleri | Hangi aşamaya, tarih, onay kimden alındı | 4 |
@@ -219,7 +221,7 @@ Her kişinin altında kendine ait kayıtlar:
 | Koç iç notları | Okur/yazar | Atandığı kişiler | Görmez | Görmez |
 | Program | Okur/yazar | Okur; yetkisi varsa yazar | Kendi programı ve ev egzersizleri | Çocuğunun |
 | Yoklama, RPE | Okur/yazar | Atandığı kişiler/gruplar | Kendi geçmişi | Çocuğunun |
-| Wellness | Okur/yazar | Atandığı kişiler; eksikse salonda doldurur | Kendi telefonundan doldurur, geçmişini görür | Çocuğunun geçmişi |
+| Wellness | Okur/yazar | Atandığı kişiler; eksikse salonda doldurur | Kendi telefonundan doldurur, geçmişini görür | Telefonu olmayan çocuk için doldurur, geçmişi görür |
 | Testler | Okur/yazar | Atandığı kişiler | Kendi sonuçları | Çocuğunun |
 | Paket ve ödeme | Hepsi; kişiye özel fiyatı yalnızca o değiştirir | Atandığı kişiler; ödeme kaydeder, düzeltir; fiyatı değiştiremez | Kendi fiyatı ve durumu (liste fiyatını görmez) | Çocuğunun (liste fiyatını görmez) |
 | Ödeme silme | Evet | Hayır | Hayır | Hayır |
@@ -279,7 +281,7 @@ Ek olarak: **Yerine bakılan dersler** (geçici devredilen dersler Bugün ekran�
 1. **Öğrenci hesabı:** Yaş sınırı yok. Telefonu olan reşit olmayan sporcu, aile onayıyla kendi hesabını kullanabilir; onay kaydı tutulur.
 2. **Paketler:** Grup ve bireysel paketler ayrı. Fiyat şubeye (iki şube) ve kitleye (sporcu / PT danışanı) göre değişir.
 3. **Birden fazla aktif paket:** Olabilir. Ders, türüne uyan en eski aktif paketten düşer.
-4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Veli doldurmaz, geçmişi görür.
+4. **Wellness:** Kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; hesabı olmayan ya da unutan için koç salonda doldurur. Kimin doldurduğu kaydedilir. Telefonu olmayan çocuk velisinin telefonundan (veli hesabıyla) doldurur; veli geçmişi de görür.
 5. **Ayrılan kişi:** Pasife alınır, silinmez. (Not: KVKK kapsamında kişi verilerinin silinmesini açıkça talep ederse yönetici kalıcı silme yapabilmelidir; bu sadece talep halinde.)
 6. **Paket süresi yok (bireysel/PT):** Geçerlilik süresi/bitiş tarihi tutulmaz; paket dersler bitince biter.
 7. **Kişiye özel fiyat:** Paket atanırken liste fiyatı gelir; yalnızca yönetici değiştirebilir. Öğrenci ve veli liste fiyatını hiçbir yerde görmez, sadece kendi fiyatını ve kalan tutarı görür.

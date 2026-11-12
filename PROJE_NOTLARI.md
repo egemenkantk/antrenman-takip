@@ -27,7 +27,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Hesaplar ve veri saklama
 - Öğrenci hesabında yaş sınırı yok: telefonu olan reşit olmayan sporcu aile onayıyla kendi hesabını kullanabilir.
-- Wellness: kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; eksikse koç salonda doldurur. Veli doldurmaz.
+- Wellness: kendi hesabı olan öğrenci ve yetişkin danışan kendi telefonundan doldurur; telefonu olmayan çocuk velisinin telefonundan (veli hesabıyla) doldurur; eksikse koç salonda doldurur. Hangi hesaptan doldurulduğu kaydedilir; aynı gün yalnızca dolduran hesap düzeltebilir.
 - Ayrılan kişi pasife alınır, silinmez (KVKK silme talebi hariç).
 
 ### Roller
@@ -214,7 +214,13 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## 5. Yol haritası
 1. **Aşama 1 — Temel:** kurulum, giriş, roller, Sporcu Kartı ve Tenis Takip'in taşınması. Yalnızca yönetici ve koçlar kullanır.
 2. **Aşama 2 — Danışan ve işletme:** danışan tipi ve hedefler, paketler, ödeme kaydı, site içi bildirimler. ✔ Yapıldı (Kasım 2026).
-3. **Aşama 3 — Portal:** öğrenci ve veli girişi açılır.
+3. **Aşama 3 — Portal:** öğrenci ve veli girişi açılır. ✔ Yapıldı (Kasım 2026):
+   - Öğrenci/veli girişte portalı görür: ana sayfa (sıradaki dersler, bugünkü form, kalan ders ve ödeme, yaklaşan maç/test), takvim (haftalık saatler, 2 aylık etkinlikler), ev programı (video + "yaptım"), gelişim (test sonuçları), paket ve ödemeler (yalnızca kendi fiyatı, ödenen/kalan, ödeme geçmişi).
+   - Veli: birden fazla çocuğu varsa üstte çocuk seçici.
+   - Paket, grup ve etkinlik bilgileri sunucuda kişiye özel özetlenir (portalVerisi); öğrenci/veli bu koleksiyonları doğrudan okuyamaz.
+   - Ev programı: kişi kartı → "Ev programı" sekmesi (koç hazırlar; kütüphane videoları otomatik). Son 4 haftanın "yaptım" günleri koça görünür.
+   - Yönetici kişi kartında "Portal görünümü" ile öğrencinin ekranını salt okunur önizler.
+   - Henüz yok: raporların portalda paylaşılması, erteleme/iptalin portal takviminde görünmesi.
 4. **Aşama 4 — Kütüphaneler:** branş profilleri, sakatlık ve rehabilitasyon modülü.
 
 ## 6. Açık konular
