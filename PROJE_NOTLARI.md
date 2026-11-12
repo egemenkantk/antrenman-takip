@@ -71,6 +71,17 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Öğrenci görür: aktif paket(ler), kalan ders, ödenen/kalan tutar, ödeme geçmişi.
 - Koçlara yapılan ödemeler / hakediş: kapsam dışı (öğrenciden tahsilat ise kapsamda, koçlar kaydeder).
 
+**Nasıl çalışıyor (Aşama 2, yapıldı):**
+- Paket tanımları: Paketler ve ödemeler → Paket tanımları (yalnızca yönetici). Satıştan kaldırılan paket eski satışları bozmaz.
+- Bireysel/PT: kişinin kartı → Paket ve ödeme → "Bireysel paket ata". Başlangıç tarihinden sonraki "geldi" işaretli bireysel dersler en eski dolmamış paketten düşer; "gelmedi" düşmez, yönetici isterse ders bazında "dersten düşsün" işaretler. Pakete düşmeyen dersler uyarı olarak görünür.
+- Grup: grubun ayarında dönem ücreti paketi + ilk dönem başlangıcı seçilir; dönemler 28 günde bir ilerler. Kayıtlar her sabah 08:00'de otomatik açılır (yönetici "şimdi kontrol et" de diyebilir ya da grubun Ödemeler sekmesinden açabilir).
+- Sonradan eklenen üyenin katılım tarihi saklanır; ilk dönemi kalan haftalara göre orantılı açılır.
+- Kişiye özel grup ücreti (kardeş indirimi vb.) grupta kişi bazında saklanır ve sonraki dönemlere de uygulanır.
+- Dönemin son günü 08:00'de: gruba bağlı öğrenci/veli hesaplarına hatırlatma, yöneticilere ödedi/ödemedi özeti (site içi bildirim).
+- Ödeme silme: kayıt yok olmaz, "silindi" işaretlenir ve işlem geçmişine yazılır; düzeltmelerin eski değerleri saklanır.
+- Liste: bekleyen ödemeler, azalan paketler (≤2 ders), tarih/koç/yöntem filtreli tahsilatlar.
+- Henüz yok: "paket azaldı" bildiriminin öğrenciye/veliye gitmesi ve öğrenci/veli ekranları (Aşama 3, portal ile).
+
 ### Program
 - Sporcular: eski Sporcu Kartı program yapısı aynen taşınır (bloklar, dönemler, A/B/C günleri, bölüm seçimi ve sürükle-sırala, haftalık ilerleme tablosu, güne özel değişiklik, şablonlar, grup programı, maç gününe göre planlama).
 - PT danışanları: blok yerine sade haftalık plan (günler + egzersiz listesi; bölümler ve ilerleme tablosu isteğe bağlı). Varsayılan fazlar Adaptasyon / Temel / İlerleme, ayrıca elle faz eklenebilir. Hedefe göre örnek şablonlar. Ev programı isteğe bağlı, kişi kişi gönderilir.
@@ -201,7 +212,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ## 5. Yol haritası
 1. **Aşama 1 — Temel:** kurulum, giriş, roller, Sporcu Kartı ve Tenis Takip'in taşınması. Yalnızca yönetici ve koçlar kullanır.
-2. **Aşama 2 — Danışan ve işletme:** danışan tipi ve hedefler, paketler, ödeme kaydı, site içi bildirimler.
+2. **Aşama 2 — Danışan ve işletme:** danışan tipi ve hedefler, paketler, ödeme kaydı, site içi bildirimler. ✔ Yapıldı (Kasım 2026).
 3. **Aşama 3 — Portal:** öğrenci ve veli girişi açılır.
 4. **Aşama 4 — Kütüphaneler:** branş profilleri, sakatlık ve rehabilitasyon modülü.
 

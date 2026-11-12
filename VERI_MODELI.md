@@ -81,7 +81,12 @@ Her kişinin altında kendine ait kayıtlar:
 | haftalikSaatler | Grubun ders günleri ve saatleri |
 | aktifProgramId | Grubun ortak programı |
 
-**grupDonemleri** — grup dersleri 4 haftalık dönemlerle ilerler (Aşama 2)
+> Uygulamada (Aşama 2): dönemler ayrı belge olarak tutulmaz, gruptaki alanlardan hesaplanır:
+> **gruplar** ek alanları: paketTanimId (dönem ücreti), donemBaslangic (ilk dönemin ilk günü; dönemler 28 gün), uyeKatilim {kisiId: tarih} (sonradan eklenenler), ozelFiyatlar {kisiId: {fiyat, not}} (kişiye özel dönem ücreti).
+> Her üyenin her dönemi bir **satilanPaketler** kaydıdır: kimlik `g_<grupId>_<donemBas>_<kisiId>`, tur "grup", donemBas, donemBit, tamUcret.
+> Bireysel derste "gelmedi" kaydı için `derstenDussun: true` paketten düşürür.
+
+**grupDonemleri** — grup dersleri 4 haftalık dönemlerle ilerler (Aşama 2) — (aşağıdaki tasarım; yerine yukarıdaki hesaplama kullanılıyor)
 | Alan | Açıklama |
 |---|---|
 | grupId | |
