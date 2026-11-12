@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useState } from 'react';
 import { egzersizleriGetir, egzersizBul } from './veri';
 
 // Kütüphaneyi bir kez yükler (önbellekli)
@@ -14,11 +14,17 @@ export function useKutuphane() {
   return l;
 }
 
+// Aktif sakatlığı olan kişide bu aşamada kaçınılacak hareket kalıpları (Set). Sağlayıcı yoksa işaretleme yapılmaz.
+export const RiskliKaliplar = createContext(null);
+
 // Program satırı: kütüphanede videosu varsa ▶ bağlantısı, ipucu varsa üzerine gelince görünür
 export function EgzersizSatiri({ satir, kutuphane }) {
   const e = egzersizBul(satir, kutuphane);
+  const riskli = useContext(RiskliKaliplar);
+  const uyar = !!(e?.kalip && riskli?.has(e.kalip));
   return (
-    <li title={e?.ipucu || undefined}>
+    <li title={uyar ? 'Sakatlık: bu aşamada kaçınılacak hareket türü. Fizyoterapistin kısıtlarına bak, alternatif seç.' : e?.ipucu || undefined} className={uyar ? 'riskli-satir' : undefined}>
+      {uyar && <span className="riskli-isaret" aria-label="Sakatlık uyarısı">⚠ </span>}
       {satir}
       {e?.video && (
         <a className="video-bag kucuk" href={e.video} target="_blank" rel="noreferrer" aria-label={`${e.ad} videosu`} onClick={(ev) => ev.stopPropagation()}>

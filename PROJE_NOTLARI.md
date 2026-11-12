@@ -212,7 +212,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - [x] Veri modeli ve ekran listesi (VERI_MODELI.md)
 - [x] Kod iskeleti, giriş sistemi, roller, otomatik yayın, test/gerçek ortam (ilk sürüm)
 - [ ] Mevcut iki sayfadan veri aktarma aracı
-- [ ] Branş ve sakatlık kütüphanesi taslakları
+- [x] Branş ve sakatlık kütüphanesi taslakları (Kasım 2026, kaynaklı; kontrol Çağla'da)
 
 ## 5. Yol haritası
 1. **Aşama 1 — Temel:** kurulum, giriş, roller, Sporcu Kartı ve Tenis Takip'in taşınması. Yalnızca yönetici ve koçlar kullanır.
@@ -224,7 +224,13 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
    - Ev programı: kişi kartı → "Ev programı" sekmesi (koç hazırlar; kütüphane videoları otomatik). Son 4 haftanın "yaptım" günleri koça görünür.
    - Yönetici kişi kartında "Portal görünümü" ile öğrencinin ekranını salt okunur önizler.
    - Henüz yok: raporların portalda paylaşılması, erteleme/iptalin portal takviminde görünmesi.
-4. **Aşama 4 — Kütüphaneler:** branş profilleri, sakatlık ve rehabilitasyon modülü.
+4. **Aşama 4 — Kütüphaneler:** branş profilleri, sakatlık ve rehabilitasyon modülü. ✔ Yapıldı (Kasım 2026):
+   - Kişi kartı → Sağlık: sakatlık kaydı (tür, bölge, taraf, tanı, takip eden uzman + WhatsApp), fizyoterapistin kısıtları, 4 aşama ve aşama geçişleri (onay veren kaydedilir), görüşme kayıtları ve sonraki kontrol tarihi, ağrı grafiği, önerilen testlerde sakatlık öncesi/sonrası karşılaştırma, iyileşti/yeniden aç.
+   - Kişi kartı başlığında, kişi listesinde ve Bugün'de ⚠ uyarı; aktif sakatlığı olanlara yoklamada 0–10 ağrı skoru (≥5 ya da önceki derse göre +2 uyarı).
+   - Programda (kişi kartı ve Bugün) o aşamada kaçınılacak hareket kalıbındaki egzersizler ⚠ ile işaretlenir; bunun için kütüphanede egzersizin hareket kalıbı seçilmiş olmalı.
+   - Kütüphaneler → Sakatlık ve Branş profilleri: kaynaklı taslaklar tek tıkla eklenir, yönetici düzenler ve "Kontrol ettim" ile taslak işaretini kaldırır.
+   - Sporcunun branş profili Özet'te, branşın öncelikli testleri (son ölçüm tarihiyle) Testler sekmesinde görünür.
+   - Henüz yok: belge (rapor/MR) yükleme, fizyoterapiste gönderilecek özet PDF, öğrenci/veli portalında sakatlık görünümü.
 
 ## 6. Açık konular
 - Ürün ve site ismi

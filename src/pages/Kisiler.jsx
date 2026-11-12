@@ -24,6 +24,10 @@ import PosturSekmesi from '../postur/PosturSekmesi';
 import PaketSekmesi from '../paket/PaketSekmesi';
 import EvProgramiSekmesi from '../portal/EvProgramiSekmesi';
 import Portal from '../portal/Portal';
+import SaglikSekmesi from '../saglik/SaglikSekmesi';
+import { BransOzeti, BransTestOnerisi } from '../saglik/Kutuphane';
+import { sakatlikTipleriGetir, riskliKaliplar, sakatlikEtiketi } from '../saglik/veri';
+import { RiskliKaliplar } from '../kutuphane/bilesenler';
 import { HAFTA_GUNLERI } from '../program/model';
 import { saatOzeti } from './Gruplar';
 
@@ -281,7 +285,7 @@ const SEKMELER = [
   ['kayitlar', 'Kayıtlar', 1],
   ['testler', 'Testler', 1],
   ['postur', 'Postür', 1],
-  ['saglik', 'Sağlık', 4],
+  ['saglik', 'Sağlık', null],
   ['paket', 'Paket ve ödeme', null],
   ['rapor', 'Rapor', null],
   ['portal', 'Portal görünümü', null],
@@ -292,6 +296,12 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
   const [duzenle, setDuzenle] = useState(false);
   const [baglaSecim, setBaglaSecim] = useState('');
   const [hata, setHata] = useState('');
+  const [tipler, setTipler] = useState([]);
+  const sakatliklar = kisi.aktifSakatliklar || [];
+  useEffect(() => {
+    if (sakatliklar.length) sakatlikTipleriGetir().then(setTipler).catch(() => {});
+  }, [sakatliklar.length]);
+  const riskli = useMemo(() => riskliKaliplar(kisi, tipler), [kisi, tipler]);
   const yas = yasHesapla(kisi.dogumTarihi, kisi.dogumYili);
   const subeAdlari = kisi.subeIds?.map((id) => subeler.find((s) => s.id === id)?.ad).filter(Boolean) || [];
   const kocAdlari = (kisi.kocIds || []).map((id) =>
@@ -326,6 +336,11 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
             {yas !== null ? ` · ${yas} yaş` : ''}
             {kisi.aktif === false ? ' · Pasif' : ''}
           </p>
+          {sakatliklar.map((a) => (
+            <button key={a.id} className="sakatlik-uyari" onClick={() => setSekme('saglik')}>
+              ⚠ {a.ad} · {sakatlikEtiketi(a)}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -340,24 +355,33 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       {hata && <p className="hata">{hata}</p>}
 
       {sekme === 'program' && (
-        <ProgramSekmesi
-          sahipTip="kisi"
-          sahipId={kisi.id}
-          sade={kisi.tip === 'pt'}
-          hedef={kisi.hedef}
-          duzenleyebilir={programYetkisi}
-          yapan={benim}
-        />
+        <RiskliKaliplar.Provider value={riskli}>
+          {riskli.size > 0 && (
+            <p className="uyari-kutu kucuk-yazi">
+              ⚠ Aktif sakatlık: bu aşamada kaçınılacak hareket türündeki egzersizler işaretli (kütüphanede hareket kalıbı seçilmiş olanlar). Fizyoterapistin kısıtları önce gelir.
+            </p>
+          )}
+          <ProgramSekmesi
+            sahipTip="kisi"
+            sahipId={kisi.id}
+            sade={kisi.tip === 'pt'}
+            hedef={kisi.hedef}
+            duzenleyebilir={programYetkisi}
+            yapan={benim}
+          />
+        </RiskliKaliplar.Provider>
       )}
+      {sekme === 'testler' && kisi.tip === 'sporcu' && kisi.brans && <BransTestOnerisi brans={kisi.brans} kisiId={kisi.id} />}
       {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
       {sekme === 'rapor' && <RaporSekmesi kisi={kisi} yapan={benim} />}
       {sekme === 'portal' && yonetici && <Portal ben={{ id: benim, rol: 'yonetici' }} onizlemeKisiId={kisi.id} />}
       {sekme === 'ev' && <EvProgramiSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
+      {sekme === 'saglik' && <SaglikSekmesi kisi={kisi} yapan={benim} onKisiDegisti={onDegisti} />}
       {sekme === 'paket' && <PaketSekmesi kisi={kisi} yonetici={yonetici} benim={benim} koclar={koclar} />}
       {sekme === 'postur' && <PosturSekmesi kisi={kisi} yapan={benim} programYetkisi={programYetkisi} />}
-      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal'].includes(sekme) && (
+      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal', 'saglik'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.
@@ -383,6 +407,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
 
       {sekme === 'ozet' && !duzenle && (
         <>
+          {kisi.tip === 'sporcu' && kisi.brans && <BransOzeti brans={kisi.brans} />}
           <dl className="bilgi-izgara">
             <div><dt>Doğum tarihi</dt><dd>{kisi.dogumTarihi ? tarihGoster(kisi.dogumTarihi) : kisi.dogumYili ? `${kisi.dogumYili} (yıl)` : '—'}</dd></div>
             <div><dt>Boy / kilo</dt><dd>{kisi.boy ? `${kisi.boy} cm` : '—'} / {kisi.kilo ? `${String(kisi.kilo).replace('.', ',')} kg` : '—'}</dd></div>
@@ -624,6 +649,7 @@ export default function Kisiler({ onGeri }) {
                     {yas !== null ? ` · ${yas} yaş` : ''}
                   </span>
                 </div>
+                {(k.aktifSakatliklar || []).length > 0 && <span className="sakatlik-nokta" title="Aktif sakatlık">⚠</span>}
                 <em>Aç →</em>
               </button>
             </li>

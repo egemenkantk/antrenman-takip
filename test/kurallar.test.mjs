@@ -49,5 +49,11 @@ await t('öğrenci koç notlarını okuyamaz', assertFails(getDoc(doc(ogr, 'kisi
 await t('öğrenci grubu okuyamaz', assertFails(getDocs(collection(ogr, 'gruplar'))));
 await t('koç düet paketi atar', assertSucceeds(addDoc(collection(koc, 'satilanPaketler'), { kisiId: 'k1', tur: 'duet', listeFiyati: 100, uygulananFiyat: 100 })));
 await t('koç ek ücret açamaz (yönetici girer)', assertFails(setDoc(doc(koc, 'satilanPaketler', 'ek_k1_x'), { kisiId: 'k1', tur: 'ek', listeFiyati: 100, uygulananFiyat: 100 })));
+await t('koç sakatlık kaydı açar', assertSucceeds(setDoc(doc(koc, 'kisiler', 'k1', 'sakatliklar', 's1'), { bolge: 'Diz', asama: 1 })));
+await t('koç fizyoterapist görüşmesi ekler', assertSucceeds(setDoc(doc(koc, 'kisiler', 'k1', 'sakatliklar', 's1', 'gorusmeler', 'g1'), { ozet: 'x' })));
+await t('koç kişi özetine aktif sakatlık yazar', assertSucceeds(updateDoc(doc(koc, 'kisiler', 'k1'), { aktifSakatliklar: [{ id: 's1', bolge: 'Diz', asama: 1 }] })));
+await t('öğrenci sakatlık ayrıntısını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'sakatliklar', 's1'))));
+await t('koç sakatlık kütüphanesini okur', assertSucceeds(getDocs(collection(koc, 'sakatlikTipleri'))));
+await t('koç sakatlık kütüphanesini değiştiremez', assertFails(setDoc(doc(koc, 'sakatlikTipleri', 'x'), { ad: 'x' })));
 await env.cleanup();
 if (hata) process.exit(1);

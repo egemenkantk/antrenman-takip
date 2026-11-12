@@ -36,6 +36,33 @@ import { gununKartlari } from '../takvim/gunHesap';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
 import { ekUcretEkle, farkKarari } from '../paket/veri';
+import { sakatlikTipleriGetir, riskliKaliplar, sakatlikEtiketi } from '../saglik/veri';
+import { RiskliKaliplar } from '../kutuphane/bilesenler';
+
+// Aktif sakatlığı olanlar için ders sonu 0–10 ağrı skoru
+function AgriSecici({ deger, onChange }) {
+  return (
+    <div>
+      <span className="alan-baslik">Ağrı (0–10)</span>
+      <div className="rpe-secici agri" role="radiogroup" aria-label="Ağrı skoru">
+        {Array.from({ length: 11 }, (_, i) => i).map((v) => (
+          <button
+            type="button"
+            key={v}
+            role="radio"
+            aria-checked={deger === v}
+            className={'rpe-btn' + (deger === v ? ' secili' : '') + (v >= 5 ? ' yuksek' : '')}
+            onClick={() => onChange(deger === v ? null : v)}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      {deger >= 5 && <p className="uyari-yazi kucuk-yazi">Ağrı yüksek: yükü azalt, fizyoterapistle görüş.</p>}
+    </div>
+  );
+}
+const sakatMi = (k) => (k?.aktifSakatliklar || []).length > 0;
 import { TUR_KISA } from '../paket/model.js';
 
 // Düet/trioda eksik katılım: gelenlere fark ücreti (tutarı yönetici girer)
@@ -162,8 +189,9 @@ function Plan({ s }) {
   );
 }
 
-function TamamlaFormu({ ilk, onKaydet, onVazgec }) {
+function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec }) {
   const [katilim, setKatilim] = useState(ilk?.katilim || 'geldi');
+  const [agri, setAgri] = useState(ilk?.agri ?? null);
   const [rpe, setRpe] = useState(ilk?.rpe ?? null);
   const [sure, setSure] = useState(ilk?.sure ?? 60);
   const [not, setNot] = useState(ilk?.not || '');
@@ -179,6 +207,7 @@ function TamamlaFormu({ ilk, onKaydet, onVazgec }) {
             <span>Süre (dk)</span>
             <input type="number" min="5" max="300" value={sure} onChange={(e) => setSure(e.target.value)} />
           </label>
+          {agriSor && <AgriSecici deger={agri} onChange={setAgri} />}
         </>
       )}
       <label className="alan">
@@ -193,7 +222,7 @@ function TamamlaFormu({ ilk, onKaydet, onVazgec }) {
           onClick={async () => {
             setBekliyor(true);
             try {
-              await onKaydet({ katilim, rpe: katilim === 'geldi' ? rpe : null, sure: katilim === 'geldi' ? Number(sure) || null : null, not });
+              await onKaydet({ katilim, rpe: katilim === 'geldi' ? rpe : null, sure: katilim === 'geldi' ? Number(sure) || null : null, not, ...(agriSor ? { agri: katilim === 'geldi' ? agri : null } : {}) });
             } finally {
               setBekliyor(false);
             }
@@ -209,7 +238,7 @@ function TamamlaFormu({ ilk, onKaydet, onVazgec }) {
 
 function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec }) {
   const [satir, setSatir] = useState(() =>
-    Object.fromEntries(uyeler.map((k) => [k.id, { katilim: kayitlar[k.id]?.katilim || 'geldi', rpe: kayitlar[k.id]?.rpe ?? null }]))
+    Object.fromEntries(uyeler.map((k) => [k.id, { katilim: kayitlar[k.id]?.katilim || 'geldi', rpe: kayitlar[k.id]?.rpe ?? null, agri: kayitlar[k.id]?.agri ?? null }]))
   );
   const ilkSure = Object.values(kayitlar).find((x) => x?.sure)?.sure ?? 60;
   const [sure, setSure] = useState(ilkSure);
@@ -223,6 +252,9 @@ function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec }) {
           <KatilimSecici deger={satir[k.id].katilim} onChange={(v) => setSatir({ ...satir, [k.id]: { ...satir[k.id], katilim: v } })} />
           {satir[k.id].katilim === 'geldi' && (
             <RpeSecici deger={satir[k.id].rpe} onChange={(v) => setSatir({ ...satir, [k.id]: { ...satir[k.id], rpe: v } })} />
+          )}
+          {satir[k.id].katilim === 'geldi' && sakatMi(k) && (
+            <AgriSecici deger={satir[k.id].agri} onChange={(v) => setSatir({ ...satir, [k.id]: { ...satir[k.id], agri: v } })} />
           )}
         </div>
       ))}
@@ -281,6 +313,10 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
   const [sadeceBenim, setSadeceBenim] = useState(!yonetici);
   const [acik, setAcik] = useState(null);
   const [fark, setFark] = useState(null);
+  const [sakatlikTipleri, setSakatlikTipleri] = useState([]);
+  useEffect(() => {
+    sakatlikTipleriGetir().then(setSakatlikTipleri).catch(() => {});
+  }, []);
   const [hata, setHata] = useState('');
 
   useEffect(() => {
@@ -415,6 +451,12 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                 <div className="esnek">
                   <h3>{c.ad}</h3>
                   {c.tip === 'grup' && <small className="aciklama">{c.uyeler.length} üye</small>}
+                  {c.tip === 'kisi' && (c.k?.aktifSakatliklar || []).map((a) => (
+                    <small key={a.id} className="sakatlik-uyari kucuk">⚠ {sakatlikEtiketi(a)}</small>
+                  ))}
+                  {c.tip === 'grup' && c.uyeler.some(sakatMi) && (
+                    <small className="sakatlik-uyari kucuk">⚠ Sakatlığı olan: {c.uyeler.filter(sakatMi).map((k) => k.ad.split(' ')[0]).join(', ')}</small>
+                  )}
                 </div>
                 <button className="metin" onClick={() => setAcik(acik === 'ozel:' + anahtar ? null : 'ozel:' + anahtar)}>✎ Bugüne özel</button>
               </header>
@@ -428,6 +470,10 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                   {...islem}
                   onVazgec={() => setAcik(null)}
                 />
+              ) : c.tip === 'kisi' && sakatMi(c.k) ? (
+                <RiskliKaliplar.Provider value={riskliKaliplar(c.k, sakatlikTipleri)}>
+                  <Plan s={c.s} />
+                </RiskliKaliplar.Provider>
               ) : (
                 <Plan s={c.s} />
               )}
@@ -456,6 +502,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                   {acik === 't:' + c.id && (
                     <TamamlaFormu
                       ilk={gunluk['b:' + c.id]}
+                      agriSor={sakatMi(c.k)}
                       onVazgec={() => setAcik(null)}
                       onKaydet={(v) =>
                         hataliOlabilir(async () => {
@@ -485,7 +532,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                     {c.uyeler.map((k) => (
                       <li key={k.id}>
                         <div className="satir-arasi">
-                          <span className="kim"><Avatar k={k} /> {k.ad}</span>
+                          <span className="kim"><Avatar k={k} /> {k.ad}{sakatMi(k) && <span className="sakatlik-nokta" title={k.aktifSakatliklar.map(sakatlikEtiketi).join(", ")}> ⚠</span>}</span>
                           <span className="uye-durum">
                             {gunluk['w:' + k.id] ? <WellnessRozeti w={gunluk['w:' + k.id]} /> : (
                               <button className="metin" onClick={() => setAcik(acik === 'w:' + k.id ? null : 'w:' + k.id)}>+ wellness</button>
@@ -536,6 +583,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                                 ...ortak,
                                 katilim: satir[k.id].katilim,
                                 rpe: satir[k.id].katilim === 'geldi' ? satir[k.id].rpe : null,
+                                ...(sakatMi(k) ? { agri: satir[k.id].katilim === 'geldi' ? satir[k.id].agri : null } : {}),
                                 sure: satir[k.id].katilim === 'geldi' ? sure : null,
                               };
                               return antrenmanKaydet(k.id, grupKayitId(tarih, c.id), r, ben.id).then(() =>

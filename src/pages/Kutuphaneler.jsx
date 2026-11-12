@@ -3,6 +3,7 @@ import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
 import { fazAdi } from '../program/model';
 import { tumProgramlar } from '../bugun/veri';
+import { BransKutuphanesi, SakatlikKutuphanesi } from '../saglik/Kutuphane';
 import {
   egzersizleriGetir,
   egzersizKaydet,
@@ -360,15 +361,8 @@ export default function Kutuphaneler({ onGeri }) {
       </nav>
       {sekme === 'egzersiz' && <Egzersizler yazabilir={yazabilir} yapan={ben.id} />}
       {sekme === 'sablon' && <Sablonlar yazabilir={yazabilir} />}
-      {(sekme === 'brans' || sekme === 'sakatlik') && (
-        <div className="bos-durum">
-          <p>
-            {sekme === 'brans'
-              ? 'Branş profilleri (kayak, basketbol, karting, futbol, voleybol, tenis) Aşama 4\'te gelecek.'
-              : 'Sakatlık ve rehabilitasyon kütüphanesi Aşama 4\'te gelecek.'}
-          </p>
-        </div>
-      )}
+      {sekme === 'brans' && <BransKutuphanesi yazabilir={ben.rol === 'yonetici'} yapan={ben.id} />}
+      {sekme === 'sakatlik' && <SakatlikKutuphanesi yazabilir={ben.rol === 'yonetici'} yapan={ben.id} />}
     </div>
   );
 }

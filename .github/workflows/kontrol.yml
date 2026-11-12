@@ -1,0 +1,19 @@
+# Her gönderimde kodu tanımsız değişken/bileşen hatalarına karşı tarar ve derler
+name: Kod kontrolü
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  kontrol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm i --no-save eslint@9 eslint-plugin-react@7 globals@15
+      - run: npx eslint .
+      - run: npm run build
