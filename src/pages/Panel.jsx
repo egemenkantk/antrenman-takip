@@ -10,6 +10,8 @@ import Bugun from './Bugun';
 import Testler from './Testler';
 import Takvim from './Takvim';
 import Kutuphaneler from './Kutuphaneler';
+import Odemeler from './Odemeler';
+import Bildirimler from '../paket/Bildirimler';
 
 const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci', veli: 'Veli' };
 
@@ -22,7 +24,7 @@ const BOLUMLER = {
     ['Takvim', 'Haftalık ve aylık görünüm, maç ve etkinlikler', 1, 'takvim'],
     ['Kütüphaneler', 'Egzersizler ve program şablonları', 1, 'kutuphane'],
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
-    ['Paketler ve ödemeler', 'Paketler, dönemler, tahsilatlar', 2],
+    ['Paketler ve ödemeler', 'Paket tanımları, bekleyen ödemeler, tahsilatlar', 2, 'odemeler'],
     ['Koçlar ve kullanıcılar', 'Hesaplar ve geçici şifreler', 1, 'kullanicilar'],
     ['Ayarlar', 'Şubeler', 1, 'ayarlar'],
   ],
@@ -32,7 +34,7 @@ const BOLUMLER = {
     ['Gruplarım', 'Grup derslerin', 1, 'gruplar'],
     ['Takvim', 'Haftalık ve aylık görünüm, maç ve etkinlikler', 1, 'takvim'],
     ['Testler', 'Test günü ve Performanz raporları', 1, 'testler'],
-    ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2],
+    ['Ödemeler', 'Öğrencilerinin paket ve ödemeleri', 2, 'odemeler'],
   ],
   ogrenci: [
     ['Takvimim', 'Ders günlerin ve saatlerin', 3],
@@ -64,6 +66,7 @@ export default function Panel() {
         <div className="kullanici-bilgi">
           <span>{k.ad || k.id}</span>
           <small>{ROL_ADI[k.rol] || k.rol}</small>
+          <Bildirimler benimId={k.id} />
           <button className="metin" onClick={cikis}>Çıkış</button>
         </div>
       </header>
@@ -86,6 +89,8 @@ export default function Panel() {
             baslangicTarihi={bugunTarihi}
             onGeri={() => { const geri = bugunTarihi ? 'takvim' : null; setBugunTarihi(null); setSayfa(geri); }}
           />
+        ) : sayfa === 'odemeler' ? (
+          <Odemeler onGeri={() => setSayfa(null)} />
         ) : sayfa === 'ayarlar' ? (
           <Ayarlar onGeri={() => setSayfa(null)} />
         ) : (

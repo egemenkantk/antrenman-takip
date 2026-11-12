@@ -5,6 +5,10 @@ import { subeleriGetir, kullanicilariGetir, kisileriGetir, TIP_ADI } from '../ve
 import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
+import GrupOdemeleri from '../paket/GrupOdemeleri';
+import { paketTanimlariGetir, grupKaydiOlustur, grupDonemKayitlari } from '../paket/veri';
+import { donemBul, tl } from '../paket/model.js';
+import { bugun } from '../program/model';
 
 const GUN_ADI = Object.fromEntries(HAFTA_GUNLERI);
 export const saatOzeti = (saatler = {}) =>
@@ -12,7 +16,7 @@ export const saatOzeti = (saatler = {}) =>
     .map(([g, ad]) => `${ad} ${saatler[g] || ''}`.trim())
     .join(' · ');
 
-function GrupForm({ ilk, subeler, koclar, kisiler, onKaydet, onVazgec }) {
+function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec }) {
   const [f, setF] = useState({
     ad: ilk?.ad || '',
     subeId: ilk?.subeId || subeler[0]?.id || '',
@@ -21,6 +25,8 @@ function GrupForm({ ilk, subeler, koclar, kisiler, onKaydet, onVazgec }) {
     sure: ilk?.sure || 60,
     not: ilk?.not || '',
     uyeIds: ilk?.uyeIds || [],
+    paketTanimId: ilk?.paketTanimId || '',
+    donemBaslangic: ilk?.donemBaslangic || '',
   });
   const [ara, setAra] = useState('');
   const [hata, setHata] = useState('');
@@ -40,7 +46,14 @@ function GrupForm({ ilk, subeler, koclar, kisiler, onKaydet, onVazgec }) {
     if (!Object.keys(f.saatler).length) return setHata('En az bir ders günü seç.');
     setBekliyor(true);
     try {
-      await onKaydet({ ...f, ad: f.ad.trim(), sure: Number(f.sure) || 60 });
+      if (f.paketTanimId && !f.donemBaslangic) {
+        setBekliyor(false);
+        return setHata('Dönem ücreti seçildiyse ilk dönemin başlangıç tarihi de girilmeli.');
+      }
+      // Sonradan eklenen üyelerin katılım tarihi: dönem ortası ücreti bundan hesaplanır
+      const uyeKatilim = { ...(ilk?.uyeKatilim || {}) };
+      if (ilk) for (const id of f.uyeIds) if (!(ilk.uyeIds || []).includes(id) && !uyeKatilim[id]) uyeKatilim[id] = bugun();
+      await onKaydet({ ...f, ad: f.ad.trim(), sure: Number(f.sure) || 60, uyeKatilim });
     } catch (err) {
       setHata(hataMesaji(err));
       setBekliyor(false);
@@ -66,6 +79,23 @@ function GrupForm({ ilk, subeler, koclar, kisiler, onKaydet, onVazgec }) {
           <input type="number" min="10" max="240" value={f.sure} onChange={(e) => setF({ ...f, sure: e.target.value })} />
         </label>
       </div>
+
+      <div className="form-izgara">
+        <label className="alan">
+          <span>Dönem ücreti (4 hafta)</span>
+          <select value={f.paketTanimId} onChange={(e) => setF({ ...f, paketTanimId: e.target.value })}>
+            <option value="">Seçilmedi</option>
+            {tanimlar
+              .filter((t) => t.tur === 'grup' && (t.aktif !== false || t.id === f.paketTanimId) && (!t.subeId || t.subeId === f.subeId))
+              .map((t) => <option key={t.id} value={t.id}>{t.ad} · {tl(t.fiyat)}</option>)}
+          </select>
+        </label>
+        <label className="alan">
+          <span>İlk dönemin başlangıcı</span>
+          <input type="date" value={f.donemBaslangic} onChange={(e) => setF({ ...f, donemBaslangic: e.target.value })} />
+        </label>
+      </div>
+      <small className="ipucu">Dönemler bu tarihten itibaren 4'er hafta ilerler. Grup paketlerini "Paketler ve ödemeler → Paket tanımları"ndan eklersin.</small>
 
       <div className="alan">
         <span>Ders günleri ve saatleri</span>
@@ -176,6 +206,7 @@ export default function Gruplar({ onGeri }) {
   const [subeler, setSubeler] = useState([]);
   const [koclar, setKoclar] = useState([]);
   const [kisiler, setKisiler] = useState([]);
+  const [tanimlar, setTanimlar] = useState([]);
   const [secili, setSecili] = useState(null);
   const [mod, setMod] = useState(null); // null | 'yeni' | 'duzenle'
   const [sekme, setSekme] = useState('uyeler');
@@ -184,12 +215,14 @@ export default function Gruplar({ onGeri }) {
 
   async function yukle() {
     try {
-      const [g, s, u, k] = await Promise.all([
+      const [g, s, u, k, t] = await Promise.all([
         gruplariGetir(ben),
         subeleriGetir(),
         yonetici ? kullanicilariGetir() : Promise.resolve([]),
         kisileriGetir(ben),
+        paketTanimlariGetir().catch(() => []),
       ]);
+      setTanimlar(t);
       setGruplar(g);
       setSubeler(s);
       setKoclar(u.filter((x) => (x.rol === 'koc' || x.rol === 'yonetici') && x.aktif !== false));
@@ -215,9 +248,20 @@ export default function Gruplar({ onGeri }) {
           subeler={subeler}
           koclar={koclar}
           kisiler={kisiler}
+          tanimlar={tanimlar}
           onVazgec={() => setMod(null)}
           onKaydet={async (veri) => {
-            const id = await grupKaydet(mod === 'duzenle' ? g : null, veri, ben.id);
+            const eski = mod === 'duzenle' ? g : null;
+            const id = await grupKaydet(eski, veri, ben.id);
+            // Dönem ortasında eklenen üyeler için bu dönemin kaydını hemen aç (orantılı ücret)
+            const tanim = tanimlar.find((t) => t.id === veri.paketTanimId);
+            const donem = tanim && donemBul(veri.donemBaslangic, bugun());
+            const yeniler = eski ? veri.uyeIds.filter((x) => !(eski.uyeIds || []).includes(x)) : [];
+            if (donem && yeniler.length) {
+              const grup = { ...veri, id };
+              const mevcut = await grupDonemKayitlari({ ...grup, uyeIds: yeniler }, donem);
+              for (const kid of yeniler) if (!mevcut[kid]) await grupKaydiOlustur(grup, donem, tanim, kid, ben.id);
+            }
             setMod(null);
             await yukle();
             setSecili(id);
@@ -240,7 +284,7 @@ export default function Gruplar({ onGeri }) {
         </p>
         {g.not && <p className="blok-not">{g.not}</p>}
         <nav className="sekmeler">
-          {[['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı']].map(([id, ad]) => (
+          {[['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ['odeme', 'Ödemeler']].map(([id, ad]) => (
             <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>{ad}</button>
           ))}
         </nav>
@@ -268,6 +312,17 @@ export default function Gruplar({ onGeri }) {
         )}
         {sekme === 'program' && (
           <ProgramSekmesi sahipTip="grup" sahipId={g.id} sade={false} duzenleyebilir={programYetkisi} yapan={ben.id} />
+        )}
+        {sekme === 'odeme' && (
+          <GrupOdemeleri
+            grup={g}
+            kisiler={kisiler}
+            tanim={tanimlar.find((t) => t.id === g.paketTanimId)}
+            yonetici={yonetici}
+            benim={ben.id}
+            koclar={koclar}
+            onGrupDegisti={yukle}
+          />
         )}
         {yonetici && (
           <div className="dugme-satiri" style={{ marginTop: 16 }}>

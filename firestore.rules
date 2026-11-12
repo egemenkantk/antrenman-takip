@@ -155,8 +155,10 @@ service cloud.firestore {
     match /satilanPaketler/{id} {
       allow read: if yonetici() || kisininKocu(resource.data.kisiId);
       // Koç paket atayabilir ama kişiye özel fiyat veremez
+      // Grup dönem kayıtlarını yalnızca yönetici (ve her sabahki otomatik kontrol) açar
       allow create: if yonetici()
         || (kisininKocu(request.resource.data.kisiId)
+            && request.resource.data.tur == 'bireysel'
             && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati);
       allow update: if yonetici()
         || (kisininKocu(resource.data.kisiId)
@@ -168,6 +170,7 @@ service cloud.firestore {
       allow create: if yonetici()
         || (kisininKocu(request.resource.data.kisiId)
             && request.resource.data.tahsilEdenKocId == benimId()
+            && request.resource.data.tutar is number && request.resource.data.tutar > 0
             && request.resource.data.get('silindi', false) == false);
       // Koç düzeltebilir (geçmişe kaydedilir) ama silemez; silme yöneticide ve iz bırakır
       allow update: if yonetici()

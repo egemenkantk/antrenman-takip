@@ -235,3 +235,18 @@ exports.kullaniciSil = onCall(async (request) => {
   await islemKaydet(yapan, 'kullaniciSil', { telefon, rol: kayit.rol });
   return { tamam: true };
 });
+
+// ---------- Grup dönemleri: her sabah 08:00 (İstanbul) ----------
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { donemKontrolu } = require('./donem');
+
+exports.donemKontrol = onSchedule({ schedule: '0 8 * * *', timeZone: 'Europe/Istanbul' }, async () => {
+  const r = await donemKontrolu(db, admin, KURUM_ID);
+  console.log('Dönem kontrolü', JSON.stringify(r));
+});
+
+// Yönetici "şimdi çalıştır" der (ör. ilk kurulumda ya da test için)
+exports.donemKontrolCalistir = onCall(async (request) => {
+  await yoneticiMi(request);
+  return donemKontrolu(db, admin, KURUM_ID);
+});

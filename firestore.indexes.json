@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "bildirimler",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "aliciKullaniciId", "order": "ASCENDING" },
+        { "fieldPath": "tarih", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

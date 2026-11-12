@@ -1,0 +1,26 @@
+# Firestore güvenlik kurallarını emülatörde dener (kim neyi okuyup yazabilir)
+name: Kural testi
+
+on:
+  push:
+    paths: ['firestore.rules', 'test/**', '.github/workflows/kural-test.yml']
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Araçları kur
+        working-directory: test
+        run: npm i --no-save firebase-tools@14 @firebase/rules-unit-testing@4 firebase@11
+      - name: Kuralları dene
+        working-directory: test
+        run: npx firebase emulators:exec --only firestore --project demo-test "node kurallar.test.mjs"
