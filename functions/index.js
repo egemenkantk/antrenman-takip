@@ -250,3 +250,12 @@ exports.donemKontrolCalistir = onCall(async (request) => {
   await yoneticiMi(request);
   return donemKontrolu(db, admin, KURUM_ID);
 });
+
+// ---------- Bireysel paket: son ders bildirimi (yoklama girilince) ----------
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { sonDersKontrolu } = require('./donem');
+
+exports.sonDersBildirimi = onDocumentWritten('kisiler/{kisiId}/antrenmanKayitlari/{kayitId}', async (event) => {
+  if (String(event.params.kayitId).includes('_')) return; // grup dersi kayıtları paketten düşmez
+  await sonDersKontrolu(db, admin, KURUM_ID, event.params.kisiId);
+});

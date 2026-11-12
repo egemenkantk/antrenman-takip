@@ -80,7 +80,8 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - Dönemin son günü 08:00'de: gruba bağlı öğrenci/veli hesaplarına hatırlatma, yöneticilere ödedi/ödemedi özeti (site içi bildirim).
 - Ödeme silme: kayıt yok olmaz, "silindi" işaretlenir ve işlem geçmişine yazılır; düzeltmelerin eski değerleri saklanır.
 - Liste: bekleyen ödemeler, azalan paketler (≤2 ders), tarih/koç/yöntem filtreli tahsilatlar.
-- Henüz yok: "paket azaldı" bildiriminin öğrenciye/veliye gitmesi ve öğrenci/veli ekranları (Aşama 3, portal ile).
+- Son ders bildirimi: yoklamada bir pakette tek ders kaldığında kişiye bağlı öğrenci/veli hesaplarına bir kez gider. "Paket azaldı" bildirimi kararla kaldırıldı; yönetici/koç için "Azalan paketler" listesi duruyor.
+- Öğrenci/veli ekranları Aşama 3'te (bildirimleri o zaman görecekler).
 
 ### Program
 - Sporcular: eski Sporcu Kartı program yapısı aynen taşınır (bloklar, dönemler, A/B/C günleri, bölüm seçimi ve sürükle-sırala, haftalık ilerleme tablosu, güne özel değişiklik, şablonlar, grup programı, maç gününe göre planlama).
@@ -124,7 +125,7 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 
 ### Bildirimler
 - Şimdilik yalnızca site içi (bildirim alanı + ana sayfada önemli kartlar).
-- Örnekler: paket azaldı (son dersler), grup dönemi ödemesi, grup saati değişti, ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
+- Örnekler: paketin son dersi (bir sonraki ders paketin son dersi olduğunda bir kez; "paket azaldı" bildirimi yok), grup dönemi ödemesi, grup saati değişti, ders iptal, yeni test sonucu, ödeme kaydedildi, fizyoterapist kontrol tarihi.
 - Yönetici hangi otomatik bildirimlerin çalışacağını açıp kapatabilir.
 - SMS/WhatsApp bildirimi ileride eklenebilir.
 

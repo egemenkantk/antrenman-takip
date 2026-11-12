@@ -172,7 +172,7 @@ Her kişinin altında kendine ait kayıtlar:
 | Alan | Açıklama |
 |---|---|
 | aliciKullaniciId | |
-| tip | paket azaldı (son 2 ders) / grup dönemi ödemesi / grup saati değişti / ders iptal / yeni test / ödeme kaydedildi / fizyo kontrol / … |
+| tip | paketin son dersi (bir sonraki ders son ders) / grup dönemi ödemesi / grup saati değişti / ders iptal / yeni test / ödeme kaydedildi / fizyo kontrol / … |
 | metin, baglanti | Tıklayınca ilgili sayfaya gider |
 | okundu, tarih | |
 

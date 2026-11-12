@@ -166,3 +166,60 @@ async function donemKontrolu(db, admin, KURUM_ID, bugun = istanbulBugun()) {
 }
 
 module.exports = { donemKontrolu, donemBul, orantili, istanbulBugun };
+
+// ---------- Bireysel paket: son ders bildirimi ----------
+// Yoklama kaydı değişince kişinin bireysel paketleri yeniden hesaplanır; bir pakette tek ders kaldıysa
+// kişiye bağlı öğrenci/veli hesaplarına bir kez bildirim gider (belge kimliği sabit, tekrar gitmez).
+function sayilanDers(k) {
+  const id = String(k.id || '');
+  if (!k.tarih || id.startsWith('sk_') || id.includes('_')) return false;
+  return k.katilim === 'geldi' || (k.katilim === 'gelmedi' && k.derstenDussun === true);
+}
+function kalanDersler(paketler, kayitlar) {
+  const bireysel = paketler
+    .filter((p) => p.tur === 'bireysel' && p.durum !== 'iptal')
+    .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || a.id.localeCompare(b.id));
+  const kullanilan = Object.fromEntries(bireysel.map((p) => [p.id, 0]));
+  for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
+    const p = bireysel.find((x) => (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
+    if (p) kullanilan[p.id]++;
+  }
+  return bireysel.map((p) => ({ p, kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
+}
+async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
+  const [ps, ks] = await Promise.all([
+    db.collection('satilanPaketler').where('kisiId', '==', kisiId).get(),
+    db.collection('kisiler').doc(kisiId).collection('antrenmanKayitlari').get(),
+  ]);
+  const paketler = ps.docs.map((d) => ({ id: d.id, ...d.data() }));
+  if (!paketler.some((p) => p.tur === 'bireysel')) return 0;
+  const sonDers = kalanDersler(paketler, ks.docs.map((d) => ({ id: d.id, ...d.data() }))).filter((x) => x.kalan === 1);
+  if (!sonDers.length) return 0;
+  const us = await db.collection('kullanicilar').where('bagliKisiler', 'array-contains', kisiId).get();
+  const alicilar = us.docs.filter((d) => ['ogrenci', 'veli'].includes(d.data().rol) && d.data().aktif !== false);
+  const kisi = await db.collection('kisiler').doc(kisiId).get();
+  const ad = kisi.exists ? (kisi.data().ad || '').split(' ')[0] : '';
+  let n = 0;
+  for (const { p } of sonDers) {
+    for (const u of alicilar) {
+      const veli = u.data().rol === 'veli';
+      await db
+        .collection('bildirimler')
+        .doc(`sonders_${p.id}_${u.id}`)
+        .create({
+          aliciKullaniciId: u.id,
+          tip: 'paket-son-ders',
+          baslik: 'Paketin son dersi',
+          metin: `${veli && ad ? `${ad} için ` : ''}${p.paketAdi || 'paket'}: bir sonraki ders paketin son dersi.`,
+          okundu: false,
+          kurumId: KURUM_ID,
+          tarih: admin.firestore.FieldValue.serverTimestamp(),
+        })
+        .then(() => n++)
+        .catch(() => {}); // daha önce gönderildiyse tekrar gönderilmez
+    }
+  }
+  return n;
+}
+
+module.exports.sonDersKontrolu = sonDersKontrolu;
