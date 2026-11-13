@@ -681,3 +681,15 @@ h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-
 .bolum-duzen textarea { width: 100%; min-width: 0; min-height: 76px; line-height: 1.4; }
 .iki-sutun { grid-template-columns: 1fr; gap: 6px; }
 .iki-sutun input { width: 100%; max-width: 260px; }
+
+/* Kişi kartı test girişi (Sporcu Kartı düzeni) */
+.test-kategori { border-top: 1px solid var(--cizgi); padding: 8px 0; }
+.test-kategori summary { font: 700 1.2rem 'Barlow Condensed', Barlow, sans-serif; cursor: pointer; padding: 4px 0; }
+.test-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 8px; }
+.test-oge { display: grid; gap: 3px; align-content: start; background: var(--zemin); border-radius: 12px; padding: 8px 10px; }
+.test-oge strong { font-size: 0.92rem; }
+.test-oge small { color: var(--soluk); font-size: 0.78rem; line-height: 1.3; }
+.test-kutular { display: flex; gap: 6px; margin-top: 4px; }
+.test-kutu { display: grid; gap: 2px; flex: 1; min-width: 0; font-size: 0.75rem; color: var(--soluk); }
+.test-kutu input { width: 100%; min-width: 0; padding: 7px 9px; border: 1px solid var(--cizgi); border-radius: 10px; background: var(--kart); color: var(--yazi); font: inherit; font-size: 0.95rem; }
+tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed', Barlow, sans-serif; text-align: left; padding-top: 10px; }

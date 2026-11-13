@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { tarihGoster } from '../veri';
-import { TESTLER, testBilgisi, sayiyaCevir } from '../testler/tanimlar';
+import { testBilgisi, testSirasi } from '../testler/tanimlar';
+import TestGunuFormu from '../testler/TestGunuFormu';
 import { sonuclariKaydet } from '../testler/veri';
 
 async function altListe(kisiId, ad) {
@@ -34,7 +35,8 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
     (satirlar[k] ||= { test: t.test, taraf: t.taraf || null, olcumler: {} }).olcumler[t.tarih] = t;
   }
   const tarihler = [...new Set(liste.map((t) => t.tarih))].sort();
-  const anahtarlar = Object.keys(satirlar).sort((a, b) => a.localeCompare(b, 'tr'));
+  // Kategori sırasına (Sporcu Kartı'ndaki gibi), sonra katalogdaki sıraya göre
+  const anahtarlar = Object.keys(satirlar).sort((a, b) => testSirasi(satirlar[a].test) - testSirasi(satirlar[b].test) || a.localeCompare(b, 'tr'));
   const farklar = {};
   for (const k of anahtarlar) {
     const r = satirlar[k];
@@ -52,64 +54,20 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
     <div className="kayit-bolumleri">
       {duzenleyebilir && !form && (
         <div className="dugme-satiri">
-          <button className="ikincil kucuk" onClick={() => setForm({ test: '', tarih: new Date().toISOString().slice(0, 10), deger: '', taraf: '' })}>
-            + Sonuç ekle
-          </button>
-          <small className="aciklama">Toplu giriş ve Performanz raporları için ana sayfadaki Testler bölümünü kullan.</small>
+          <button className="ikincil kucuk" onClick={() => setForm(true)}>+ Test sonucu gir</button>
+          <small className="aciklama">Birden fazla kişi için Testler sayfasındaki "Test günü"nü, Performanz PDF'leri için de aynı sayfayı kullan.</small>
         </div>
       )}
       {form && (
-        <form
-          className="ic-form"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setHata('');
-            const deger = sayiyaCevir(form.deger);
-            if (!form.test.trim() || deger == null || !form.tarih) return setHata('Test, tarih ve değer gerekli.');
-            try {
-              await sonuclariKaydet([{ kisiId, test: form.test.trim(), tarih: form.tarih, deger, taraf: form.taraf || null, kaynak: 'elle', ...(TESTLER[form.test]?.seviyeli && form.seviye !== '' && form.seviye != null ? { seviye: Number(form.seviye) } : {}) }], yapan);
-              setForm(null);
-              await yukle();
-            } catch {
-              setHata('Kaydedilemedi.');
-            }
+        <TestGunuFormu
+          kullanilanlar={new Set(liste.map((t) => t.test))}
+          onVazgec={() => setForm(null)}
+          onKaydet={async (sonuclar) => {
+            await sonuclariKaydet(sonuclar.map((x) => ({ ...x, kisiId })), yapan);
+            setForm(null);
+            await yukle();
           }}
-        >
-          <div className="form-izgara">
-            <label className="alan">
-              <span>Test</span>
-              <input list="test-adlari" value={form.test} onChange={(e) => setForm({ ...form, test: e.target.value })} placeholder="Örn. CMJ (cm)" />
-              <datalist id="test-adlari">{Object.keys(TESTLER).map((t) => <option key={t} value={t} />)}</datalist>
-            </label>
-            <label className="alan">
-              <span>Tarih</span>
-              <input type="date" value={form.tarih} onChange={(e) => setForm({ ...form, tarih: e.target.value })} />
-            </label>
-            <label className="alan">
-              <span>Değer</span>
-              <input inputMode="decimal" value={form.deger} onChange={(e) => setForm({ ...form, deger: e.target.value })} />
-            </label>
-            <label className="alan">
-              <span>Taraf</span>
-              <select value={form.taraf} onChange={(e) => setForm({ ...form, taraf: e.target.value })}>
-                <option value="">—</option>
-                <option value="sag">Sağ</option>
-                <option value="sol">Sol</option>
-              </select>
-            </label>
-            {TESTLER[form.test]?.seviyeli && (
-              <label className="alan">
-                <span>Makine seviyesi</span>
-                <input inputMode="numeric" value={form.seviye || ''} onChange={(e) => setForm({ ...form, seviye: e.target.value })} placeholder="Örn. 5" />
-              </label>
-            )}
-          </div>
-          {hata && <p className="hata">{hata}</p>}
-          <div className="dugme-satiri">
-            <button className="birincil kucuk">Kaydet</button>
-            <button type="button" className="metin" onClick={() => setForm(null)}>Vazgeç</button>
-          </div>
-        </form>
+        />
       )}
 
       {liste.length === 0 ? (
@@ -125,9 +83,17 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
               </tr>
             </thead>
             <tbody>
-              {anahtarlar.flatMap((k) => {
+              {anahtarlar.flatMap((k, ki) => {
                 const r = satirlar[k];
-                const iyi = testBilgisi(r.test).iyi;
+                const kat = testBilgisi(r.test).kat;
+                const baslik =
+                  ki === 0 || testBilgisi(satirlar[anahtarlar[ki - 1]].test).kat !== kat ? (
+                    <tr key={'kat-' + kat} className="kat-satir">
+                      <th colSpan={tarihler.length + 2}>{kat}</th>
+                    </tr>
+                  ) : null;
+                const bilgi = testBilgisi(r.test);
+                const iyi = bilgi.kat === 'Diğer' ? Object.values(r.olcumler).find((o) => o.ozelYon)?.ozelYon || bilgi.iyi : bilgi.iyi;
                 const d = tarihler.map((t) => r.olcumler[t]?.deger).filter((v) => v != null);
                 const fark = d.length > 1 ? d[d.length - 1] - d[0] : null;
                 const iyilesme = fark == null || fark === 0 || iyi === 'notr' ? '' : (iyi === 'dusuk' ? fark < 0 : fark > 0) ? 'artı' : 'eksi';
@@ -149,9 +115,10 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                     )}
                   </tr>
                 );
-                if (!(r.taraf === 'sol' && farklar[r.test])) return [satir];
+                if (!(r.taraf === 'sol' && farklar[r.test])) return [baslik, satir].filter(Boolean);
                 const f = farklar[r.test];
                 return [
+                  baslik,
                   satir,
                   <tr key={k + 'fark'} className="fark-satiri">
                     <th scope="row">{r.test} · sağ-sol farkı</th>
@@ -160,7 +127,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                     ))}
                     {tarihler.length > 1 && <td></td>}
                   </tr>,
-                ];
+                ].filter(Boolean);
               })}
             </tbody>
           </table>

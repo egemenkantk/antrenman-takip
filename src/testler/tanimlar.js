@@ -43,6 +43,7 @@ export const TEST_KATEGORILERI = [
     ['Barfiks (tekrar)', 'yuksek'],
     ['1 dk squat (tekrar)', 'yuksek'],
     ['Gravity pull up (tekrar)', 'yuksek', false, true], // makinede zorluk seviyesiyle yapılır
+    ['Squat thrust (tekrar)', 'yuksek'],
     ['Mekik (tekrar)', 'yuksek'],
     ['Şınav (tekrar)', 'yuksek'],
     ['Kavrama kuvveti (kg)', 'yuksek', true],
@@ -50,7 +51,7 @@ export const TEST_KATEGORILERI = [
   ['Dayanıklılık', [
     ['Yo-Yo IR1 (m)', 'yuksek'],
     ['30-15 IFT (km/s)', 'yuksek'],
-    ['Mekik koşusu (seviye)', 'yuksek'],
+    ['Bleep test (seviye)', 'yuksek'],
     ['RSA ortalama (sn)', 'dusuk'],
   ]],
   ['Antropometri', [
@@ -71,6 +72,48 @@ export const TEST_KATEGORILERI = [
 export const TESTLER = Object.fromEntries(
   TEST_KATEGORILERI.flatMap(([kat, l]) => l.map(([ad, iyi, tarafli, seviyeli]) => [ad, { ad, kat, iyi, tarafli: !!tarafli, seviyeli: !!seviyeli }]))
 );
+// Katalogdaki sıra (kategori + test): listelerde Sporcu Kartı'ndaki düzen korunur
+const SIRA = Object.fromEntries(Object.keys(TESTLER).map((ad, i) => [ad, i]));
+export const testSirasi = (ad) => SIRA[ad] ?? 9999;
+
+// Test girişinde her testin altında görünen kısa açıklama
+export const TEST_ACIKLAMA = {
+  'CMJ (cm)': 'Kollar belde, çömelip dikey sıçrama; alt vücut patlayıcı gücü',
+  'Squat jump (cm)': 'Çömelmiş pozisyondan (yaylanmadan) dikey sıçrama',
+  'Drop jump RSI': 'Kutudan düşüp hızlı sıçrama; reaktif kuvvet (sıçrama yüksekliği / temas süresi)',
+  'Bosco skoru (cm)': 'Art arda sıçramalarda güç ve dayanıklılık (Performanz)',
+  'Tek ayak CMJ (cm)': 'Tek ayakla dikey sıçrama; sağ-sol farkına bakılır',
+  'Durarak uzun atlama (cm)': 'Durduğu yerden ileri sıçrama; yatay güç',
+  '5 m sürat (sn)': 'İlk adım ve çıkış hızı',
+  '10 m sürat (sn)': 'Hızlanma',
+  '20 m sürat (sn)': 'Hızlanma ve sürat',
+  '30 m sürat (sn)': 'Maksimal sürata ulaşma',
+  'Uçan 10 m (sn)': 'Hareketli başlangıçla en yüksek hız',
+  'V-cut (sn)': 'Açılı kesmelerle yön değiştirme hızı',
+  '505 çeviklik (sn)': '180° dönüşte yön değiştirme hızı; sağ ve sol ayrı',
+  'T-test (sn)': 'İleri, yana ve geri hareketlerde çeviklik',
+  'Pro-agility (sn)': 'Kısa mesafede hızlı yön değiştirme',
+  'Illinois (sn)': 'Engeller arasında çeviklik ve koordinasyon',
+  'Denge (puan)': 'Tek ayak denge (Performanz)',
+  'Otur-uzan (cm)': 'Arka bacak ve bel esnekliği',
+  'Squat 1RM (kg)': 'Bacak kuvveti (tek tekrarda kaldırılabilen en yüksek ağırlık)',
+  'Bench press 1RM (kg)': 'Üst vücut itme kuvveti',
+  'Trap bar deadlift 1RM (kg)': 'Tüm vücut kuvveti',
+  'Barfiks (tekrar)': 'Üst vücut çekme kuvveti ve dayanıklılığı',
+  '1 dk squat (tekrar)': '1 dakikada yapılan squat sayısı; bacak kuvvet dayanıklılığı',
+  'Gravity pull up (tekrar)': 'Modifiye barfiks; üst vücut çekme kuvveti (makine seviyesiyle)',
+  'Squat thrust (tekrar)': 'Belirli sürede squat thrust sayısı; tüm vücut dayanıklılığı',
+  'Mekik (tekrar)': 'Karın (core) kaslarının dayanıklılığı',
+  'Şınav (tekrar)': 'Üst vücut itme kuvveti ve dayanıklılığı',
+  'Kavrama kuvveti (kg)': 'El dinamometresiyle kavrama; sağ ve sol ayrı',
+  'Yo-Yo IR1 (m)': 'Kısa dinlenmelerle tekrarlanan koşularda dayanıklılık',
+  '30-15 IFT (km/s)': 'Aralıklı koşu kapasitesi; kondisyonun göstergesi',
+  'Bleep test (seviye)': 'Mekik koşusu; aerobik dayanıklılık',
+  'RSA ortalama (sn)': 'Arka arkaya sprintlerde hızı koruyabilme',
+  'Vücut ağırlığı (kg)': 'Kilo',
+  'Yağ oranı (%)': 'Vücut yağ yüzdesi',
+};
+
 export const testBilgisi = (ad) => TESTLER[ad] || { ad, kat: 'Diğer', iyi: /\(sn\)/.test(ad) ? 'dusuk' : 'yuksek', tarafli: false };
 export const TARAF_ADI = { sag: 'Sağ', sol: 'Sol' };
 
