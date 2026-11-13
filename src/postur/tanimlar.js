@@ -5,6 +5,9 @@ export const POSTUR = [
     ['head_tilt', 'Baş lateral eğimi', 1, 'head', ['Boyun lateral esneme', 'Chin tuck']],
     ['shoulder_h', 'Omuz yükseklik farkı', 1, 'shoulder', ['Üst trapez esnetme', 'Serratus wall slide']],
     ['pelvis_h', 'Pelvis yükseklik farkı', 1, 'pelvis', ['Side plank', 'Quadratus lumborum esnetme']],
+    ['rib_shift', 'Göğüs kafesi shift (yana kayma; taraf = kaydığı yön)', 1, 'thoracic', ['90/90 nefes (göğüs kafesini ortalama)', 'Duvarda lateral shift düzeltme drili', 'Side plank (karşı taraf)']],
+    ['femur_ir', 'Femur iç rotasyonu (patella içe bakıyor)', 1, 'thigh', ['Clamshell', 'Band ile kalça dış rotasyonu', 'Tek ayak squat (diz-ayak hizası)']],
+    ['femur_er', 'Femur dış rotasyonu (patella dışa bakıyor)', 1, 'thigh', ['90/90 kalça iç rotasyon mobilitesi', 'Kalça iç rotasyon aktivasyonu', 'Piriformis esnetme']],
     ['valgus', 'Diz valgus', 1, 'knee', ['Mini band lateral walk', 'Clamshell', 'Tek ayak squat (ayna önünde)']],
     ['varus', 'Diz varus', 1, 'knee', ['Copenhagen plank', 'Kalça iç rotasyon mobilitesi']],
     ['pronation', 'Ayak pronasyonu / düz taban', 1, 'foot', ['Short foot egzersizi', 'Tek ayak denge', 'Tibialis posterior güçlendirme']],
@@ -50,7 +53,7 @@ export const BOLGE = {
   head: { c: [70, 24], R: [60, 22], L: [80, 22] }, neck: { c: [70, 46] },
   shoulder: { c: [70, 58], R: [45, 58], L: [95, 58] }, thoracic: { c: [70, 84], R: [62, 90], L: [78, 90] },
   scap: { c: [70, 78], R: [55, 78], L: [85, 78] }, lumbar: { c: [70, 126] },
-  pelvis: { c: [70, 146], R: [53, 146], L: [87, 146] }, knee: { c: [70, 214], R: [57, 214], L: [83, 214] },
+  pelvis: { c: [70, 146], R: [53, 146], L: [87, 146] }, thigh: { c: [70, 180], R: [58, 180], L: [82, 180] }, knee: { c: [70, 214], R: [57, 214], L: [83, 214] },
   foot: { c: [70, 284], R: [55, 284], L: [85, 284] },
 };
 
