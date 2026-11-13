@@ -46,6 +46,7 @@ export function degisimMetni(iyi, onceki, son) {
   const d = son - onceki;
   if (Math.abs(d) < 1e-9) return 'Değişim yok.';
   const p = '%' + Math.abs((d / onceki) * 100).toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+  if (iyi === 'notr') return d > 0 ? `${p} arttı.` : `${p} azaldı.`;
   if (iyi === 'dusuk') return d < 0 ? `${p} azaldı, gelişme var.` : `${p} arttı, gerileme var.`;
   return d > 0 ? `${p} oranında artış oldu, gelişme var.` : `${p} oranında düşüş oldu, gerileme var.`;
 }
@@ -77,8 +78,8 @@ export function testSatirlari(liste, A, B, { vucut = false } = {}) {
         const tum = liste.filter((t) => satirAnahtari(t) === k && t.tarih <= B).map((t) => t.deger);
         const enIyi = bilgi.iyi === 'dusuk' ? Math.min(...tum) : Math.max(...tum);
         const fark = pv != null ? son.deger - pv : null;
-        const iyi = fark == null || Math.abs(fark) < 1e-9 ? null : bilgi.iyi === 'dusuk' ? fark < 0 : fark > 0;
-        const rekor = tum.length > 1 && son.deger === enIyi && yeni && pv != null && son.deger !== pv;
+        const iyi = fark == null || Math.abs(fark) < 1e-9 || bilgi.iyi === 'notr' ? null : bilgi.iyi === 'dusuk' ? fark < 0 : fark > 0;
+        const rekor = bilgi.iyi !== 'notr' && tum.length > 1 && son.deger === enIyi && yeni && pv != null && son.deger !== pv;
         return { anahtar: k, test, taraf: taraf || null, bilgi, son, onceki: pv, fark, iyi, rekor, yeni };
       })
       .filter(Boolean);

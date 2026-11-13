@@ -21,11 +21,14 @@ export const TEST_KATEGORILERI = [
     ['10 m sürat (sn)', 'dusuk'],
     ['20 m sürat (sn)', 'dusuk'],
     ['30 m sürat (sn)', 'dusuk'],
+    ['Uçan 10 m (sn)', 'dusuk'],
   ]],
   ['Çeviklik', [
     ['V-cut (sn)', 'dusuk'],
     ['505 çeviklik (sn)', 'dusuk', true],
     ['T-test (sn)', 'dusuk'],
+    ['Pro-agility (sn)', 'dusuk'],
+    ['Illinois (sn)', 'dusuk'],
   ]],
   ['Denge', [
     ['Denge (puan)', 'yuksek', true],
@@ -35,20 +38,38 @@ export const TEST_KATEGORILERI = [
   ]],
   ['Kuvvet', [
     ['Squat 1RM (kg)', 'yuksek'],
+    ['Bench press 1RM (kg)', 'yuksek'],
+    ['Trap bar deadlift 1RM (kg)', 'yuksek'],
+    ['Barfiks (tekrar)', 'yuksek'],
+    ['1 dk squat (tekrar)', 'yuksek'],
+    ['Gravity pull up (tekrar)', 'yuksek', false, true], // makinede zorluk seviyesiyle yapılır
+    ['Mekik (tekrar)', 'yuksek'],
+    ['Şınav (tekrar)', 'yuksek'],
     ['Kavrama kuvveti (kg)', 'yuksek', true],
   ]],
   ['Dayanıklılık', [
     ['Yo-Yo IR1 (m)', 'yuksek'],
+    ['30-15 IFT (km/s)', 'yuksek'],
+    ['Mekik koşusu (seviye)', 'yuksek'],
+    ['RSA ortalama (sn)', 'dusuk'],
   ]],
   ['Antropometri', [
-    ['Boy (cm)', 'yuksek'],
-    ['Vücut ağırlığı (kg)', 'yuksek'],
+    // notr: artış ya da azalış tek başına gelişme/gerileme sayılmaz
+    ['Boy (cm)', 'notr'],
+    ['Vücut ağırlığı (kg)', 'notr'],
+    ['Yağ oranı (%)', 'dusuk'],
+    ['Omuz çevresi (cm)', 'notr'],
+    ['Göğüs çevresi (cm)', 'notr'],
+    ['Kol çevresi (cm)', 'notr'],
     ['Bel çevresi (cm)', 'dusuk'],
+    ['Kalça çevresi (cm)', 'notr'],
+    ['Bacak çevresi (cm)', 'notr'],
+    ['Alt bacak çevresi (cm)', 'notr'],
   ]],
 ];
 
 export const TESTLER = Object.fromEntries(
-  TEST_KATEGORILERI.flatMap(([kat, l]) => l.map(([ad, iyi, tarafli]) => [ad, { ad, kat, iyi, tarafli: !!tarafli }]))
+  TEST_KATEGORILERI.flatMap(([kat, l]) => l.map(([ad, iyi, tarafli, seviyeli]) => [ad, { ad, kat, iyi, tarafli: !!tarafli, seviyeli: !!seviyeli }]))
 );
 export const testBilgisi = (ad) => TESTLER[ad] || { ad, kat: 'Diğer', iyi: /\(sn\)/.test(ad) ? 'dusuk' : 'yuksek', tarafli: false };
 export const TARAF_ADI = { sag: 'Sağ', sol: 'Sol' };

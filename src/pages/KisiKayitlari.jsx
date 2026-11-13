@@ -67,7 +67,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
             const deger = sayiyaCevir(form.deger);
             if (!form.test.trim() || deger == null || !form.tarih) return setHata('Test, tarih ve değer gerekli.');
             try {
-              await sonuclariKaydet([{ kisiId, test: form.test.trim(), tarih: form.tarih, deger, taraf: form.taraf || null, kaynak: 'elle' }], yapan);
+              await sonuclariKaydet([{ kisiId, test: form.test.trim(), tarih: form.tarih, deger, taraf: form.taraf || null, kaynak: 'elle', ...(TESTLER[form.test]?.seviyeli && form.seviye !== '' && form.seviye != null ? { seviye: Number(form.seviye) } : {}) }], yapan);
               setForm(null);
               await yukle();
             } catch {
@@ -97,6 +97,12 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                 <option value="sol">Sol</option>
               </select>
             </label>
+            {TESTLER[form.test]?.seviyeli && (
+              <label className="alan">
+                <span>Makine seviyesi</span>
+                <input inputMode="numeric" value={form.seviye || ''} onChange={(e) => setForm({ ...form, seviye: e.target.value })} placeholder="Örn. 5" />
+              </label>
+            )}
           </div>
           {hata && <p className="hata">{hata}</p>}
           <div className="dugme-satiri">
@@ -124,7 +130,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                 const iyi = testBilgisi(r.test).iyi;
                 const d = tarihler.map((t) => r.olcumler[t]?.deger).filter((v) => v != null);
                 const fark = d.length > 1 ? d[d.length - 1] - d[0] : null;
-                const iyilesme = fark == null || fark === 0 ? '' : (iyi === 'dusuk' ? fark < 0 : fark > 0) ? 'artı' : 'eksi';
+                const iyilesme = fark == null || fark === 0 || iyi === 'notr' ? '' : (iyi === 'dusuk' ? fark < 0 : fark > 0) ? 'artı' : 'eksi';
                 const satir = (
                   <tr key={k}>
                     <th scope="row">{r.test}{r.taraf ? ` · ${TARAF[r.taraf]}` : ''}</th>
@@ -133,6 +139,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                       return (
                         <td key={t} title={o ? KAYNAK[o.kaynak] || '' : ''}>
                           {o ? sayiGoster(o.deger) : '—'}
+                          {o?.seviye != null && <small className="aciklama"> · sv. {o.seviye}</small>}
                           {o?.normSeviye && <span className={'norm-rozet kucuk n-' + o.normSeviye}>{o.normSeviye}</span>}
                         </td>
                       );

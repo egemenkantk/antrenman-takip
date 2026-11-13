@@ -29,7 +29,9 @@ function TestGunu({ kisiler, gruplar, ben }) {
     return ids.map((id) => kisiler.find((k) => k.id === id)).filter(Boolean);
   }, [grup, secilenler, kisiler, gruplar]);
 
-  const sutunlar = testler.flatMap((t) => (TESTLER[t]?.tarafli ? [[t, 'sag'], [t, 'sol']] : [[t, null]]));
+  // Taraflı testte sağ/sol, makine seviyeli testte (Gravity pull up) değer + seviye sütunu
+  const sutunlar = testler.flatMap((t) => (TESTLER[t]?.tarafli ? [[t, 'sag'], [t, 'sol']] : TESTLER[t]?.seviyeli ? [[t, null], [t, 'seviye']] : [[t, null]]));
+  const sutunAdi = (taraf) => (taraf === 'seviye' ? ' · seviye' : taraf ? ` · ${TARAF_ADI[taraf]}` : '');
   const adaylar = kisiler.filter(
     (k) => k.aktif !== false && !secilenler.includes(k.id) && ara.trim() && normalAd(k.ad).includes(normalAd(ara))
   );
@@ -40,9 +42,11 @@ function TestGunu({ kisiler, gruplar, ben }) {
     const sonuclar = [];
     for (const k of satirlar) {
       for (const [t, taraf] of sutunlar) {
+        if (taraf === 'seviye') continue;
         const v = sayiyaCevir(degerler[`${k.id}|${t}|${taraf}`]);
         if (v == null) continue;
-        sonuclar.push({ kisiId: k.id, test: t, tarih, deger: v, taraf, kaynak: 'elle' });
+        const sv = TESTLER[t]?.seviyeli ? sayiyaCevir(degerler[`${k.id}|${t}|seviye`]) : null;
+        sonuclar.push({ kisiId: k.id, test: t, tarih, deger: v, taraf, kaynak: 'elle', ...(sv != null ? { seviye: sv } : {}) });
       }
     }
     if (!sonuclar.length) return setHata('Kaydedilecek değer yok.');
@@ -128,7 +132,7 @@ function TestGunu({ kisiler, gruplar, ben }) {
             <thead>
               <tr>
                 <th>Kişi</th>
-                {sutunlar.map(([t, taraf]) => <th key={t + taraf}>{t}{taraf ? ` · ${TARAF_ADI[taraf]}` : ''}</th>)}
+                {sutunlar.map(([t, taraf]) => <th key={t + taraf}>{t}{sutunAdi(taraf)}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -143,7 +147,7 @@ function TestGunu({ kisiler, gruplar, ben }) {
                           inputMode="decimal"
                           value={degerler[a] || ''}
                           onChange={(e) => setDegerler({ ...degerler, [a]: e.target.value })}
-                          aria-label={`${k.ad} ${t}${taraf ? ' ' + TARAF_ADI[taraf] : ''}`}
+                          aria-label={`${k.ad} ${t}${sutunAdi(taraf)}`}
                         />
                       </td>
                     );
