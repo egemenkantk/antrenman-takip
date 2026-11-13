@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
-import { hataMesaji, telefonuDuzenle, telefonuGoster } from '../auth/hesap';
+import { kisiSilSunucu, hataMesaji, telefonuDuzenle, telefonuGoster } from '../auth/hesap';
 import {
   BRANSLAR,
   HEDEFLER,
@@ -346,7 +346,7 @@ const SEKMELER = [
   ['portal', 'Portal görünümü', null],
 ];
 
-function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti }) {
+function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti, onSilindi }) {
   const [sekme, setSekme] = useState('ozet');
   const [duzenle, setDuzenle] = useState(false);
   const [baglaSecim, setBaglaSecim] = useState('');
@@ -492,6 +492,24 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
                 {kisi.aktif === false ? 'Aktif et' : 'Pasife al'}
               </button>
             )}
+            {yonetici && (
+              <button
+                className="metin tehlike"
+                onClick={() => {
+                  const yaz = window.prompt(
+                    `${kisi.ad} ve tüm kayıtları (testler, antrenmanlar, wellness, sağlık, program) kalıcı olarak silinecek. Bu geri alınamaz.\n\nYalnızca yanlışlıkla eklenen kayıtlar için kullan; ayrılan kişiler için "Pasife al" yeterli.\n\nOnaylamak için SİL yaz:`
+                  );
+                  if (yaz == null) return;
+                  if (yaz.trim().toLocaleUpperCase('tr-TR') !== 'SİL') return setHata('Silme onaylanmadı: SİL yazılmalı.');
+                  calistir(async () => {
+                    await kisiSilSunucu({ kisiId: kisi.id });
+                    onSilindi?.();
+                  });
+                }}
+              >
+                Kişiyi sil
+              </button>
+            )}
           </div>
 
           {yonetici && (
@@ -611,6 +629,10 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
           programYetkisi={yonetici || (ben.ekYetkiler || []).includes('programDuzenle')}
           onGeri={() => setSecili(null)}
           onDegisti={yukle}
+          onSilindi={() => {
+            setSecili(null);
+            yukle();
+          }}
         />
       );
     }

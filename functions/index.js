@@ -276,3 +276,42 @@ exports.portalVerisi = onCall(async (request) => {
   if (!v) throw new HttpsError('not-found', 'Kişi bulunamadı.');
   return v;
 });
+
+// ---------- Kişiyi tamamen silme (yanlışlıkla iki kez eklenen kayıt ya da KVKK talebi) ----------
+// Alt kayıtlar (test, antrenman, wellness, sağlık…) dahil silinir; gruplardan ve bağlı hesaplardan çıkarılır.
+// Kayıtlı ödemesi ya da paketi olan kişi silinmez: muhasebe izi kaybolmasın, pasife alınır.
+exports.kisiSil = onCall(async (request) => {
+  const { telefon } = await yoneticiMi(request);
+  const kisiId = String(request.data?.kisiId || '');
+  if (!kisiId) throw new HttpsError('invalid-argument', 'Kişi eksik.');
+  const ref = db.collection('kisiler').doc(kisiId);
+  const kisi = await ref.get();
+  if (!kisi.exists) throw new HttpsError('not-found', 'Kişi bulunamadı.');
+
+  const [odemeler, paketler] = await Promise.all([
+    db.collection('odemeler').where('kisiId', '==', kisiId).limit(1).get(),
+    db.collection('satilanPaketler').where('kisiId', '==', kisiId).get(),
+  ]);
+  if (!odemeler.empty || paketler.docs.some((d) => d.data().tur !== 'grup' || d.data().olusturan !== 'otomatik')) {
+    throw new HttpsError('failed-precondition', 'Bu kişinin paket ya da ödeme kaydı var; silmek yerine pasife al.');
+  }
+
+  // Gruplardan çıkar
+  const gruplar = await db.collection('gruplar').where('uyeIds', 'array-contains', kisiId).get();
+  for (const g of gruplar.docs) {
+    const katilim = { ...(g.data().uyeKatilim || {}) };
+    delete katilim[kisiId];
+    await g.ref.update({ uyeIds: admin.firestore.FieldValue.arrayRemove(kisiId), uyeKatilim: katilim });
+  }
+  // Bağlı öğrenci/veli hesaplarından çıkar
+  const hesaplar = await db.collection('kullanicilar').where('bagliKisiler', 'array-contains', kisiId).get();
+  for (const h of hesaplar.docs) await h.ref.update({ bagliKisiler: admin.firestore.FieldValue.arrayRemove(kisiId) });
+  // Otomatik açılmış ama ödemesiz grup dönem kayıtları ve kişinin kendi programları
+  for (const p of paketler.docs) await p.ref.delete();
+  const programlar = await db.collection('programlar').where('sahipId', '==', kisiId).get();
+  for (const p of programlar.docs) await p.ref.delete();
+
+  await db.recursiveDelete(ref);
+  await islemKaydet(telefon, 'kisi-silindi', { kisiId, ad: kisi.data().ad || '' });
+  return { tamam: true, gruplar: gruplar.size, hesaplar: hesaplar.size };
+});

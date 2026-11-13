@@ -15,6 +15,7 @@ import { auth, db, fonksiyonlar } from '../firebase';
 
 const cagir = (ad) => async (veri) => (await httpsCallable(fonksiyonlar, ad)(veri)).data;
 export const donemKontrolCalistir = cagir('donemKontrolCalistir');
+export const kisiSilSunucu = cagir('kisiSil');
 // Yoklama sonrası: pakette tek ders kaldıysa öğrenci/veliye bildirim (arka planda, hata yutulur)
 export const sonDersKontrol = (kisiId) => cagir('sonDersKontrol')({ kisiId }).catch(() => {});
 
