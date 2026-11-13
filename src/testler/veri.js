@@ -43,6 +43,3 @@ export function sonucGuncelle(kisiId, eski, yeni, yapan) {
     oncekiDeger: eski.deger,
   });
 }
-export function sonucSil(kisiId, id) {
-  return deleteDoc(doc(db, 'kisiler', kisiId, 'testSonuclari', id));
-}
