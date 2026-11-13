@@ -32,6 +32,7 @@ export const TEST_KATEGORILERI = [
   ]],
   ['Denge', [
     ['Denge (puan)', 'yuksek', true],
+    ['Tek ayak denge (sn)', 'yuksek', true],
   ]],
   ['Esneklik', [
     ['Otur-uzan (cm)', 'yuksek'],
@@ -94,7 +95,8 @@ export const TEST_ACIKLAMA = {
   'T-test (sn)': 'İleri, yana ve geri hareketlerde çeviklik',
   'Pro-agility (sn)': 'Kısa mesafede hızlı yön değiştirme',
   'Illinois (sn)': 'Engeller arasında çeviklik ve koordinasyon',
-  'Denge (puan)': 'Tek ayak denge (Performanz)',
+  'Denge (puan)': 'Tek ayak denge puanı (Performanz cihazı); sağ ve sol ayrı',
+  'Tek ayak denge (sn)': 'Tek ayak üzerinde kaç saniye dengede kalabildiği; sağ ve sol ayrı',
   'Otur-uzan (cm)': 'Arka bacak ve bel esnekliği',
   'Squat 1RM (kg)': 'Bacak kuvveti (tek tekrarda kaldırılabilen en yüksek ağırlık)',
   'Bench press 1RM (kg)': 'Üst vücut itme kuvveti',
