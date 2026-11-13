@@ -693,3 +693,5 @@ h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-
 .test-kutu { display: grid; gap: 2px; flex: 1; min-width: 0; font-size: 0.75rem; color: var(--soluk); }
 .test-kutu input { width: 100%; min-width: 0; padding: 7px 9px; border: 1px solid var(--cizgi); border-radius: 10px; background: var(--kart); color: var(--yazi); font: inherit; font-size: 0.95rem; }
 tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed', Barlow, sans-serif; text-align: left; padding-top: 10px; }
+.deger-dugme { background: none; border: 0; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer; }
+.deger-dugme:hover, .deger-dugme:focus-visible { background: var(--marka-acik); color: var(--marka-dolu); }

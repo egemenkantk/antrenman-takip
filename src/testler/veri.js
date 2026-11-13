@@ -1,4 +1,4 @@
-import { doc, writeBatch, serverTimestamp, collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, collection, getDocs, deleteDoc, updateDoc, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { sonucId } from './tanimlar.js';
@@ -27,6 +27,22 @@ export async function kisininSonuclari(kisiId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+export function sonucSil(kisiId, id) {
+  return deleteDoc(doc(db, 'kisiler', kisiId, 'testSonuclari', id));
+}
+
+// Tek sonucu düzelt (değer, tarih, seviye, not); eski değer düzeltme geçmişinde kalır
+export function sonucGuncelle(kisiId, eski, yeni, yapan) {
+  return updateDoc(doc(db, 'kisiler', kisiId, 'testSonuclari', eski.id), {
+    deger: yeni.deger,
+    tarih: yeni.tarih,
+    seviye: yeni.seviye ?? deleteField(),
+    not: yeni.not ? yeni.not : deleteField(),
+    duzelten: yapan,
+    duzeltme: serverTimestamp(),
+    oncekiDeger: eski.deger,
+  });
+}
 export function sonucSil(kisiId, id) {
   return deleteDoc(doc(db, 'kisiler', kisiId, 'testSonuclari', id));
 }

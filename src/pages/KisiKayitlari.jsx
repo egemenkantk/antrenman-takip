@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { tarihGoster } from '../veri';
-import { testBilgisi, testSirasi } from '../testler/tanimlar';
+import { testBilgisi, testSirasi, TESTLER, sayiyaCevir } from '../testler/tanimlar';
 import TestGunuFormu from '../testler/TestGunuFormu';
-import { sonuclariKaydet } from '../testler/veri';
+import { sonuclariKaydet, sonucGuncelle, sonucSil } from '../testler/veri';
 
 async function altListe(kisiId, ad) {
   const snap = await getDocs(collection(db, 'kisiler', kisiId, ad));
@@ -17,9 +17,60 @@ const sayiGoster = (v, b = 2) => (v == null ? '—' : String(Math.round(v * 10 *
 const TARAF = { sag: 'Sağ', sol: 'Sol' };
 const KAYNAK = { performanz: 'Performanz', elle: 'Elle girildi', 'sporcu-karti': 'Sporcu Kartı' };
 
+function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
+  const [f, setF] = useState({ deger: String(o.deger ?? '').replace('.', ','), tarih: o.tarih, seviye: o.seviye ?? '', not: o.not || '' });
+  const [hata, setHata] = useState('');
+  const seviyeli = TESTLER[o.test]?.seviyeli || o.seviye != null;
+  return (
+    <div className="kart-form ic-form">
+      <strong>{o.test}{o.taraf ? ` · ${TARAF[o.taraf]}` : ''}</strong>
+      <small className="aciklama">{KAYNAK[o.kaynak] || ''}{o.oncekiDeger != null ? ` · önceki değer ${sayiGoster(o.oncekiDeger)}` : ''}</small>
+      <div className="form-izgara">
+        <label className="alan"><span>Değer</span><input inputMode="decimal" value={f.deger} onChange={(e) => setF({ ...f, deger: e.target.value })} /></label>
+        <label className="alan"><span>Tarih</span><input type="date" value={f.tarih} onChange={(e) => setF({ ...f, tarih: e.target.value })} /></label>
+        {seviyeli && <label className="alan"><span>Makine seviyesi</span><input inputMode="numeric" value={f.seviye} onChange={(e) => setF({ ...f, seviye: e.target.value })} /></label>}
+        <label className="alan"><span>Not</span><input value={f.not} onChange={(e) => setF({ ...f, not: e.target.value })} /></label>
+      </div>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button
+          className="birincil kucuk"
+          onClick={async () => {
+            const deger = sayiyaCevir(f.deger);
+            if (deger == null || !f.tarih) return setHata('Değer ve tarih gerekli.');
+            setHata('');
+            try {
+              await onKaydet({ deger, tarih: f.tarih, seviye: sayiyaCevir(f.seviye), not: f.not.trim() });
+            } catch {
+              setHata('Kaydedilemedi.');
+            }
+          }}
+        >
+          Kaydet
+        </button>
+        <button className="metin" onClick={onVazgec}>Vazgeç</button>
+        <button
+          className="metin tehlike"
+          onClick={async () => {
+            if (!window.confirm(`${o.test} · ${tarihGoster(o.tarih)} sonucu silinsin mi?`)) return;
+            try {
+              await onSil();
+            } catch {
+              setHata('Silinemedi.');
+            }
+          }}
+        >
+          Sil
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
   const [liste, setListe] = useState(null);
   const [form, setForm] = useState(null);
+  const [duzenle, setDuzenle] = useState(null); // düzenlenen sonuç
   const [hata, setHata] = useState('');
   const yukle = () => altListe(kisiId, 'testSonuclari').then(setListe).catch(() => setListe([]));
   useEffect(() => {
@@ -70,6 +121,15 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
         />
       )}
 
+      {duzenle && (
+        <SonucDuzenle
+          o={duzenle}
+          onVazgec={() => setDuzenle(null)}
+          onKaydet={async (v) => { await sonucGuncelle(kisiId, duzenle, v, yapan); setDuzenle(null); await yukle(); }}
+          onSil={async () => { await sonucSil(kisiId, duzenle.id); setDuzenle(null); await yukle(); }}
+        />
+      )}
+      {duzenleyebilir && liste.length > 0 && !duzenle && <p className="aciklama kucuk-yazi">Düzeltmek ya da silmek için değerin üstüne dokun.</p>}
       {liste.length === 0 ? (
         <div className="bos-durum"><p>Henüz test sonucu yok.</p></div>
       ) : (
@@ -104,7 +164,11 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                       const o = r.olcumler[t];
                       return (
                         <td key={t} title={o ? KAYNAK[o.kaynak] || '' : ''}>
-                          {o ? sayiGoster(o.deger) : '—'}
+                          {o && duzenleyebilir ? (
+                            <button className="deger-dugme" onClick={() => setDuzenle(o)} aria-label={`${r.test} ${tarihGoster(t)} düzenle`}>
+                              {sayiGoster(o.deger)}
+                            </button>
+                          ) : o ? sayiGoster(o.deger) : '—'}
                           {o?.seviye != null && <small className="aciklama"> · sv. {o.seviye}</small>}
                           {o?.normSeviye && <span className={'norm-rozet kucuk n-' + o.normSeviye}>{o.normSeviye}</span>}
                         </td>
