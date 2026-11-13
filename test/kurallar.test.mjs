@@ -55,5 +55,9 @@ await t('koç kişi özetine aktif sakatlık yazar', assertSucceeds(updateDoc(do
 await t('öğrenci sakatlık ayrıntısını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'sakatliklar', 's1'))));
 await t('koç sakatlık kütüphanesini okur', assertSucceeds(getDocs(collection(koc, 'sakatlikTipleri'))));
 await t('koç sakatlık kütüphanesini değiştiremez', assertFails(setDoc(doc(koc, 'sakatlikTipleri', 'x'), { ad: 'x' })));
+await t('koç liste ücretiyle aylık abonelik atar', assertSucceeds(setDoc(doc(koc, 'satilanPaketler', 'ab1'), { kisiId: 'k1', tur: 'abonelik', listeFiyati: 0, uygulananFiyat: 0, aylikListe: 3000, aylikUcret: 3000 })));
+await t('koç indirimli abonelik atayamaz', assertFails(setDoc(doc(koc, 'satilanPaketler', 'ab2'), { kisiId: 'k1', tur: 'abonelik', listeFiyati: 0, uygulananFiyat: 0, aylikListe: 3000, aylikUcret: 2500 })));
+await t('koç abonelik ayını açar', assertSucceeds(setDoc(doc(koc, 'satilanPaketler', 'a_ab1_2026-11-06'), { kisiId: 'k1', tur: 'abonelikDonem', listeFiyati: 3000, uygulananFiyat: 3000 })));
+await t('koç aylık ücreti değiştiremez', assertFails(updateDoc(doc(koc, 'satilanPaketler', 'ab1'), { aylikUcret: 1 })));
 await env.cleanup();
 if (hata) process.exit(1);

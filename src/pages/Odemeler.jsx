@@ -15,6 +15,8 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
     tur: ilk?.tur || 'bireysel',
     kitle: ilk?.kitle || 'sporcu',
     dersSayisi: ilk?.dersSayisi || 8,
+    haftalikDers: ilk?.haftalikDers || 3,
+    taahhutAy: ilk?.taahhutAy ?? 6,
     fiyat: ilk?.fiyat ?? '',
   });
   const [hata, setHata] = useState('');
@@ -25,7 +27,7 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
         e.preventDefault();
         if (!f.ad.trim()) return setHata('Paket adı gerekli.');
         if (!(Number(f.fiyat) >= 0) || f.fiyat === '') return setHata('Fiyat girilmeli.');
-        if (dersSayili(f.tur) && !(Number(f.dersSayisi) > 0)) return setHata('Ders sayısı girilmeli.');
+        if ((dersSayili(f.tur) || f.tur === 'abonelik') && !(Number(f.dersSayisi) > 0)) return setHata('Ders sayısı girilmeli.');
         setHata('');
         try {
           await onKaydet({
@@ -33,7 +35,8 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             subeId: f.subeId,
             tur: f.tur,
             kitle: f.kitle,
-            dersSayisi: dersSayili(f.tur) ? Number(f.dersSayisi) : null,
+            dersSayisi: dersSayili(f.tur) || f.tur === 'abonelik' ? Number(f.dersSayisi) : null,
+            ...(f.tur === 'abonelik' ? { haftalikDers: Number(f.haftalikDers) || 3, taahhutAy: Number(f.taahhutAy) || 0 } : {}),
             fiyat: Number(f.fiyat),
           });
         } catch (err) {
@@ -71,8 +74,24 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             <input type="number" min="1" value={f.dersSayisi} onChange={(e) => setF({ ...f, dersSayisi: e.target.value })} />
           </label>
         )}
+        {f.tur === 'abonelik' && (
+          <>
+            <label className="alan">
+              <span>Haftalık ders</span>
+              <input type="number" min="1" max="7" value={f.haftalikDers} onChange={(e) => setF({ ...f, haftalikDers: e.target.value })} />
+            </label>
+            <label className="alan">
+              <span>Aylık ders hakkı</span>
+              <input type="number" min="1" value={f.dersSayisi} onChange={(e) => setF({ ...f, dersSayisi: e.target.value })} />
+            </label>
+            <label className="alan">
+              <span>Taahhüt (en az kaç ay; bilgi amaçlı)</span>
+              <input type="number" min="0" value={f.taahhutAy} onChange={(e) => setF({ ...f, taahhutAy: e.target.value })} />
+            </label>
+          </>
+        )}
         <label className="alan">
-          <span>{f.tur === 'grup' ? '4 haftalık dönem ücreti (₺)' : f.tur === 'bireysel' ? 'Paket fiyatı (₺)' : 'Kişi başı paket fiyatı (₺)'}</span>
+          <span>{f.tur === 'grup' ? '4 haftalık dönem ücreti (₺)' : f.tur === 'abonelik' ? 'Aylık ücret (₺)' : f.tur === 'bireysel' ? 'Paket fiyatı (₺)' : 'Kişi başı paket fiyatı (₺)'}</span>
           <input type="number" min="0" value={f.fiyat} onChange={(e) => setF({ ...f, fiyat: e.target.value })} />
         </label>
       </div>
@@ -148,7 +167,7 @@ function Tanimlar({ subeler, yapan }) {
                       <th>{t.ad}{t.aktif === false ? ' (satıştan kalktı)' : ''}</th>
                       <td>{TUR_KISA[t.tur]}</td>
                       <td>{KITLE_ADI[t.kitle]}</td>
-                      <td>{t.tur === 'grup' ? '4 hafta' : t.dersSayisi}</td>
+                      <td>{t.tur === 'grup' ? '4 hafta' : t.tur === 'abonelik' ? `ayda ${t.dersSayisi} (haftada ${t.haftalikDers || 3})${t.taahhutAy ? ` · en az ${t.taahhutAy} ay` : ''}` : t.dersSayisi}</td>
                       <td>{tl(t.fiyat)}</td>
                       <td>
                         <button className="metin" onClick={() => setForm(t)}>Düzenle</button>
@@ -190,6 +209,7 @@ function Alacaklar({ veri, kisiler }) {
           <option value="bireysel">Bireysel / PT</option>
           <option value="duet">Düet</option>
           <option value="trio">Trio</option>
+          <option value="abonelikDonem">Aylık abonelik</option>
           <option value="ek">Ek ücretler</option>
         </select>
         <span className="aciklama">Toplam bekleyen <strong>{tl(toplam)}</strong> · {satirlar.length} kayıt</span>
@@ -204,7 +224,7 @@ function Alacaklar({ veri, kisiler }) {
               {satirlar.map(({ p, od }) => (
                 <tr key={p.id}>
                   <th>{kisiAdi(p.kisiId)}</th>
-                  <td>{p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? `${p.paketAdi} · ${kisaTarih(p.baslangic)}` : `${TUR_KISA[p.tur]} · ${p.paketAdi}`}</td>
+                  <td>{p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? `${p.paketAdi} · ${kisaTarih(p.baslangic)}` : p.tur === 'abonelikDonem' ? `Abonelik · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : `${TUR_KISA[p.tur]} · ${p.paketAdi}`}</td>
                   <td>{tl(p.uygulananFiyat)}</td>
                   <td>{tl(od.odenen)}</td>
                   <td><strong>{tl(od.kalan)}</strong></td>

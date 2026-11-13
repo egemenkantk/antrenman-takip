@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
 import { tarihGoster } from '../veri';
-import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru } from './model.js';
+import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi } from './model.js';
 import {
   kisiPaketleri,
   kisiOdemeleri,
+  abonelikAta,
+  abonelikDonemleriniAc,
   bireyselKayitlar,
   paketTanimlariGetir,
   paketAta,
@@ -19,9 +21,9 @@ import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 
 function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
   const uygun = tanimlar.filter(
-    (t) => t.aktif !== false && dersSayili(t.tur) && (!t.kitle || t.kitle === kisi.tip)
+    (t) => t.aktif !== false && (dersSayili(t.tur) || t.tur === 'abonelik') && (!t.kitle || t.kitle === kisi.tip)
   );
-  const digerleri = tanimlar.filter((t) => t.aktif !== false && dersSayili(t.tur) && t.kitle && t.kitle !== kisi.tip);
+  const digerleri = tanimlar.filter((t) => t.aktif !== false && (dersSayili(t.tur) || t.tur === 'abonelik') && t.kitle && t.kitle !== kisi.tip);
   const [tanimId, setTanimId] = useState(uygun[0]?.id || '');
   const tanim = tanimlar.find((t) => t.id === tanimId);
   const [baslangic, setBaslangic] = useState(bugun());
@@ -30,7 +32,7 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
   const [hata, setHata] = useState('');
   useEffect(() => setFiyat(tanim?.fiyat ?? ''), [tanimId]);
 
-  if (!tanimlar.some((t) => dersSayili(t.tur) && t.aktif !== false)) {
+  if (!tanimlar.some((t) => (dersSayili(t.tur) || t.tur === 'abonelik') && t.aktif !== false)) {
     return (
       <div className="kart-form">
         <p className="aciklama">Henüz bireysel, düet ya da trio paket tanımı yok. Yönetici "Paketler ve ödemeler → Paket tanımları"ndan ekleyebilir.</p>
@@ -57,7 +59,7 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
         <label className="alan">
           <span>Paket</span>
           <select value={tanimId} onChange={(e) => setTanimId(e.target.value)}>
-            {uygun.map((t) => <option key={t.id} value={t.id}>{TUR_KISA[t.tur]} · {t.ad} · {t.dersSayisi} ders</option>)}
+            {uygun.map((t) => <option key={t.id} value={t.id}>{TUR_KISA[t.tur]} · {t.ad} · {t.tur === 'abonelik' ? `ayda ${t.dersSayisi} ders` : `${t.dersSayisi} ders`}</option>)}
             {digerleri.length > 0 && (
               <optgroup label="Diğer kitle">
                 {digerleri.map((t) => <option key={t.id} value={t.id}>{t.ad} · {KITLE_ADI[t.kitle]}</option>)}
@@ -66,11 +68,11 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
           </select>
         </label>
         <label className="alan">
-          <span>Başlangıç</span>
+          <span>{tanim?.tur === 'abonelik' ? 'Başlangıç (her ay bu gün ödeme)' : 'Başlangıç'}</span>
           <input type="date" value={baslangic} onChange={(e) => setBaslangic(e.target.value)} />
         </label>
         <label className="alan">
-          <span>Fiyat (₺){yonetici ? ' — kişiye özel değiştirebilirsin' : ''}</span>
+          <span>{tanim?.tur === 'abonelik' ? 'Aylık ücret (₺)' : 'Fiyat (₺)'}{yonetici ? ' — kişiye özel değiştirebilirsin' : ''}</span>
           <input type="number" min="0" value={fiyat} disabled={!yonetici} onChange={(e) => setFiyat(e.target.value)} />
         </label>
         {yonetici && (
@@ -81,10 +83,12 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
         )}
       </div>
       <p className="aciklama kucuk-yazi">
-        {tanim?.tur === 'bireysel' || !tanim
+        {tanim?.tur === 'abonelik'
+          ? `Her ay başlangıç gününde yeni dönem ve ödeme kaydı açılır; ayda ${tanim.dersSayisi} ders hakkı (haftada ${tanim.haftalikDers || 3}). Habersiz gelmeme hakkı yer, "izinli / ertelendi" yemez.${tanim.taahhutAy ? ` En az ${tanim.taahhutAy} ay taahhüt.` : ''}`
+          : tanim?.tur === 'bireysel' || !tanim
           ? 'Bu tarihten sonraki "geldi" işaretli bireysel dersler bu paketten düşer.'
           : `Bu tarihten sonra ${TUR_KISA[tanim.tur].toLowerCase()} grubunda "geldi" işaretlenen dersler bu paketten düşer; eşi gelmezse fark ücretini sen eklersin.`}{' '}
-        Paketin bitiş tarihi yok.
+        {tanim?.tur !== 'abonelik' && 'Paketin bitiş tarihi yok.'}
       </p>
       {hata && <p className="hata">{hata}</p>}
       <div className="dugme-satiri">
@@ -136,6 +140,133 @@ export function EkUcretFormu({ ilk, onKaydet, onVazgec }) {
   );
 }
 
+function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, benim, koclar, onDegisti, setHata }) {
+  const [acik, setAcik] = useState(false);
+  const [mod, setMod] = useState(null); // 'odeme' | 'ucret' | 'ek'
+  const [ucret, setUcret] = useState(a.aylikUcret);
+  const [ekDers, setEkDers] = useState('');
+  const simdi = abonelikDonemBul(a.baslangic, bugun());
+  const buDonem = simdi && donemler.find((d) => d.donemBas === simdi.bas);
+  const ders = simdi ? abonelikDersleri(simdi, kayitlar, (Number(buDonem?.dersHakki) || a.aylikDers) + (Number(buDonem?.ekDers) || 0)) : null;
+  const od = buDonem ? odemeDurumu(buDonem, odemeler) : null;
+  const t = taahhutBilgisi(a, bugun());
+  const bitti = a.durum === 'iptal';
+  const calistir = async (is) => {
+    setHata('');
+    try {
+      await is();
+      setMod(null);
+      await onDegisti();
+    } catch (e) {
+      setHata(hataMesaji(e));
+    }
+  };
+  return (
+    <li className={'paket-karti' + (bitti ? ' soluk' : '')}>
+      <div className="paket-ust">
+        <div className="esnek">
+          <strong>{a.paketAdi}</strong>
+          <span className="aciklama kucuk-yazi">
+            Aylık abonelik · {tarihGoster(a.baslangic)} başlangıç · her ay {Number(a.baslangic.slice(8, 10))}'inde ödeme
+            {bitti && a.bitis ? ` · ${tarihGoster(a.bitis)} tarihinde sonlandı` : ''}
+          </span>
+        </div>
+        {od && <DurumRozeti durum={od.durum} />}
+      </div>
+      {t.en > 0 && !bitti && (
+        <p className="kucuk-yazi taahhut-bilgi">Taahhüt: en az {t.en} ay · şu an {t.ay}. ay{t.doldu ? ' (taahhüt süresi doldu)' : ` · ${tarihGoster(t.bitis)} tarihine kadar`}</p>
+      )}
+      {simdi && ders && !bitti && (
+        <div className="ders-sayac">
+          <div className="ilerleme-cubuk" aria-hidden="true">
+            <span style={{ width: `${Math.min(100, ((ders.geldi + ders.yanan) / (ders.hak || 1)) * 100)}%` }} />
+          </div>
+          <span>
+            Bu dönem ({kisaTarih(simdi.bas)} – {kisaTarih(simdi.bit)}): {ders.hak} dersten {ders.geldi} yapıldı
+            {ders.yanan ? ` · ${ders.yanan} habersiz (yandı)` : ''}
+            {ders.ertelenen ? ` · ${ders.ertelenen} ertelendi` : ''} · <strong>{ders.kalan} kaldı</strong>
+          </span>
+        </div>
+      )}
+      {buDonem && od && (
+        <div className="paket-tutar">
+          <span>Bu ay <strong>{tl(buDonem.uygulananFiyat)}</strong></span>
+          <span>Ödenen <strong>{tl(od.odenen)}</strong></span>
+          <span>Kalan <strong className={od.kalan > 0 ? 'uyari-yazi' : ''}>{tl(od.kalan)}</strong></span>
+        </div>
+      )}
+      {mod === 'odeme' && buDonem && (
+        <OdemeFormu
+          onrTutar={od.kalan || ''}
+          onVazgec={() => setMod(null)}
+          onKaydet={(v) => calistir(() => odemeEkle({ ...v, kisiId: a.kisiId, satilanPaketId: buDonem.id }, benim))}
+        />
+      )}
+      {mod === 'ucret' && (
+        <div className="kart-form ic-form">
+          <label className="alan">
+            <span>Kişiye özel aylık ücret (₺) · liste {tl(a.aylikListe)}</span>
+            <input type="number" min="0" value={ucret} onChange={(e) => setUcret(e.target.value)} />
+          </label>
+          <p className="aciklama kucuk-yazi">Sonraki aylar bu ücretle açılır. Bu ayın tutarını değiştirmek için aşağıdaki aylardan "Fiyatı düzenle"yi kullan.</p>
+          <div className="dugme-satiri">
+            <button className="birincil kucuk" onClick={() => calistir(() => paketGuncelle(a, { aylikUcret: Number(ucret) || 0 }, benim))}>Kaydet</button>
+            <button className="metin" onClick={() => setMod(null)}>Vazgeç</button>
+          </div>
+        </div>
+      )}
+      {mod === 'ek' && buDonem && (
+        <div className="kart-form ic-form">
+          <label className="alan">
+            <span>Bu döneme ek ders hakkı (ör. geçen aydan ertelenen dersler)</span>
+            <input type="number" min="0" max="20" value={ekDers} onChange={(e) => setEkDers(e.target.value)} />
+          </label>
+          <div className="dugme-satiri">
+            <button className="birincil kucuk" onClick={() => calistir(() => paketGuncelle(buDonem, { ekDers: Number(ekDers) || 0 }, benim))}>Kaydet</button>
+            <button className="metin" onClick={() => setMod(null)}>Vazgeç</button>
+          </div>
+        </div>
+      )}
+      {!mod && (
+        <div className="dugme-satiri">
+          {buDonem && od?.kalan > 0 && !bitti && <button className="birincil kucuk" onClick={() => setMod('odeme')}>Ödeme al</button>}
+          <button className="ikincil kucuk" onClick={() => setAcik(!acik)}>{acik ? 'Ayları gizle' : 'Aylar ve ödemeler'}</button>
+          {yonetici && !bitti && <button className="metin" onClick={() => setMod('ucret')}>Aylık ücreti düzenle</button>}
+          {yonetici && !bitti && buDonem && (
+            <button className="metin" onClick={() => { setEkDers(buDonem.ekDers || ''); setMod('ek'); }}>Ek ders hakkı</button>
+          )}
+          {yonetici && (
+            <button
+              className="metin"
+              onClick={() => {
+                if (bitti) return calistir(() => paketGuncelle(a, { durum: 'aktif', bitis: null }, benim));
+                const uyari = t.en && !t.doldu ? `Taahhüt henüz dolmadı (en az ${t.en} ay, şu an ${t.ay}. ay). ` : '';
+                if (!window.confirm(`${uyari}Abonelik bugün itibarıyla sonlandırılsın mı? Yeni aylar açılmaz; geçmiş ödemeler kalır.`)) return;
+                calistir(() => paketGuncelle(a, { durum: 'iptal', bitis: bugun() }, benim));
+              }}
+            >
+              {bitti ? 'Yeniden başlat' : 'Aboneliği sonlandır'}
+            </button>
+          )}
+        </div>
+      )}
+      {acik && (
+        <div className="paket-ayrinti">
+          {[...donemler].sort((x, y) => y.donemBas.localeCompare(x.donemBas)).map((d) => (
+            <PaketKarti key={d.id} p={d} dagitim={null} odemeler={odemeler} yonetici={yonetici} benim={benim} koclar={koclar} onDegisti={onDegisti} setHata={setHata} />
+          ))}
+          {ders && ders.dersler.length > 0 && (
+            <p className="kucuk-yazi">
+              Bu dönemin dersleri:{' '}
+              {ders.dersler.map((x) => `${kisaTarih(x.tarih)}${x.katilim === 'gelmedi' ? ' (gelmedi)' : x.katilim === 'izinli' ? ' (ertelendi)' : ''}`).join(' · ')}
+            </p>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
 function FiyatFormu({ paket, onKaydet, onVazgec }) {
   const [fiyat, setFiyat] = useState(paket.uygulananFiyat);
   const [not, setNot] = useState(paket.fiyatNotu || '');
@@ -184,6 +315,8 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, 
               ? `Grup dönemi ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}`
               : p.tur === 'ek'
               ? `Ek ücret · ${tarihGoster(p.baslangic)}`
+              : p.tur === 'abonelikDonem'
+              ? `Abonelik ayı ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}${p.ekDers ? ` · +${p.ekDers} ek ders` : ''}`
               : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç`}
           </span>
         </div>
@@ -278,7 +411,13 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
         bireyselKayitlar(kisi.id),
         paketTanimlariGetir(),
       ]);
-      setVeri({ paketler, odemeler, kayitlar, tanimlar });
+      // Aktif aboneliklerde bugüne kadar açılmamış ay kaydı varsa aç (her sabah sunucu da açar)
+      const aktifAbonelik = paketler.filter((p) => p.tur === 'abonelik' && p.durum !== 'iptal');
+      for (const a of aktifAbonelik) {
+        await abonelikDonemleriniAc(a, benim, paketler.filter((p) => p.aboneId === a.id)).catch(() => {});
+      }
+      const son = aktifAbonelik.length ? await kisiPaketleri(kisi.id) : paketler;
+      setVeri({ paketler: son, odemeler, kayitlar, tanimlar });
     } catch (e) {
       setHata(hataMesaji(e));
       setVeri({ paketler: [], odemeler: [], kayitlar: [], tanimlar: [] });
@@ -291,7 +430,10 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
   const dagitim = useMemo(() => (veri ? dersleriDagit(veri.paketler, veri.kayitlar) : null), [veri]);
   if (!veri) return <p className="aciklama">Yükleniyor…</p>;
 
-  const sirali = [...veri.paketler].sort((a, b) => (b.baslangic || '').localeCompare(a.baslangic || ''));
+  const sirali = [...veri.paketler]
+    .filter((p) => p.tur !== 'abonelik' && p.tur !== 'abonelikDonem')
+    .sort((a, b) => (b.baslangic || '').localeCompare(a.baslangic || ''));
+  const abonelikler = veri.paketler.filter((p) => p.tur === 'abonelik');
   const bitmis = (p) => {
     if (p.durum === 'iptal') return true;
     const od = odemeDurumu(p, veri.odemeler);
@@ -341,7 +483,12 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
           tanimlar={veri.tanimlar}
           yonetici={yonetici}
           onVazgec={() => setAta(false)}
-          onKaydet={async (v) => { await paketAta(v, benim); setAta(false); await yukle(); }}
+          onKaydet={async (v) => {
+            if (v.tanim.tur === 'abonelik') await abonelikAta({ ...v, aylikUcret: v.uygulananFiyat }, benim);
+            else await paketAta(v, benim);
+            setAta(false);
+            await yukle();
+          }}
         />
       )}
       {ek && (
@@ -386,8 +533,26 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
           {dagitim.paketsizDersler.slice(-6).map((x) => `${kisaTarih(x.tarih)} ${TUR_KISA[x.tur] || ''}`.trim()).join(', ')}
         </p>
       )}
-      {acikPaketler.length === 0 && !ata && (
-        <div className="bos-durum"><p>Açık paket yok. Grup dönemleri grubun "Ödemeler" sekmesinden açılır; bireysel, düet ve trio paketlerini buradan atarsın.</p></div>
+      {acikPaketler.length === 0 && abonelikler.length === 0 && !ata && (
+        <div className="bos-durum"><p>Açık paket yok. Grup dönemleri grubun "Ödemeler" sekmesinden açılır; aylık abonelik, bireysel, düet ve trio paketlerini buradan atarsın.</p></div>
+      )}
+      {abonelikler.length > 0 && (
+        <ul className="paket-listesi">
+          {abonelikler.map((a) => (
+            <AbonelikKarti
+              key={a.id}
+              a={a}
+              donemler={veri.paketler.filter((p) => p.tur === 'abonelikDonem' && p.aboneId === a.id)}
+              odemeler={veri.odemeler}
+              kayitlar={veri.kayitlar}
+              yonetici={yonetici}
+              benim={benim}
+              koclar={koclar}
+              onDegisti={yukle}
+              setHata={setHata}
+            />
+          ))}
+        </ul>
       )}
       <ul className="paket-listesi">{acikPaketler.map(kart)}</ul>
       {bitenPaketler.length > 0 && (

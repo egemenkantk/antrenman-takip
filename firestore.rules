@@ -174,11 +174,12 @@ service cloud.firestore {
       // Grup dönem kayıtlarını ve ek ücretleri yalnızca yönetici (ve her sabahki otomatik kontrol) açar
       allow create: if yonetici()
         || (kisininKocu(request.resource.data.kisiId)
-            && request.resource.data.tur in ['bireysel', 'duet', 'trio']
-            && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati);
+            && request.resource.data.tur in ['bireysel', 'duet', 'trio', 'abonelik', 'abonelikDonem']
+            && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati
+            && request.resource.data.get('aylikUcret', 0) == request.resource.data.get('aylikListe', 0));
       allow update: if yonetici()
         || (kisininKocu(resource.data.kisiId)
-            && !degisenler().hasAny(['uygulananFiyat', 'listeFiyati', 'fiyatNotu', 'kisiId']));
+            && !degisenler().hasAny(['uygulananFiyat', 'listeFiyati', 'fiyatNotu', 'kisiId', 'aylikUcret', 'aylikListe', 'dersHakki']));
       allow delete: if yonetici();
     }
     match /odemeler/{id} {

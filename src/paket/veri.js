@@ -18,7 +18,8 @@ import {
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { sonDersKontrol } from '../auth/hesap';
-import { grupKayitKimligi, orantiliUcret } from './model.js';
+import { grupKayitKimligi, orantiliUcret, abonelikDonemi, abonelikDonemBul, abonelikKayitKimligi } from './model.js';
+import { bugun } from '../program/model';
 
 const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
@@ -88,6 +89,63 @@ export async function paketGuncelle(p, veri, yapan) {
   await updateDoc(doc(db, 'satilanPaketler', p.id), { ...veri, guncelleyen: yapan, guncelleme: serverTimestamp() });
   if ('uygulananFiyat' in veri && Number(veri.uygulananFiyat) !== Number(p.uygulananFiyat)) {
     await gecmiseYaz(yapan, 'fiyat-degisti', { paketId: p.id, kisiId: p.kisiId, eski: p.uygulananFiyat, yeni: veri.uygulananFiyat });
+  }
+}
+
+// ---------- Aylık abonelik ----------
+// Ana kayıt (tur "abonelik"): başlangıç, aylık ücret, ders hakkı, taahhüt bilgisi. Ödemeler dönem kayıtlarına girer.
+export async function abonelikAta({ kisi, tanim, baslangic, aylikUcret, fiyatNotu }, yapan) {
+  const ucret = Number(aylikUcret ?? tanim.fiyat) || 0;
+  const ref = await addDoc(collection(db, 'satilanPaketler'), {
+    kisiId: kisi.id,
+    tur: 'abonelik',
+    paketTanimId: tanim.id,
+    paketAdi: tanim.ad,
+    subeId: tanim.subeId || '',
+    baslangic,
+    aylikDers: Number(tanim.dersSayisi) || 12,
+    haftalikDers: Number(tanim.haftalikDers) || 3,
+    taahhutAy: Number(tanim.taahhutAy) || 0,
+    aylikListe: Number(tanim.fiyat) || 0,
+    aylikUcret: ucret,
+    listeFiyati: 0,
+    uygulananFiyat: 0,
+    fiyatNotu: fiyatNotu || '',
+    durum: 'aktif',
+    kurumId: KURUM_ID,
+    olusturan: yapan,
+    olusturma: serverTimestamp(),
+  });
+  const ana = { id: ref.id, kisiId: kisi.id, paketAdi: tanim.ad, subeId: tanim.subeId || '', baslangic, aylikDers: Number(tanim.dersSayisi) || 12, aylikListe: Number(tanim.fiyat) || 0, aylikUcret: ucret, fiyatNotu: fiyatNotu || '' };
+  await abonelikDonemleriniAc(ana, yapan);
+}
+// Başlangıçtan bugüne kadar açılmamış dönem kayıtlarını açar (her sabah sunucu da açar)
+export async function abonelikDonemleriniAc(ana, yapan, mevcut = []) {
+  const simdi = abonelikDonemBul(ana.baslangic, bugun());
+  if (!simdi) return;
+  for (let no = Math.max(0, simdi.no - 11); no <= simdi.no; no++) {
+    const d = abonelikDonemi(ana.baslangic, no);
+    if (ana.bitis && d.bas > ana.bitis) break;
+    const id = abonelikKayitKimligi(ana.id, d.bas);
+    if (mevcut.some((m) => m.id === id)) continue;
+    await setDoc(doc(db, 'satilanPaketler', id), {
+      kisiId: ana.kisiId,
+      tur: 'abonelikDonem',
+      aboneId: ana.id,
+      paketAdi: ana.paketAdi,
+      subeId: ana.subeId || '',
+      donemBas: d.bas,
+      donemBit: d.bit,
+      baslangic: d.bas,
+      dersHakki: ana.aylikDers,
+      listeFiyati: ana.aylikUcret,
+      uygulananFiyat: ana.aylikUcret,
+      fiyatNotu: ana.aylikUcret !== ana.aylikListe ? ana.fiyatNotu || 'Kişiye özel aylık ücret' : '',
+      durum: 'aktif',
+      kurumId: KURUM_ID,
+      olusturan: yapan,
+      olusturma: serverTimestamp(),
+    });
   }
 }
 

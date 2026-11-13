@@ -162,7 +162,106 @@ async function donemKontrolu(db, admin, KURUM_ID, bugun = istanbulBugun()) {
     }
     await toplu.commit();
   }
+  await abonelikKontrolu(db, admin, KURUM_ID, bugun, zaman, yoneticiler, rapor);
   return rapor;
+}
+
+// ---------- Aylık abonelik: her ay başlangıç gününde dönem kaydı, dönemin son günü hatırlatma ----------
+function ayEkle(tarih, n) {
+  const [y, m, d] = tarih.split('-').map(Number);
+  const h = new Date(Date.UTC(y, m - 1 + n, 1));
+  const son = new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth() + 1, 0)).getUTCDate();
+  h.setUTCDate(Math.min(d, son));
+  return h.toISOString().slice(0, 10);
+}
+function abonelikDonemi(bas, no) {
+  const b = ayEkle(bas, no);
+  return { no, bas: b, bit: gunEkle(ayEkle(bas, no + 1), -1) };
+}
+function abonelikDonemBul(bas, tarih) {
+  if (!bas || tarih < bas) return null;
+  let no = Math.max(0, (Number(tarih.slice(0, 4)) - Number(bas.slice(0, 4))) * 12 + Number(tarih.slice(5, 7)) - Number(bas.slice(5, 7)) - 1);
+  while (abonelikDonemi(bas, no + 1).bas <= tarih) no++;
+  return abonelikDonemi(bas, no);
+}
+
+async function abonelikKontrolu(db, admin, KURUM_ID, bugun, zaman, yoneticiler, rapor) {
+  const as = await db.collection('satilanPaketler').where('tur', '==', 'abonelik').get();
+  const bitenler = [];
+  for (const d of as.docs) {
+    const a = { id: d.id, ...d.data() };
+    if (a.durum === 'iptal' || !a.baslangic) continue;
+    const donem = abonelikDonemBul(a.baslangic, bugun);
+    if (!donem) continue;
+    const ref = db.collection('satilanPaketler').doc(`a_${a.id}_${donem.bas}`);
+    await ref
+      .create({
+        kisiId: a.kisiId,
+        tur: 'abonelikDonem',
+        aboneId: a.id,
+        paketAdi: a.paketAdi || '',
+        subeId: a.subeId || '',
+        donemBas: donem.bas,
+        donemBit: donem.bit,
+        baslangic: donem.bas,
+        dersHakki: Number(a.aylikDers) || 12,
+        listeFiyati: Number(a.aylikUcret) || 0,
+        uygulananFiyat: Number(a.aylikUcret) || 0,
+        fiyatNotu: Number(a.aylikUcret) !== Number(a.aylikListe) ? a.fiyatNotu || 'Kişiye özel aylık ücret' : '',
+        durum: 'aktif',
+        kurumId: KURUM_ID,
+        olusturan: 'otomatik',
+        olusturma: zaman,
+      })
+      .then(() => rapor.acilan++)
+      .catch(() => {});
+    if (bugun !== donem.bit) continue;
+
+    // Ayın son günü: öğrenci/veliye hatırlatma (yeni ay ödemesi yarın)
+    const sonraki = gunEkle(donem.bit, 1);
+    const kisi = await db.collection('kisiler').doc(a.kisiId).get();
+    const ad = kisi.exists ? kisi.data().ad || '' : '';
+    const hesaplar = await db.collection('kullanicilar').where('bagliKisiler', 'array-contains', a.kisiId).get();
+    const b = db.batch();
+    for (const h of hesaplar.docs) {
+      const u = h.data();
+      if (!['ogrenci', 'veli'].includes(u.rol) || u.aktif === false) continue;
+      b.set(db.collection('bildirimler').doc(`abone_${a.id}_${donem.bas}_${h.id}`), {
+        aliciKullaniciId: h.id,
+        tip: 'abonelik-odemesi',
+        baslik: 'Ödeme hatırlatması',
+        metin: `${u.rol === 'veli' && ad ? `${ad.split(' ')[0]} · ` : ''}${a.paketAdi || 'Aylık abonelik'}: yeni ay ${kisa(sonraki)} tarihinde başlıyor. Aylık ödemeyi hatırlatırız.`,
+        okundu: false,
+        kurumId: KURUM_ID,
+        tarih: zaman,
+      });
+      rapor.hatirlatma++;
+    }
+    await b.commit();
+    // Bu ayın ödeme durumu yönetici özeti için
+    const odemeler = await db.collection('odemeler').where('kisiId', '==', a.kisiId).get();
+    const odenen = odemeler.docs
+      .map((x) => x.data())
+      .filter((o) => o.satilanPaketId === ref.id && !o.silindi)
+      .reduce((t, o) => t + (Number(o.tutar) || 0), 0);
+    const kalan = (Number(a.aylikUcret) || 0) - odenen;
+    bitenler.push(kalan > 0 ? `${ad} (${tl(kalan)} eksik)` : `${ad} (ödendi)`);
+  }
+  if (!bitenler.length) return;
+  const b = db.batch();
+  for (const tel of yoneticiler) {
+    b.set(db.collection('bildirimler').doc(`aboneozet_${bugun}_${tel}`), {
+      aliciKullaniciId: tel,
+      tip: 'abonelik-ozeti',
+      baslik: 'Aylık abonelikler · ay sonu',
+      metin: `Bugün ayı biten abonelikler: ${bitenler.join(', ')}. Öğrenci/velilere hatırlatma gönderildi.`,
+      okundu: false,
+      kurumId: KURUM_ID,
+      tarih: zaman,
+    });
+    rapor.ozet++;
+  }
+  await b.commit();
 }
 
 module.exports = { donemKontrolu, donemBul, orantili, istanbulBugun };
@@ -231,3 +330,5 @@ async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
 
 module.exports.sonDersKontrolu = sonDersKontrolu;
 module.exports.kalanDersleriHesapla = kalanDersler;
+module.exports.abonelikDonemBul = abonelikDonemBul;
+module.exports.ayEkle = ayEkle;

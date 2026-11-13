@@ -90,7 +90,7 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
   const plan = dersPlani(v);
   const siradaki = siradakiDersler(plan);
   const bugunDers = siradaki.some((d) => d.tarih === bugun());
-  const bireysel = v.paketler.filter((p) => p.kalanDers > 0);
+  const bireysel = v.paketler.filter((p) => p.kalanDers > 0 || (p.tur === 'abonelik' && p.donemBas));
   const borc = v.paketler.reduce((t, p) => t + p.kalan, 0);
   return (
     <div className="portal-izgara">
@@ -114,7 +114,7 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
         <section className="portal-kart">
           <h3>Paket</h3>
           {bireysel.map((p) => (
-            <p key={p.id}><strong>{p.kalanDers}</strong> ders kaldı · {p.ad}</p>
+            <p key={p.id}><strong>{p.tur === 'abonelik' ? p.abonelik.kalan : p.kalanDers}</strong> ders kaldı · {p.ad}{p.tur === 'abonelik' ? ' (bu ay)' : ''}</p>
           ))}
           {borc > 0 && <p>Kalan ödeme <strong>{tl(borc)}</strong></p>}
           <button className="metin" onClick={() => git('paket')}>Ayrıntı →</button>
@@ -234,15 +234,39 @@ function Programim({ kisiId, ben, salt }) {
 }
 
 function Paketim({ v }) {
-  const aktif = v.paketler.filter((p) => p.kalan > 0 || p.kalanDers > 0 || (p.tur === 'grup' && p.donemBit >= bugun()));
+  const aktif = v.paketler.filter((p) => p.tur === 'abonelik' || p.kalan > 0 || p.kalanDers > 0 || ((p.tur === 'grup' || p.tur === 'abonelikDonem') && p.donemBit >= bugun()));
   const eski = v.paketler.filter((p) => !aktif.includes(p));
-  const kart = (p) => (
+  const kart = (p) => p.tur === 'abonelik' ? (
     <li key={p.id} className="paket-karti">
       <div className="paket-ust">
         <div className="esnek">
           <strong>{p.ad}</strong>
           <span className="aciklama kucuk-yazi">
-            {p.tur === 'grup' ? `Dönem ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? tarihGoster(p.baslangic) : `${tarihGoster(p.baslangic)} başlangıç`}
+            Aylık abonelik · {tarihGoster(p.baslangic)} başlangıç
+            {p.abonelik.taahhutAy ? ` · en az ${p.abonelik.taahhutAy} ay (şu an ${p.abonelik.ay}. ay)` : ''}
+          </span>
+        </div>
+      </div>
+      {p.donemBas && (
+        <div className="ders-sayac">
+          <div className="ilerleme-cubuk" aria-hidden="true">
+            <span style={{ width: `${Math.min(100, ((p.abonelik.geldi + p.abonelik.yanan) / (p.abonelik.hak || 1)) * 100)}%` }} />
+          </div>
+          <span>
+            Bu ay ({kisaTarih(p.donemBas)} – {kisaTarih(p.donemBit)}): {p.abonelik.hak} dersten {p.abonelik.geldi} yapıldı
+            {p.abonelik.ertelenen ? ` · ${p.abonelik.ertelenen} ertelendi` : ''}
+            {p.abonelik.yanan ? ` · ${p.abonelik.yanan} habersiz` : ''} · <strong>{p.abonelik.kalan} kaldı</strong>
+          </span>
+        </div>
+      )}
+    </li>
+  ) : (
+    <li key={p.id} className="paket-karti">
+      <div className="paket-ust">
+        <div className="esnek">
+          <strong>{p.ad}</strong>
+          <span className="aciklama kucuk-yazi">
+            {p.tur === 'grup' || p.tur === 'abonelikDonem' ? `Dönem ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? tarihGoster(p.baslangic) : `${tarihGoster(p.baslangic)} başlangıç`}
           </span>
         </div>
       </div>

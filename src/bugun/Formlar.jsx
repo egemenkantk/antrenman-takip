@@ -122,7 +122,7 @@ export function RpeSecici({ deger, onChange }) {
 export const KATILIM = [
   ['geldi', 'Geldi'],
   ['gelmedi', 'Gelmedi'],
-  ['izinli', 'İzinli'],
+  ['izinli', 'İzinli / ertelendi'],
 ];
 export function KatilimSecici({ deger, onChange }) {
   return (
