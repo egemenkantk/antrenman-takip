@@ -23,7 +23,7 @@ function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
   const seviyeli = TESTLER[o.test]?.seviyeli || o.seviye != null;
   return (
     <div className="kart-form ic-form">
-      <strong>{o.test}{o.taraf ? ` · ${TARAF[o.taraf]}` : ''}</strong>
+      <strong>{o.yeni ? 'Değer ekle: ' : ''}{o.test}{o.taraf ? ` · ${TARAF[o.taraf]}` : ''}</strong>
       <small className="aciklama">{KAYNAK[o.kaynak] || ''}{o.oncekiDeger != null ? ` · önceki değer ${sayiGoster(o.oncekiDeger)}` : ''}</small>
       <div className="form-izgara">
         <label className="alan"><span>Değer</span><input inputMode="decimal" value={f.deger} onChange={(e) => setF({ ...f, deger: e.target.value })} /></label>
@@ -49,7 +49,7 @@ function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
           Kaydet
         </button>
         <button className="metin" onClick={onVazgec}>Vazgeç</button>
-        <button
+        {!o.yeni && <button
           className="metin tehlike"
           onClick={async () => {
             if (!window.confirm(`${o.test} · ${tarihGoster(o.tarih)} sonucu silinsin mi?`)) return;
@@ -61,7 +61,7 @@ function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
           }}
         >
           Sil
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -111,6 +111,8 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
       )}
       {form && (
         <TestGunuFormu
+          ilkTarih={form.tarih}
+          mevcut={liste}
           kullanilanlar={new Set(liste.map((t) => t.test))}
           onVazgec={() => setForm(null)}
           onKaydet={async (sonuclar) => {
@@ -125,7 +127,16 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
         <SonucDuzenle
           o={duzenle}
           onVazgec={() => setDuzenle(null)}
-          onKaydet={async (v) => { await sonucGuncelle(kisiId, duzenle, v, yapan); setDuzenle(null); await yukle(); }}
+          onKaydet={async (v) => {
+            if (duzenle.yeni) {
+              await sonuclariKaydet(
+                [{ kisiId, test: duzenle.test, taraf: duzenle.taraf, kaynak: 'elle', tarih: v.tarih, deger: v.deger, ...(v.seviye != null ? { seviye: v.seviye } : {}), ...(v.not ? { not: v.not } : {}) }],
+                yapan
+              );
+            } else await sonucGuncelle(kisiId, duzenle, v, yapan);
+            setDuzenle(null);
+            await yukle();
+          }}
           onSil={async () => { await sonucSil(kisiId, duzenle.id); setDuzenle(null); await yukle(); }}
         />
       )}
@@ -138,7 +149,17 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
             <thead>
               <tr>
                 <th>Test / ölçüm</th>
-                {tarihler.map((t) => <th key={t}>{tarihGoster(t)}</th>)}
+                {tarihler.map((t) => (
+                  <th key={t}>
+                    {duzenleyebilir ? (
+                      <button className="tarih-ekle" onClick={() => setForm({ tarih: t })} title="Bu tarihe test ekle">
+                        {tarihGoster(t)} <span aria-hidden="true">+</span>
+                      </button>
+                    ) : (
+                      tarihGoster(t)
+                    )}
+                  </th>
+                ))}
                 {tarihler.length > 1 && <th>Değişim</th>}
               </tr>
             </thead>
@@ -168,7 +189,19 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                             <button className="deger-dugme" onClick={() => setDuzenle(o)} aria-label={`${r.test} ${tarihGoster(t)} düzenle`}>
                               {sayiGoster(o.deger)}
                             </button>
-                          ) : o ? sayiGoster(o.deger) : '—'}
+                          ) : o ? (
+                            sayiGoster(o.deger)
+                          ) : duzenleyebilir ? (
+                            <button
+                              className="deger-dugme bos"
+                              onClick={() => setDuzenle({ yeni: true, test: r.test, taraf: r.taraf || null, tarih: t, kaynak: 'elle' })}
+                              aria-label={`${r.test} ${tarihGoster(t)} için değer ekle`}
+                            >
+                              +
+                            </button>
+                          ) : (
+                            '—'
+                          )}
                           {o?.seviye != null && <small className="aciklama"> · sv. {o.seviye}</small>}
                           {o?.normSeviye && <span className={'norm-rozet kucuk n-' + o.normSeviye}>{o.normSeviye}</span>}
                         </td>

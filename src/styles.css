@@ -695,3 +695,7 @@ h1, h2, h3, .sekme, .saat-kutu, .harf, .asama-rozet, .paket-tutar strong, .ders-
 tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed', Barlow, sans-serif; text-align: left; padding-top: 10px; }
 .deger-dugme { background: none; border: 0; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer; }
 .deger-dugme:hover, .deger-dugme:focus-visible { background: var(--marka-acik); color: var(--marka-dolu); }
+.tarih-ekle { background: none; border: 0; padding: 2px 6px; margin: -2px -6px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer; white-space: nowrap; }
+.tarih-ekle span { color: var(--marka-dolu); font-weight: 700; }
+.tarih-ekle:hover { background: var(--marka-acik); }
+.deger-dugme.bos { color: var(--soluk); min-width: 28px; }

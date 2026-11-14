@@ -5,8 +5,8 @@ import { TEST_KATEGORILERI, TEST_ACIKLAMA, TARAF_ADI, sayiyaCevir } from './tani
 
 // Kişi kartında Sporcu Kartı tarzı test girişi: kategori başlıkları altında tüm testler,
 // her testin kısa açıklaması; boş bırakılan testler kaydedilmez.
-export default function TestGunuFormu({ kullanilanlar, onKaydet, onVazgec }) {
-  const [tarih, setTarih] = useState(bugun());
+export default function TestGunuFormu({ ilkTarih, mevcut = [], kullanilanlar, onKaydet, onVazgec }) {
+  const [tarih, setTarih] = useState(ilkTarih || bugun());
   const [not, setNot] = useState('');
   const [d, setD] = useState({}); // `${test}|${taraf|seviye}` → metin
   const [ozel, setOzel] = useState([{ ad: '', deger: '', dusuk: false }]);
@@ -37,6 +37,9 @@ export default function TestGunuFormu({ kullanilanlar, onKaydet, onVazgec }) {
       l.push({ test: o.ad.trim(), tarih, deger: v, taraf: null, kaynak: 'elle', ozelYon: o.dusuk ? 'dusuk' : 'yuksek', ...(not.trim() ? { not: not.trim() } : {}) });
     }
     if (!l.length) return setHata('En az bir test değeri gir.');
+    // Aynı gün aynı test zaten girildiyse üzerine yazılacağını sor (farklı testler sorunsuz eklenir)
+    const cakisan = l.filter((x) => mevcut.some((m) => m.kaynak === 'elle' && m.tarih === x.tarih && m.test === x.test && (m.taraf || null) === (x.taraf || null)));
+    if (cakisan.length && !window.confirm(`${cakisan.map((x) => x.test + (x.taraf ? ` (${TARAF_ADI[x.taraf]})` : '')).join(', ')} için bu tarihte zaten değer var. Yeni değer eskisinin yerine geçsin mi?`)) return;
     setHata('');
     setBekliyor(true);
     try {
@@ -50,6 +53,7 @@ export default function TestGunuFormu({ kullanilanlar, onKaydet, onVazgec }) {
   return (
     <div className="kart-form test-gunu-formu">
       <h3>Test sonucu gir</h3>
+      <p className="aciklama kucuk-yazi">Önceki bir test gününe ekliyorsan tarihi o güne ayarla; aynı güne farklı testler istediğin kadar eklenebilir.</p>
       <div className="form-izgara">
         <label className="alan">
           <span>Test tarihi</span>
