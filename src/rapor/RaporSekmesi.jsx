@@ -4,7 +4,7 @@ import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'fireb
 import { db } from '../firebase';
 import { KURUM_ID, MARKA } from '../config/marka';
 import { TIP_ADI, HEDEF_ADI, yasHesapla } from '../veri';
-import { TARAF_ADI, sayiGoster } from '../testler/tanimlar';
+import { TARAF_ADI, sayiGoster, degerGoster } from '../testler/tanimlar';
 import { testSatirlari, testTarihleri, grafikNoktalari, antrenmanOzeti, degisimMetni, TEST_ACIKLAMA } from './model';
 import { bugun, gunEkle, gunFarki } from '../program/model';
 import { posturleriGetir } from '../postur/PosturSekmesi';
@@ -324,9 +324,9 @@ export default function RaporSekmesi({ kisi, yapan }) {
                           <b>{r.test}{r.taraf ? ` · ${TARAF_ADI[r.taraf]}` : ''}</b>
                           {TEST_ACIKLAMA[r.test] && <span className="r-acik">{TEST_ACIKLAMA[r.test]}</span>}
                         </td>
-                        {mod === 'test' && A && <td className="r-sayi">{r.onceki != null ? sayiGoster(r.onceki) : '—'}</td>}
+                        {mod === 'test' && A && <td className="r-sayi">{r.onceki != null ? degerGoster(r.test, r.onceki) : '—'}</td>}
                         <td className="r-sayi">
-                          {sayiGoster(r.son.deger)}
+                          {degerGoster(r.test, r.son.deger)}
                           {r.rekor && <span className="r-rekor">Rekor</span>}
                           {r.son.normSeviye && <span className="r-acik">{r.son.normSeviye}</span>}
                           {!r.yeni && <span className="r-acik">bu dönem ölçülmedi</span>}
@@ -422,7 +422,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
                   {vucut.map((r) => (
                     <tr key={r.anahtar}>
                       <td><b>{r.test}</b></td>
-                      <td className="r-sayi">{r.onceki != null ? `${sayiGoster(r.onceki)} → ` : ''}{sayiGoster(r.son.deger)}</td>
+                      <td className="r-sayi">{r.onceki != null ? `${degerGoster(r.test, r.onceki)} → ` : ''}{degerGoster(r.test, r.son.deger)}</td>
                     </tr>
                   ))}
                   {kartOlculeri.map(([t, v]) => (

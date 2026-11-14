@@ -52,7 +52,7 @@ export const TEST_KATEGORILERI = [
   ['Dayanıklılık', [
     ['Yo-Yo IR1 (m)', 'yuksek'],
     ['30-15 IFT (km/s)', 'yuksek'],
-    ['Bleep test (seviye)', 'yuksek'],
+    ['Beep test (seviye/mekik)', 'yuksek'],
     ['RSA ortalama (sn)', 'dusuk'],
   ]],
   ['Antropometri', [
@@ -110,7 +110,7 @@ export const TEST_ACIKLAMA = {
   'Kavrama kuvveti (kg)': 'El dinamometresiyle kavrama; sağ ve sol ayrı',
   'Yo-Yo IR1 (m)': 'Kısa dinlenmelerle tekrarlanan koşularda dayanıklılık',
   '30-15 IFT (km/s)': 'Aralıklı koşu kapasitesi; kondisyonun göstergesi',
-  'Bleep test (seviye)': 'Mekik koşusu; aerobik dayanıklılık',
+  'Beep test (seviye/mekik)': 'Mekik koşusu (bleep); aerobik dayanıklılık. 8/5 gibi gir: seviye 8, mekik 5',
   'RSA ortalama (sn)': 'Arka arkaya sprintlerde hızı koruyabilme',
   'Vücut ağırlığı (kg)': 'Kilo',
   'Yağ oranı (%)': 'Vücut yağ yüzdesi',
@@ -120,10 +120,28 @@ export const testBilgisi = (ad) => TESTLER[ad] || { ad, kat: 'Diğer', iyi: /\(s
 export const TARAF_ADI = { sag: 'Sağ', sol: 'Sol' };
 
 // "15,97" → 15.97
+// Beep test "seviye/mekik" biçiminde girilir (8/5); sıralama doğru olsun diye 8,05 olarak saklanır
+export const BEEP_TEST = 'Beep test (seviye/mekik)';
 export const sayiyaCevir = (s) => {
   if (s == null || s === '') return null;
+  const sm = String(s).trim().match(/^(\d+)\s*[/-]\s*(\d+)$/);
+  if (sm) return Number(sm[1]) + Number(sm[2]) / 100;
   const n = Number(String(s).replace(/\s/g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : null;
+};
+export const degerGoster = (test, v) => {
+  if (v == null) return '—';
+  if (test !== BEEP_TEST) return sayiGoster(v);
+  const mekik = Math.round((v - Math.floor(v)) * 100);
+  return mekik ? `${Math.floor(v)}/${mekik}` : String(Math.floor(v));
+};
+// Teste göre değer okuma: beep testinde 8/5, 8-5, 8.5 ve 8,5 hepsi "seviye 8, mekik 5" demektir
+export const degerCevir = (test, s) => {
+  if (test === BEEP_TEST) {
+    const m = String(s ?? '').trim().match(/^(\d+)\s*[/.,-]\s*(\d+)$/);
+    if (m) return Number(m[1]) + Number(m[2]) / 100;
+  }
+  return sayiyaCevir(s);
 };
 export const sayiGoster = (v, basamak = 2) =>
   v == null ? '—' : String(Math.round(v * 10 ** basamak) / 10 ** basamak).replace('.', ',');

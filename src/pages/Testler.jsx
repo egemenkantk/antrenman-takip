@@ -4,7 +4,7 @@ import { hataMesaji } from '../auth/hesap';
 import { kisileriGetir, kisiGuncelle, tarihGoster } from '../veri';
 import { gruplariGetir } from '../gruplar/veri';
 import { bugun } from '../program/model';
-import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, sayiyaCevir, sayiGoster } from '../testler/tanimlar';
+import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, sayiyaCevir, sayiGoster, degerCevir, BEEP_TEST } from '../testler/tanimlar';
 import { sonuclariKaydet } from '../testler/veri';
 import { raporuOku, pdfMetinOgeleri } from '../testler/performanz';
 
@@ -43,7 +43,7 @@ function TestGunu({ kisiler, gruplar, ben }) {
     for (const k of satirlar) {
       for (const [t, taraf] of sutunlar) {
         if (taraf === 'seviye') continue;
-        const v = sayiyaCevir(degerler[`${k.id}|${t}|${taraf}`]);
+        const v = degerCevir(t, degerler[`${k.id}|${t}|${taraf}`]);
         if (v == null) continue;
         const sv = TESTLER[t]?.seviyeli ? sayiyaCevir(degerler[`${k.id}|${t}|seviye`]) : null;
         sonuclar.push({ kisiId: k.id, test: t, tarih, deger: v, taraf, kaynak: 'elle', ...(sv != null ? { seviye: sv } : {}) });
@@ -144,7 +144,8 @@ function TestGunu({ kisiler, gruplar, ben }) {
                     return (
                       <td key={a}>
                         <input
-                          inputMode="decimal"
+                          inputMode={t === BEEP_TEST ? 'text' : 'decimal'}
+                          placeholder={t === BEEP_TEST ? '8/5' : undefined}
                           value={degerler[a] || ''}
                           onChange={(e) => setDegerler({ ...degerler, [a]: e.target.value })}
                           aria-label={`${k.ad} ${t}${sutunAdi(taraf)}`}

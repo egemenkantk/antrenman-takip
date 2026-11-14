@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { tarihGoster } from '../veri';
-import { testBilgisi, testSirasi, TESTLER, sayiyaCevir } from '../testler/tanimlar';
+import { testBilgisi, testSirasi, TESTLER, sayiyaCevir, degerCevir, degerGoster, BEEP_TEST } from '../testler/tanimlar';
 import TestGunuFormu from '../testler/TestGunuFormu';
 import { sonuclariKaydet, sonucGuncelle, sonucSil } from '../testler/veri';
 
@@ -18,15 +18,15 @@ const TARAF = { sag: 'Sağ', sol: 'Sol' };
 const KAYNAK = { performanz: 'Performanz', elle: 'Elle girildi', 'sporcu-karti': 'Sporcu Kartı' };
 
 function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
-  const [f, setF] = useState({ deger: String(o.deger ?? '').replace('.', ','), tarih: o.tarih, seviye: o.seviye ?? '', not: o.not || '' });
+  const [f, setF] = useState({ deger: o.deger == null ? '' : o.test === BEEP_TEST ? degerGoster(o.test, o.deger) : String(o.deger).replace('.', ','), tarih: o.tarih, seviye: o.seviye ?? '', not: o.not || '' });
   const [hata, setHata] = useState('');
   const seviyeli = TESTLER[o.test]?.seviyeli || o.seviye != null;
   return (
     <div className="kart-form ic-form">
       <strong>{o.yeni ? 'Değer ekle: ' : ''}{o.test}{o.taraf ? ` · ${TARAF[o.taraf]}` : ''}</strong>
-      <small className="aciklama">{KAYNAK[o.kaynak] || ''}{o.oncekiDeger != null ? ` · önceki değer ${sayiGoster(o.oncekiDeger)}` : ''}</small>
+      <small className="aciklama">{KAYNAK[o.kaynak] || ''}{o.oncekiDeger != null ? ` · önceki değer ${degerGoster(o.test, o.oncekiDeger)}` : ''}</small>
       <div className="form-izgara">
-        <label className="alan"><span>Değer</span><input inputMode="decimal" value={f.deger} onChange={(e) => setF({ ...f, deger: e.target.value })} /></label>
+        <label className="alan"><span>Değer</span><input inputMode={o.test === BEEP_TEST ? 'text' : 'decimal'} placeholder={o.test === BEEP_TEST ? '8/5' : undefined} value={f.deger} onChange={(e) => setF({ ...f, deger: e.target.value })} /></label>
         <label className="alan"><span>Tarih</span><input type="date" value={f.tarih} onChange={(e) => setF({ ...f, tarih: e.target.value })} /></label>
         {seviyeli && <label className="alan"><span>Makine seviyesi</span><input inputMode="numeric" value={f.seviye} onChange={(e) => setF({ ...f, seviye: e.target.value })} /></label>}
         <label className="alan"><span>Not</span><input value={f.not} onChange={(e) => setF({ ...f, not: e.target.value })} /></label>
@@ -36,7 +36,7 @@ function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
         <button
           className="birincil kucuk"
           onClick={async () => {
-            const deger = sayiyaCevir(f.deger);
+            const deger = degerCevir(o.test, f.deger);
             if (deger == null || !f.tarih) return setHata('Değer ve tarih gerekli.');
             setHata('');
             try {
@@ -187,10 +187,10 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                         <td key={t} title={o ? KAYNAK[o.kaynak] || '' : ''}>
                           {o && duzenleyebilir ? (
                             <button className="deger-dugme" onClick={() => setDuzenle(o)} aria-label={`${r.test} ${tarihGoster(t)} düzenle`}>
-                              {sayiGoster(o.deger)}
+                              {degerGoster(r.test, o.deger)}
                             </button>
                           ) : o ? (
-                            sayiGoster(o.deger)
+                            degerGoster(r.test, o.deger)
                           ) : duzenleyebilir ? (
                             <button
                               className="deger-dugme bos"
@@ -208,7 +208,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
                       );
                     })}
                     {tarihler.length > 1 && (
-                      <td className={'degisim ' + iyilesme}>{fark == null ? '—' : (fark > 0 ? '+' : '') + sayiGoster(fark)}</td>
+                      <td className={'degisim ' + iyilesme}>{fark == null ? '—' : r.test === BEEP_TEST ? (fark > 0 ? '↑' : fark < 0 ? '↓' : '=') : (fark > 0 ? '+' : '') + sayiGoster(fark)}</td>
                     )}
                   </tr>
                 );

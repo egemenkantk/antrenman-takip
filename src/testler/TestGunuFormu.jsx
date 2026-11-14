@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun } from '../program/model';
-import { TEST_KATEGORILERI, TEST_ACIKLAMA, TARAF_ADI, sayiyaCevir } from './tanimlar';
+import { TEST_KATEGORILERI, TEST_ACIKLAMA, TARAF_ADI, sayiyaCevir, degerCevir, BEEP_TEST } from './tanimlar';
 
 // Kişi kartında Sporcu Kartı tarzı test girişi: kategori başlıkları altında tüm testler,
 // her testin kısa açıklaması; boş bırakılan testler kaydedilmez.
@@ -15,7 +15,7 @@ export default function TestGunuFormu({ ilkTarih, mevcut = [], kullanilanlar, on
   const kutu = (anahtar, etiket) => (
     <label className="test-kutu" key={anahtar}>
       <span>{etiket}</span>
-      <input inputMode="decimal" value={d[anahtar] || ''} onChange={(e) => setD({ ...d, [anahtar]: e.target.value })} />
+      <input inputMode={anahtar.startsWith(BEEP_TEST) ? 'text' : 'decimal'} placeholder={anahtar.startsWith(BEEP_TEST) ? '8/5' : undefined} value={d[anahtar] || ''} onChange={(e) => setD({ ...d, [anahtar]: e.target.value })} />
     </label>
   );
 
@@ -24,7 +24,7 @@ export default function TestGunuFormu({ ilkTarih, mevcut = [], kullanilanlar, on
     for (const [, testler] of TEST_KATEGORILERI) {
       for (const [ad, , tarafli, seviyeli] of testler) {
         for (const taraf of tarafli ? ['sag', 'sol'] : [null]) {
-          const v = sayiyaCevir(d[`${ad}|${taraf}`]);
+          const v = degerCevir(ad, d[`${ad}|${taraf}`]);
           if (v == null) continue;
           const sv = seviyeli ? sayiyaCevir(d[`${ad}|seviye`]) : null;
           l.push({ test: ad, tarih, deger: v, taraf, kaynak: 'elle', ...(sv != null ? { seviye: sv } : {}), ...(not.trim() ? { not: not.trim() } : {}) });

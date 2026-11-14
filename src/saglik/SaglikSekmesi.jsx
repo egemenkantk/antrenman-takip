@@ -4,7 +4,7 @@ import { bugun, kisaTarih } from '../program/model';
 import { tarihGoster } from '../veri';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
-import { testBilgisi, sayiGoster, TARAF_ADI as TEST_TARAF } from '../testler/tanimlar';
+import { testBilgisi, sayiGoster, degerGoster, TARAF_ADI as TEST_TARAF } from '../testler/tanimlar';
 import { ASAMA_ADLARI } from './taslaklar';
 import {
   BOLGELER,
@@ -227,8 +227,8 @@ function TestKarsilastirma({ testler, adlar, baslangic }) {
             return (
               <tr key={r.ad + r.taraf}>
                 <th>{r.ad}{r.taraf ? ` · ${TEST_TARAF[r.taraf]}` : ''}</th>
-                <td>{r.once ? `${sayiGoster(r.once.deger)} (${kisaTarih(r.once.tarih)})` : '—'}</td>
-                <td>{r.sonra ? `${sayiGoster(r.sonra.deger)} (${kisaTarih(r.sonra.tarih)})` : '—'}</td>
+                <td>{r.once ? `${degerGoster(r.ad, r.once.deger)} (${kisaTarih(r.once.tarih)})` : '—'}</td>
+                <td>{r.sonra ? `${degerGoster(r.ad, r.sonra.deger)} (${kisaTarih(r.sonra.tarih)})` : '—'}</td>
                 <td>{fark == null ? '' : `${fark > 0 ? '+' : ''}${fark.toFixed(0)}%`}</td>
               </tr>
             );
