@@ -414,7 +414,7 @@ function Cubuklar({ satirlar, test, genelOrt, dusukIyi }) {
 
 export function TestVerileri({ kisiler, gruplar, subeler }) {
   const [capa] = useDonemCapasi();
-  const [test, setTest] = useState('CMJ (cm)');
+  const [test0, setTest] = useState('CMJ (cm)');
   const [taraf, setTaraf] = useState('sag');
   const [aralik, setAralik] = useState('donem'); // donem | onceki | yil | tum
   const [hangi, setHangi] = useState('son'); // son | enIyi
@@ -427,9 +427,15 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
   const grupla = GRUPLAMA[grupla0] ? grupla0 : 'kisi';
   const gorunen = useMemo(() => suz(kisiler, gruplar, f), [kisiler, gruplar, f0, kitle]);
   const [sonuclar] = useSonuclar(kisiler);
+  // Seçimde yalnızca bu kitlede verisi olan testler görünür
+  const kullanilan = useMemo(() => {
+    const ids = new Set(kisiler.filter((k) => k.tip === kitle).map((k) => k.id));
+    return new Set((sonuclar || []).filter((s) => ids.has(s.kisiId)).map((s) => s.test));
+  }, [sonuclar, kisiler, kitle]);
+  const secenekler = [...kullanilan].sort((a, b) => testSirasi(a) - testSirasi(b) || a.localeCompare(b, 'tr'));
+  const test = kullanilan.has(test0) ? test0 : secenekler[0] || test0;
   const bilgi = testBilgisi(test);
   const tarafli = TESTLER[test]?.tarafli;
-  const kullanilan = useMemo(() => new Set((sonuclar || []).map((s) => s.test)), [sonuclar]);
 
   if (!capa) return <p className="aciklama">Yükleniyor…</p>;
   const d0 = testDonemi(capa, bugun(), 0);
@@ -511,17 +517,16 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
         ))}
       </div>
       <div className="filtreler">
-        <select value={test} onChange={(e) => setTest(e.target.value)} aria-label="Test">
-          {TEST_KATEGORILERI.map(([kat, l]) => (
-            <optgroup key={kat} label={kat}>
-              {l.map(([ad]) => <option key={ad} value={ad}>{ad}{kullanilan.has(ad) ? '' : ' (veri yok)'}</option>)}
-            </optgroup>
-          ))}
-          {[...kullanilan].filter((t) => !TUM.includes(t)).length > 0 && (
-            <optgroup label="Diğer">
-              {[...kullanilan].filter((t) => !TUM.includes(t)).map((t) => <option key={t} value={t}>{t}</option>)}
-            </optgroup>
-          )}
+        <select value={test} onChange={(e) => setTest(e.target.value)} aria-label="Test" disabled={!secenekler.length}>
+          {!secenekler.length && <option value={test}>Henüz test verisi yok</option>}
+          {[...TEST_KATEGORILERI.map(([kat]) => kat), 'Diğer'].map((kat) => {
+            const l = secenekler.filter((t) => (TUM.includes(t) ? testBilgisi(t).kat : 'Diğer') === kat);
+            return l.length ? (
+              <optgroup key={kat} label={kat}>
+                {l.map((ad) => <option key={ad} value={ad}>{ad}</option>)}
+              </optgroup>
+            ) : null;
+          })}
         </select>
         {tarafli && (
           <select value={taraf} onChange={(e) => setTaraf(e.target.value)} aria-label="Taraf">
