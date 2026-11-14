@@ -15,6 +15,8 @@ export const KALIPLAR = [
   ['adduktor', 'Kalça addüktörleri'],
   ['abduktor', 'Kalça abdüktörleri (gluteus medius / minimus)'],
   ['ayakbilegi', 'Ayak bileği kompleksi (plantar fleksör / dorsifleksör)'],
+  ['dizeks', 'Diz ekstansiyonu (quadriceps izolasyonu)'],
+  ['dizfleks', 'Diz fleksiyonu (hamstring izolasyonu)'],
   ['itme', 'Üst vücut itme'],
   ['cekme', 'Üst vücut çekme'],
   ['core', 'Core / gövde'],
