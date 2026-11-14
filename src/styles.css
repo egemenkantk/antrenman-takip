@@ -741,3 +741,5 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .cubuk-deger small.iyi { color: #2e7d4f; }
 .cubuk-deger small.kotu { color: #c8341f; }
 @media (max-width: 560px) { .cubuk-satir { grid-template-columns: 1fr; gap: 2px; } .cubuk-deger { text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; } .cubuk-baslik { display: none; } }
+.kitle-secici { margin: 4px 0 12px; display: inline-flex; }
+.kitle-secici .secim { font-weight: 600; }

@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { hataMesaji } from '../auth/hesap';
-import { kisiGuncelle, tarihGoster, BRANSLAR } from '../veri';
+import { kisiGuncelle, tarihGoster, BRANSLAR, HEDEFLER } from '../veri';
 import { bugun, gunEkle, kisaTarih } from '../program/model';
 import { ayEkle } from '../paket/model.js';
 import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, testBilgisi, testSirasi, degerGoster } from './tanimlar';
@@ -144,7 +144,7 @@ export function KisiTestPlani({ kisi, duzenleyebilir, onDegisti }) {
 }
 
 // ---------- Ortak süzgeçler ----------
-function Suzgecler({ f, setF, kisiler, gruplar, subeler, yil = true }) {
+function Suzgecler({ f, setF, kisiler, gruplar, subeler, yil = true, kitleSabit = false }) {
   const yillar = [...new Set(kisiler.map(dogumYili).filter(Boolean))].sort();
   const branslar = [...new Set([...BRANSLAR, ...kisiler.map((k) => k.brans).filter(Boolean)])];
   return (
@@ -159,15 +159,24 @@ function Suzgecler({ f, setF, kisiler, gruplar, subeler, yil = true }) {
           {subeler.map((s) => <option key={s.id} value={s.id}>{s.ad}</option>)}
         </select>
       )}
-      <select value={f.tip} onChange={(e) => setF({ ...f, tip: e.target.value })} aria-label="Kitle">
-        <option value="">Sporcu ve PT</option>
-        <option value="sporcu">Sporcular</option>
-        <option value="pt">PT danışanları</option>
-      </select>
-      <select value={f.brans} onChange={(e) => setF({ ...f, brans: e.target.value })} aria-label="Branş">
-        <option value="">Tüm branşlar</option>
-        {branslar.map((b) => <option key={b} value={b}>{b}</option>)}
-      </select>
+      {!kitleSabit && (
+        <select value={f.tip} onChange={(e) => setF({ ...f, tip: e.target.value })} aria-label="Kitle">
+          <option value="">Sporcu ve PT</option>
+          <option value="sporcu">Sporcular</option>
+          <option value="pt">PT danışanları</option>
+        </select>
+      )}
+      {f.tip !== 'pt' ? (
+        <select value={f.brans} onChange={(e) => setF({ ...f, brans: e.target.value })} aria-label="Branş">
+          <option value="">Tüm branşlar</option>
+          {branslar.map((b) => <option key={b} value={b}>{b}</option>)}
+        </select>
+      ) : (
+        <select value={f.hedef || ''} onChange={(e) => setF({ ...f, hedef: e.target.value })} aria-label="Hedef">
+          <option value="">Tüm hedefler</option>
+          {HEDEFLER.map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
+        </select>
+      )}
       <select value={f.cinsiyet} onChange={(e) => setF({ ...f, cinsiyet: e.target.value })} aria-label="Cinsiyet">
         <option value="">Tüm cinsiyetler</option>
         {Object.entries(CINSIYET).map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
@@ -189,7 +198,7 @@ function Suzgecler({ f, setF, kisiler, gruplar, subeler, yil = true }) {
     </div>
   );
 }
-const BOS_SUZGEC = { grup: '', sube: '', tip: '', brans: '', cinsiyet: '', yilMin: '', yilMax: '' };
+const BOS_SUZGEC = { grup: '', sube: '', tip: '', brans: '', hedef: '', cinsiyet: '', yilMin: '', yilMax: '' };
 function suz(kisiler, gruplar, f) {
   const g = gruplar.find((x) => x.id === f.grup);
   return kisiler.filter((k) => {
@@ -199,6 +208,7 @@ function suz(kisiler, gruplar, f) {
       (!f.sube || (k.subeIds || []).includes(f.sube)) &&
       (!f.tip || k.tip === f.tip) &&
       (!f.brans || k.brans === f.brans) &&
+      (!f.hedef || k.hedef === f.hedef) &&
       (!f.cinsiyet || k.cinsiyet === f.cinsiyet) &&
       (!f.yilMin || (y && y >= Number(f.yilMin))) &&
       (!f.yilMax || (y && y <= Number(f.yilMax)))
@@ -346,7 +356,8 @@ export function TestTakibi({ kisiler, gruplar, subeler, yonetici, onTestGunu }) 
 }
 
 // ---------- 2) Test verileri: sıralama, istatistik, karşılaştırma ----------
-const GRUPLAMA = { kisi: 'Kişi kişi', yil: 'Doğum yılı', yil2: '2 yıllık yaş grubu', brans: 'Branş', grup: 'Grup', cinsiyet: 'Cinsiyet', tip: 'Kitle' };
+const GRUPLAMA_SPORCU = { kisi: 'Kişi kişi', yil: 'Doğum yılı', yil2: '2 yıllık yaş grubu', brans: 'Branş', grup: 'Grup', cinsiyet: 'Cinsiyet' };
+const GRUPLAMA_PT = { kisi: 'Kişi kişi', yas10: 'Yaş grubu (10 yıllık)', hedef: 'Hedef', grup: 'Grup', cinsiyet: 'Cinsiyet' };
 
 function istatistik(degerler) {
   if (!degerler.length) return null;
@@ -407,9 +418,14 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
   const [taraf, setTaraf] = useState('sag');
   const [aralik, setAralik] = useState('donem'); // donem | onceki | yil | tum
   const [hangi, setHangi] = useState('son'); // son | enIyi
-  const [f, setF] = useState(BOS_SUZGEC);
-  const [grupla, setGrupla] = useState('kisi');
-  const gorunen = useMemo(() => suz(kisiler, gruplar, f), [kisiler, gruplar, f]);
+  // Sporcular ve PT danışanları istatistikte hiç karışmaz
+  const [kitle, setKitle] = useState('sporcu');
+  const [f0, setF] = useState(BOS_SUZGEC);
+  const f = { ...f0, tip: kitle };
+  const GRUPLAMA = kitle === 'pt' ? GRUPLAMA_PT : GRUPLAMA_SPORCU;
+  const [grupla0, setGrupla] = useState('kisi');
+  const grupla = GRUPLAMA[grupla0] ? grupla0 : 'kisi';
+  const gorunen = useMemo(() => suz(kisiler, gruplar, f), [kisiler, gruplar, f0, kitle]);
   const [sonuclar] = useSonuclar(kisiler);
   const bilgi = testBilgisi(test);
   const tarafli = TESTLER[test]?.tarafli;
@@ -440,6 +456,8 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
 
   const grupAdi = (r) =>
     grupla === 'kisi' ? r.k.ad
+    : grupla === 'hedef' ? HEDEFLER.find(([k]) => k === r.k.hedef)?.[1] || 'Belirtilmemiş'
+    : grupla === 'yas10' ? (r.yil ? `${Math.floor((Number(bugun().slice(0, 4)) - r.yil) / 10) * 10}'lı yaşlar` : 'Bilinmiyor')
     : grupla === 'yil' ? String(r.yil || 'Bilinmiyor')
     : grupla === 'yil2' ? (r.yil ? `${r.yil - (r.yil % 2)}–${r.yil - (r.yil % 2) + 1}` : 'Bilinmiyor')
     : grupla === 'brans' ? r.k.brans || (r.k.tip === 'pt' ? 'PT' : 'Belirtilmemiş')
@@ -485,6 +503,13 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
 
   return (
     <div>
+      <div className="secim-cubugu kitle-secici" role="group" aria-label="Kitle">
+        {[['sporcu', 'Sporcular'], ['pt', 'PT danışanları']].map(([k, ad]) => (
+          <button key={k} className={'secim' + (kitle === k ? ' secili' : '')} aria-pressed={kitle === k} onClick={() => setKitle(k)}>
+            {ad} <small>({kisiler.filter((x) => x.tip === k).length})</small>
+          </button>
+        ))}
+      </div>
       <div className="filtreler">
         <select value={test} onChange={(e) => setTest(e.target.value)} aria-label="Test">
           {TEST_KATEGORILERI.map(([kat, l]) => (
@@ -515,7 +540,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
           <option value="enIyi">En iyi ölçüm</option>
         </select>
       </div>
-      <Suzgecler f={f} setF={setF} kisiler={kisiler} gruplar={gruplar} subeler={subeler} />
+      <Suzgecler f={f} setF={(x) => setF({ ...x, tip: '' })} kisiler={kisiler.filter((k) => k.tip === kitle)} gruplar={gruplar} subeler={subeler} kitleSabit />
       {sonuclar === null ? (
         <p className="aciklama">Sonuçlar yükleniyor…</p>
       ) : !ist ? (
@@ -580,7 +605,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
             </table>
           </div>
           <p className="aciklama kucuk-yazi">
-            Yüzdelik dilim, seçili süzgeçlerdeki kişiler arasındaki yeri gösterir (%100 = en iyi). Farklı yaşları birlikte görmek için doğum yılı aralığını geniş seç. Bu ekran öğrenci ve velilere görünmez.
+            Sporcular ve PT danışanları ayrı hesaplanır. Yüzdelik dilim, seçili süzgeçlerdeki kişiler arasındaki yeri gösterir (%100 = en iyi). Farklı yaşları birlikte görmek için doğum yılı aralığını geniş seç. Bu ekran öğrenci ve velilere görünmez.
           </p>
         </>
       )}
