@@ -729,3 +729,15 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .dilim.d2 { background: #eef3f8; color: var(--yazi); }
 .dilim.d1 { background: #fff4e0; color: #8a5a10; }
 .dilim.d0 { background: #fdecea; color: #a12a1b; }
+.cubuk-satir { grid-template-columns: minmax(110px, 220px) 1fr 160px; }
+.cubuk-iz { position: relative; overflow: visible; }
+.cubuk-iz i { position: relative; z-index: 1; }
+.cubuk-iz em { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--yazi); opacity: 0.55; z-index: 2; }
+.cubuk-iz.bos { background: none; height: 16px; }
+.cubuk-iz.bos b { position: absolute; transform: translateX(-50%); font-size: 0.72rem; font-weight: 600; color: var(--soluk); white-space: nowrap; }
+.cubuk-baslik { margin-bottom: -4px; }
+.cubuk-deger { display: grid; text-align: right; line-height: 1.15; }
+.cubuk-deger small { font-size: 0.72rem; color: var(--soluk); }
+.cubuk-deger small.iyi { color: #2e7d4f; }
+.cubuk-deger small.kotu { color: #c8341f; }
+@media (max-width: 560px) { .cubuk-satir { grid-template-columns: 1fr; gap: 2px; } .cubuk-deger { text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; } .cubuk-baslik { display: none; } }

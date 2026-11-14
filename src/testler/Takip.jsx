@@ -346,7 +346,7 @@ export function TestTakibi({ kisiler, gruplar, subeler, yonetici, onTestGunu }) 
 }
 
 // ---------- 2) Test verileri: sıralama, istatistik, karşılaştırma ----------
-const GRUPLAMA = { yil: 'Doğum yılı', brans: 'Branş', grup: 'Grup', cinsiyet: 'Cinsiyet', tip: 'Kitle' };
+const GRUPLAMA = { kisi: 'Kişi kişi', yil: 'Doğum yılı', yil2: '2 yıllık yaş grubu', brans: 'Branş', grup: 'Grup', cinsiyet: 'Cinsiyet', tip: 'Kitle' };
 
 function istatistik(degerler) {
   if (!degerler.length) return null;
@@ -357,18 +357,46 @@ function istatistik(degerler) {
   return { n: s.length, ort, med, min: s[0], max: s[s.length - 1], sd };
 }
 
-function Cubuklar({ satirlar, test }) {
+// Yatay çubuklar: genel ortalama dikey çizgiyle gösterilir; her satırda ortalamaya göre fark yazar.
+// Süre gibi "düşük daha iyi" testlerde çubuk boyu değeri gösterir, sıralama en iyiden başlar.
+function Cubuklar({ satirlar, test, genelOrt, dusukIyi }) {
   if (!satirlar.length) return null;
-  const max = Math.max(...satirlar.map((r) => r.ort)) || 1;
+  const max = Math.max(...satirlar.map((r) => r.ort), genelOrt || 0) || 1;
+  const fark = (v) => {
+    if (genelOrt == null || !genelOrt) return null;
+    const y = ((v - genelOrt) / Math.abs(genelOrt)) * 100;
+    if (Math.abs(y) < 0.5) return { metin: 'ortalamada', sinif: '' };
+    const iyi = dusukIyi ? y < 0 : y > 0;
+    return { metin: `ortalamanın %${Math.abs(y).toFixed(0)} ${y > 0 ? 'üstünde' : 'altında'}`, sinif: iyi ? 'iyi' : 'kotu' };
+  };
   return (
     <div className="cubuk-grafik">
-      {satirlar.map((r) => (
-        <div key={r.ad} className="cubuk-satir">
-          <span className="cubuk-ad">{r.ad} <small>({r.n})</small></span>
-          <span className="cubuk-iz"><i style={{ width: `${(r.ort / max) * 100}%` }} /></span>
-          <strong>{degerGoster(test, r.ort)}</strong>
+      {genelOrt != null && (
+        <div className="cubuk-satir cubuk-baslik">
+          <span />
+          <span className="cubuk-iz bos"><b style={{ left: `${(genelOrt / max) * 100}%` }}>genel ortalama {degerGoster(test, genelOrt)}</b></span>
+          <span />
         </div>
-      ))}
+      )}
+      {satirlar.map((r) => {
+        const fk = fark(r.ort);
+        return (
+          <div key={r.ad} className="cubuk-satir">
+            <span className="cubuk-ad">
+              {r.ad}
+              <small>{r.n === 1 && r.kisi ? ` · ${r.kisi}` : r.n > 1 ? ` · ${r.n} kişi` : ''}</small>
+            </span>
+            <span className="cubuk-iz">
+              <i style={{ width: `${(r.ort / max) * 100}%` }} />
+              {genelOrt != null && <em style={{ left: `${(genelOrt / max) * 100}%` }} aria-hidden="true" />}
+            </span>
+            <span className="cubuk-deger">
+              <strong>{degerGoster(test, r.ort)}</strong>
+              {fk && <small className={fk.sinif}>{fk.metin}</small>}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -380,7 +408,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
   const [aralik, setAralik] = useState('donem'); // donem | onceki | yil | tum
   const [hangi, setHangi] = useState('son'); // son | enIyi
   const [f, setF] = useState(BOS_SUZGEC);
-  const [grupla, setGrupla] = useState('yil');
+  const [grupla, setGrupla] = useState('kisi');
   const gorunen = useMemo(() => suz(kisiler, gruplar, f), [kisiler, gruplar, f]);
   const [sonuclar] = useSonuclar(kisiler);
   const bilgi = testBilgisi(test);
@@ -411,16 +439,22 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
   const ist = istatistik(satirlar.map((r) => r.deger));
 
   const grupAdi = (r) =>
-    grupla === 'yil' ? String(r.yil || 'Bilinmiyor')
+    grupla === 'kisi' ? r.k.ad
+    : grupla === 'yil' ? String(r.yil || 'Bilinmiyor')
+    : grupla === 'yil2' ? (r.yil ? `${r.yil - (r.yil % 2)}–${r.yil - (r.yil % 2) + 1}` : 'Bilinmiyor')
     : grupla === 'brans' ? r.k.brans || (r.k.tip === 'pt' ? 'PT' : 'Belirtilmemiş')
     : grupla === 'cinsiyet' ? CINSIYET[r.k.cinsiyet] || 'Belirtilmemiş'
     : grupla === 'tip' ? (r.k.tip === 'pt' ? 'PT danışanı' : 'Sporcu')
     : gruplar.filter((g) => (g.uyeIds || []).includes(r.k.id)).map((g) => g.ad).join(', ') || 'Grupsuz';
   const kume = {};
-  satirlar.forEach((r) => (kume[grupAdi(r)] ||= []).push(r.deger));
+  satirlar.forEach((r) => (kume[grupAdi(r)] ||= []).push(r));
+  const dusukIyi = bilgi.iyi === 'dusuk';
   const grupSatirlari = Object.entries(kume)
-    .map(([ad, l]) => ({ ad, n: l.length, ort: l.reduce((t, v) => t + v, 0) / l.length }))
-    .sort((a, b) => a.ad.localeCompare(b.ad, 'tr'));
+    .map(([ad, l]) => ({ ad, n: l.length, kisi: grupla !== 'kisi' && l.length === 1 ? l[0].k.ad : null, ort: l.reduce((t, x) => t + x.deger, 0) / l.length }))
+    .sort((a, b) =>
+      grupla === 'kisi' ? (dusukIyi ? a.ort - b.ort : b.ort - a.ort) : grupla === 'yil' || grupla === 'yil2' ? a.ad.localeCompare(b.ad, 'tr') : dusukIyi ? a.ort - b.ort : b.ort - a.ort
+    );
+  const tekKisilik = grupla !== 'kisi' && grupSatirlari.length > 1 && grupSatirlari.every((g) => g.n === 1);
 
   // Zaman içinde: son 4 test döneminin ortalaması (aynı süzgeçlerle)
   const donemler = [-3, -2, -1, 0].map((i) => testDonemi(capa, bugun(), i));
@@ -499,15 +533,27 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
 
           <h3>Karşılaştırma</h3>
           <div className="filtreler">
-            <span className="aciklama">Ortalamaları şuna göre ayır:</span>
+            <span className="aciklama">Göster:</span>
             {Object.entries(GRUPLAMA).map(([k, ad]) => (
               <button key={k} className={'cip' + (grupla === k ? ' secili' : '')} aria-pressed={grupla === k} onClick={() => setGrupla(k)}>{ad}</button>
             ))}
           </div>
-          <Cubuklar satirlar={grupSatirlari} test={test} />
+          <p className="aciklama kucuk-yazi">
+            {grupla === 'kisi'
+              ? `Seçili ${ist.n} kişi en iyiden en düşüğe. Dikey çizgi hepsinin ortalaması.`
+              : `Her çubuk o ${GRUPLAMA[grupla].toLocaleLowerCase('tr')} içindeki kişilerin ortalaması; dikey çizgi seçili ${ist.n} kişinin genel ortalaması.`}
+            {dusukIyi ? ' Bu testte düşük değer daha iyi (kısa çubuk daha iyi).' : ''}
+          </p>
+          {tekKisilik && (
+            <p className="uyari-kutu kucuk-yazi">
+              Her grupta yalnızca bir kişi var; ortalama karşılaştırması anlamlı değil. "Kişi kişi" ya da "2 yıllık yaş grubu" daha anlaşılır olur.
+            </p>
+          )}
+          <Cubuklar satirlar={grupSatirlari} test={test} genelOrt={ist.ort} dusukIyi={dusukIyi} />
 
           <h3>Zaman içinde (son 4 test dönemi, ortalama)</h3>
-          <Cubuklar satirlar={trend.filter((t) => t.n)} test={test} />
+          <p className="aciklama kucuk-yazi">Aynı süzgeçlerdeki kişilerin her dönemdeki ortalaması ve o dönem ölçülen kişi sayısı.</p>
+          <Cubuklar satirlar={trend.filter((t) => t.n)} test={test} dusukIyi={dusukIyi} />
 
           <div className="baslik-satiri">
             <h3>Sıralama</h3>
