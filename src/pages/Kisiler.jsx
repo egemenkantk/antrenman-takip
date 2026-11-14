@@ -427,7 +427,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
         </RiskliKaliplar.Provider>
       )}
       {sekme === 'testler' && kisi.tip === 'sporcu' && kisi.brans && <BransTestOnerisi brans={kisi.brans} kisiId={kisi.id} />}
-      {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
+      {sekme === 'testler' && <TestlerSekmesi kisiId={kisi.id} kisi={kisi} duzenleyebilir yapan={benim} onKisiDegisti={onDegisti} />}
       {sekme === 'kayitlar' && <KayitlarSekmesi kisiId={kisi.id} />}
 
       {sekme === 'rapor' && <RaporSekmesi kisi={kisi} yapan={benim} />}

@@ -160,6 +160,13 @@ Uzun vadede başka salonlarda da kullanılabilecek bir ürüne ve mobil uygulama
 - İleride: fizyoterapiste gönderilebilir özet sayfası/PDF.
 - Sakatlık kütüphanesi: ön çapraz bağ, ayak bileği burkulması, hamstring, patellar tendinopati, omuz, bel ağrısı.
 
+### Test planı, takip ve veriler (Kasım 2026)
+- Sabit batarya yok: her kişiye kendi test planı atanır (kişi kartı → Testler → Test planı; ya da Testler → Test takibi'nde seçilen kişilere toplu).
+- Test dönemleri 3 aylık; başlangıç kurum ayarında (yönetici değiştirir), varsayılan yılın çeyrekleri.
+- Test takibi: kişi × planlı test tablosu (✓ yapıldı, ✗ eksik + önceki tarih, ½ taraflı testte tek taraf); eksikleri Test günü ekranına toplu aktarma.
+- Test verileri: test + taraf, dönem/son 12 ay/tüm zamanlar, son ya da en iyi ölçüm; süzgeçler grup, şube, kitle, branş, cinsiyet, doğum yılı aralığı (farklı yaşlar birlikte görülebilir). Sıralama, yüzdelik dilim (süzülen grup içinde), ortalama/medyan/en iyi/sapma, doğum yılı/branş/grup/cinsiyet/kitleye göre ortalama karşılaştırma, son 4 dönem eğilimi, CSV indirme.
+- Veliler/öğrenciler bu verileri ve sıralamayı görmez. Takım (kulüp) karşılaştırması tenis kulübü anlaşmasından sonra.
+
 ### Performanz test verileri
 - Testler Performanz cihazlarıyla yapılıyor; sonuçlar Performanz'ın kendi portalına senkronize oluyor.
 - Portal her test için PDF rapor veriyor; raporlar aynı mantıkta ve metni okunabilir.

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
-import { kisileriGetir, kisiGuncelle, tarihGoster } from '../veri';
+import { kisileriGetir, kisiGuncelle, tarihGoster, subeleriGetir } from '../veri';
+import { TestTakibi, TestVerileri } from '../testler/Takip';
 import { gruplariGetir } from '../gruplar/veri';
 import { bugun } from '../program/model';
 import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, sayiyaCevir, sayiGoster, degerCevir, BEEP_TEST } from '../testler/tanimlar';
@@ -12,11 +13,11 @@ const tumTestAdlari = TEST_KATEGORILERI.flatMap(([, l]) => l.map(([ad]) => ad));
 const normalAd = (s) => String(s || '').toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
 
 // ---------- Test günü: birden fazla kişi × test için toplu giriş ----------
-function TestGunu({ kisiler, gruplar, ben }) {
+function TestGunu({ kisiler, gruplar, ben, ilk }) {
   const [tarih, setTarih] = useState(bugun());
-  const [testler, setTestler] = useState([]);
+  const [testler, setTestler] = useState(ilk?.testler || []);
   const [grup, setGrup] = useState('');
-  const [secilenler, setSecilenler] = useState([]);
+  const [secilenler, setSecilenler] = useState(ilk?.kisiIds || []);
   const [ara, setAra] = useState('');
   const [degerler, setDegerler] = useState({}); // `${kisiId}|${test}|${taraf}` → metin
   const [mesaj, setMesaj] = useState('');
@@ -390,14 +391,17 @@ function PerformanzYukle({ kisiler, ben, onKaydedildi }) {
 export default function Testler({ onGeri }) {
   const { durum } = useOturum();
   const ben = durum.kullanici;
-  const [mod, setMod] = useState('performanz');
+  const [mod, setMod] = useState('takip');
+  const [subeler, setSubeler] = useState([]);
+  const [aktarilan, setAktarilan] = useState(null);
   const [kisiler, setKisiler] = useState(null);
   const [gruplar, setGruplar] = useState([]);
   const [hata, setHata] = useState('');
 
   const yukle = () =>
-    Promise.all([kisileriGetir(ben), gruplariGetir(ben)])
-      .then(([k, g]) => {
+    Promise.all([kisileriGetir(ben), gruplariGetir(ben), subeleriGetir().catch(() => [])])
+      .then(([k, g, s]) => {
+        setSubeler(s);
         setKisiler(k.filter((x) => x.aktif !== false));
         setGruplar(g);
       })
@@ -411,14 +415,24 @@ export default function Testler({ onGeri }) {
       {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Testler</h2>
       <nav className="sekmeler">
-        {[['performanz', 'Performanz raporu yükle'], ['gun', 'Test günü (elle giriş)']].map(([id, ad]) => (
-          <button key={id} className={'sekme' + (mod === id ? ' secili' : '')} onClick={() => setMod(id)}>{ad}</button>
+        {[['takip', 'Test takibi'], ['veriler', 'Test verileri'], ['gun', 'Test günü (elle giriş)'], ['performanz', 'Performanz raporu yükle']].map(([id, ad]) => (
+          <button key={id} className={'sekme' + (mod === id ? ' secili' : '')} onClick={() => { setAktarilan(null); setMod(id); }}>{ad}</button>
         ))}
       </nav>
       {hata && <p className="hata">{hata}</p>}
       {!kisiler && !hata && <p className="aciklama">Yükleniyor…</p>}
       {kisiler && mod === 'performanz' && <PerformanzYukle kisiler={kisiler} ben={ben} onKaydedildi={yukle} />}
-      {kisiler && mod === 'gun' && <TestGunu kisiler={kisiler} gruplar={gruplar} ben={ben} />}
+      {kisiler && mod === 'gun' && <TestGunu key={aktarilan ? 'aktarim' : 'bos'} ilk={aktarilan} kisiler={kisiler} gruplar={gruplar} ben={ben} />}
+      {kisiler && mod === 'takip' && (
+        <TestTakibi
+          kisiler={kisiler}
+          gruplar={gruplar}
+          subeler={subeler}
+          yonetici={ben.rol === 'yonetici'}
+          onTestGunu={(kisiIds, testler) => { setAktarilan({ kisiIds, testler }); setMod('gun'); }}
+        />
+      )}
+      {kisiler && mod === 'veriler' && <TestVerileri kisiler={kisiler} gruplar={gruplar} subeler={subeler} />}
     </div>
   );
 }

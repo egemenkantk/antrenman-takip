@@ -5,6 +5,7 @@ import { db } from '../firebase';
 import { tarihGoster } from '../veri';
 import { testBilgisi, testSirasi, TESTLER, sayiyaCevir, degerCevir, degerGoster, BEEP_TEST } from '../testler/tanimlar';
 import TestGunuFormu from '../testler/TestGunuFormu';
+import { KisiTestPlani } from '../testler/Takip';
 import { sonuclariKaydet, sonucGuncelle, sonucSil } from '../testler/veri';
 
 async function altListe(kisiId, ad) {
@@ -67,7 +68,7 @@ function SonucDuzenle({ o, onKaydet, onSil, onVazgec }) {
   );
 }
 
-export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
+export function TestlerSekmesi({ kisiId, kisi, duzenleyebilir, yapan, onKisiDegisti }) {
   const [liste, setListe] = useState(null);
   const [form, setForm] = useState(null);
   const [duzenle, setDuzenle] = useState(null); // düzenlenen sonuç
@@ -103,6 +104,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
 
   return (
     <div className="kayit-bolumleri">
+      {kisi && duzenleyebilir && <KisiTestPlani kisi={kisi} duzenleyebilir onDegisti={onKisiDegisti} />}
       {duzenleyebilir && !form && (
         <div className="dugme-satiri">
           <button className="ikincil kucuk" onClick={() => setForm(true)}>+ Test sonucu gir</button>
@@ -112,6 +114,7 @@ export function TestlerSekmesi({ kisiId, duzenleyebilir, yapan }) {
       {form && (
         <TestGunuFormu
           ilkTarih={form.tarih}
+          plan={kisi?.testPlani || []}
           mevcut={liste}
           kullanilanlar={new Set(liste.map((t) => t.test))}
           onVazgec={() => setForm(null)}

@@ -5,7 +5,7 @@ import { TEST_KATEGORILERI, TEST_ACIKLAMA, TARAF_ADI, sayiyaCevir, degerCevir, B
 
 // Kişi kartında Sporcu Kartı tarzı test girişi: kategori başlıkları altında tüm testler,
 // her testin kısa açıklaması; boş bırakılan testler kaydedilmez.
-export default function TestGunuFormu({ ilkTarih, mevcut = [], kullanilanlar, onKaydet, onVazgec }) {
+export default function TestGunuFormu({ ilkTarih, mevcut = [], plan = [], kullanilanlar, onKaydet, onVazgec }) {
   const [tarih, setTarih] = useState(ilkTarih || bugun());
   const [not, setNot] = useState('');
   const [d, setD] = useState({}); // `${test}|${taraf|seviye}` → metin
@@ -65,12 +65,12 @@ export default function TestGunuFormu({ ilkTarih, mevcut = [], kullanilanlar, on
         </label>
       </div>
       {TEST_KATEGORILERI.map(([kat, testler]) => (
-        <details key={kat} className="test-kategori" open={testler.some(([ad]) => kullanilanlar.has(ad)) || (!kullanilanlar.size && ['Sürat', 'Sıçrama'].includes(kat))}>
+        <details key={kat} className="test-kategori" open={plan.length ? testler.some(([ad]) => plan.includes(ad)) : testler.some(([ad]) => kullanilanlar.has(ad)) || (!kullanilanlar.size && ['Sürat', 'Sıçrama'].includes(kat))}>
           <summary>{kat}</summary>
           <div className="test-izgara">
             {testler.map(([ad, , tarafli, seviyeli]) => (
-              <div key={ad} className="test-oge">
-                <strong>{ad}</strong>
+              <div key={ad} className={'test-oge' + (plan.includes(ad) ? ' planli' : '')}>
+                <strong>{ad}{plan.includes(ad) && <span className="planli-isaret"> · planda</span>}</strong>
                 {TEST_ACIKLAMA[ad] && <small>{TEST_ACIKLAMA[ad]}</small>}
                 <div className="test-kutular">
                   {tarafli
