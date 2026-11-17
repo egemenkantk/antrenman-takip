@@ -1,0 +1,27 @@
+# Sorun giderme: aynı adlı kişi kayıtları ve Bugün ekranında tekrar eden kişiler.
+# Ad/telefon yazdırılmaz (depo herkese açık); yalnızca belge kimlikleri ve sayılar.
+name: Veri tanı
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tani:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --prefix functions
+      - name: Tanı
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node scripts/tani-bugun.cjs
+          rm -f "$RUNNER_TEMP/sa.json"
