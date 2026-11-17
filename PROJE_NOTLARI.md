@@ -275,3 +275,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - `src/paket/Tahsilatlar.jsx`. Ay = ödemenin alındığı ay (maaş hesabı ay içinde alınan paradan yapılıyor).
 - Türler (sınıf): grup, bireysel/PT (bireysel), düet/trio, aylık abonelik (abonelik + abonelikDonem), ek ücret. Ödemenin türü bağlı olduğu satilanPaket'ten gelir.
 - Ayrıca: grup grup kırılım (cimnastik grupları ayrı toplam, bu ay başlayan dönemde bekleyen sayısı), tahsil edene göre koç tablosu, son 12 ay yığılmış grafik, süzgeçler (koç, yöntem, şube, kişi tipi), CSV (Excel, ; ayraçlı) indirme.
+
+## Gruba sonradan katılım ve dönem muafiyeti
+- `grup.uyeKatilim[kisiId]` = katılım tarihi. Grubun Ödemeler sekmesinde yönetici "Katılım" ile dönem seçer ya da tarih girer (`katilimGuncelle`): katılımdan önce biten dönem kayıtları (ödemesizse) `durum: iptal, fiyatNotu: 'Katılımdan önceki dönem'`; katıldığı dönem orantılı, sonrakiler tam ücretle yeniden hesaplanır; ödemeli kayıtlara dokunulmaz.
+- Katılımı dönem bitişinden sonra olan üye o dönemde listelenmez ve kaydı açılmaz (istemci + sunucu donemKontrolu).
+- "Bu döneme dahil değil" (`donemDahilAyarla`): kayıt yoksa açılıp `iptal, fiyatNotu: 'Bu döneme dahil değil'` yapılır; "Döneme dahil et" geri alır. Sunucu mevcut kaydın üstüne yazmadığı için muafiyet kalıcıdır.

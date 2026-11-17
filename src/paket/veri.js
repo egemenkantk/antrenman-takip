@@ -18,7 +18,7 @@ import {
 import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { sonDersKontrol } from '../auth/hesap';
-import { grupKayitKimligi, orantiliUcret, abonelikDonemi, abonelikDonemBul, abonelikKayitKimligi } from './model.js';
+import { grupKayitKimligi, orantiliUcret, abonelikDonemi, abonelikDonemBul, abonelikKayitKimligi, donemBul, donemNo } from './model.js';
 import { bugun } from '../program/model';
 
 const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -221,6 +221,74 @@ export async function grupOzelFiyat(grupId, kisiId, fiyat, not, yapan) {
     [`ozelFiyatlar.${kisiId}`]: fiyat === null ? deleteField() : { fiyat: Number(fiyat) || 0, not: not || '' },
   });
   await gecmiseYaz(yapan, 'grup-ozel-fiyat', { grupId, kisiId, fiyat });
+}
+
+// Gruba sonradan katılanın katılım tarihini değiştirir (yalnızca yönetici).
+// Katılımdan önce biten dönem kayıtları (ödeme alınmamışsa) iptal edilir; katıldığı dönemin ücreti
+// kalan haftalara göre, sonraki dönemlerinki tam ücretle yeniden hesaplanır. Ödeme alınmış kayıtlara dokunulmaz.
+export const KATILIM_ONCESI = 'Katılımdan önceki dönem';
+export async function katilimGuncelle(grup, kisiId, tarih, tanim, odemeler, yapan) {
+  await updateDoc(doc(db, 'gruplar', grup.id), { [`uyeKatilim.${kisiId}`]: tarih || deleteField() });
+  const sonuc = { iptal: 0, guncel: 0, odemeli: 0 };
+  if (!grup.donemBaslangic || !tanim) return sonuc;
+  const simdi = donemBul(grup.donemBaslangic, bugun())?.no ?? 0;
+  const odenen = (id) => odemeler.filter((o) => !o.silindi && o.satilanPaketId === id).reduce((t, o) => t + (Number(o.tutar) || 0), 0);
+  const ozel = grup.ozelFiyatlar?.[kisiId];
+  const liste = Number(tanim.fiyat) || 0;
+  const tam = ozel ? Number(ozel.fiyat) || 0 : liste;
+  for (let n = 0; n <= simdi + 1; n++) {
+    const d = donemNo(grup.donemBaslangic, n);
+    const s = await getDoc(doc(db, 'satilanPaketler', grupKayitKimligi(grup.id, d.bas, kisiId)));
+    if (!s.exists()) continue;
+    const r = { id: s.id, ...s.data() };
+    if (odenen(r.id) > 0) {
+      if (tarih && d.bit < tarih) sonuc.odemeli++;
+      continue;
+    }
+    if (tarih && d.bit < tarih) {
+      if (r.durum !== 'iptal') {
+        await paketGuncelle(r, { durum: 'iptal', fiyatNotu: KATILIM_ONCESI }, yapan);
+        sonuc.iptal++;
+      }
+      continue;
+    }
+    // Elle "dahil değil" yapılmış dönem olduğu gibi kalır
+    if (r.durum === 'iptal' && r.fiyatNotu !== KATILIM_ONCESI) continue;
+    const ortada = tarih && tarih > d.bas && tarih <= d.bit;
+    const notlar = [ozel ? `Kişiye özel ücret${ozel.not ? ` (${ozel.not})` : ''}` : '', ortada ? 'Dönem ortası katılım (orantılı)' : ''].filter(Boolean);
+    await paketGuncelle(
+      r,
+      {
+        durum: 'aktif',
+        uygulananFiyat: ortada ? orantiliUcret(tam, d.bas, tarih) : tam,
+        listeFiyati: ortada ? orantiliUcret(liste, d.bas, tarih) : liste,
+        fiyatNotu: notlar.join(' · '),
+      },
+      yapan
+    );
+    sonuc.guncel++;
+  }
+  await gecmiseYaz(yapan, 'grup-katilim', { grupId: grup.id, kisiId, tarih });
+  return sonuc;
+}
+
+// Bir dönemi kişi için "dahil değil" yap / geri al (yalnızca yönetici). Ödeme alınmış kayıt değiştirilmez.
+export const DONEM_HARIC = 'Bu döneme dahil değil';
+export async function donemDahilAyarla(grup, donem, tanim, kisiId, kayit, dahil, yapan) {
+  if (!kayit) {
+    await grupKaydiOlustur(grup, donem, tanim, kisiId, yapan);
+    const s = await getDoc(doc(db, 'satilanPaketler', grupKayitKimligi(grup.id, donem.bas, kisiId)));
+    kayit = { id: s.id, ...s.data() };
+  }
+  if (dahil) {
+    const ozel = grup.ozelFiyatlar?.[kisiId];
+    const katilim = grup.uyeKatilim?.[kisiId];
+    const ortada = katilim && katilim > donem.bas && katilim <= donem.bit;
+    const notlar = [ozel ? `Kişiye özel ücret${ozel.not ? ` (${ozel.not})` : ''}` : '', ortada ? 'Dönem ortası katılım (orantılı)' : ''].filter(Boolean);
+    await paketGuncelle(kayit, { durum: 'aktif', fiyatNotu: notlar.join(' · ') }, yapan);
+  } else {
+    await paketGuncelle(kayit, { durum: 'iptal', fiyatNotu: DONEM_HARIC }, yapan);
+  }
 }
 
 // ---------- Ödemeler ----------

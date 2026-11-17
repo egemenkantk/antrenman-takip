@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
 import { donemBul, donemNo, odemeDurumu, tl, dersleriDagit, TUR_KISA } from './model.js';
-import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bireyselKayitlar, odemeEkle, grupOzelFiyat, paketGuncelle } from './veri';
+import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bireyselKayitlar, odemeEkle, grupOzelFiyat, paketGuncelle, katilimGuncelle, donemDahilAyarla, DONEM_HARIC, KATILIM_ONCESI } from './veri';
 import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 
@@ -59,12 +59,74 @@ function OzelUcretFormu({ grup, kisi, tanim, kayit, donem, benim, onBitti }) {
   );
 }
 
+function DahilDugmesi({ r, od, onDegis }) {
+  if (!r) return null;
+  const haric = r.durum === 'iptal' && (r.fiyatNotu === DONEM_HARIC || r.fiyatNotu === KATILIM_ONCESI);
+  if (haric) return <button className="metin" onClick={() => onDegis(true)}>Döneme dahil et</button>;
+  if (r.durum === 'iptal' || od.odenen > 0) return null;
+  return <button className="metin" onClick={() => onDegis(false)}>Bu döneme dahil değil</button>;
+}
+
+function KatilimFormu({ grup, kisi, tanim, odemeler, benim, onBitti }) {
+  const [tarih, setTarih] = useState(grup.uyeKatilim?.[kisi.id] || '');
+  const [bekliyor, setBekliyor] = useState(false);
+  const [hata, setHata] = useState('');
+  const donemler = [];
+  const son = (donemBul(grup.donemBaslangic, bugun())?.no ?? 0) + 1;
+  for (let n = 0; n <= son; n++) donemler.push(donemNo(grup.donemBaslangic, n));
+  async function kaydet(t) {
+    setHata('');
+    setBekliyor(true);
+    try {
+      const r = await katilimGuncelle(grup, kisi.id, t, tanim, odemeler, benim);
+      onBitti(true, r);
+    } catch (e) {
+      setHata(hataMesaji(e));
+      setBekliyor(false);
+    }
+  }
+  return (
+    <div className="kart-form ic-form">
+      <strong>{kisi.ad} · gruba katılım</strong>
+      <div className="cip-grubu kucuk" role="group" aria-label="Katıldığı dönem">
+        {donemler.map((d) => (
+          <button
+            type="button"
+            key={d.no}
+            className={'cip' + (tarih && tarih >= d.bas && tarih <= d.bit ? ' secili' : '')}
+            onClick={() => setTarih(d.bas)}
+          >
+            {d.no + 1}. dönem · {kisaTarih(d.bas)}
+          </button>
+        ))}
+      </div>
+      <label className="alan">
+        <span>Katılım tarihi (dönem ortasıysa o günü seç)</span>
+        <input type="date" value={tarih} min={grup.donemBaslangic} onChange={(e) => setTarih(e.target.value)} />
+      </label>
+      <p className="aciklama kucuk-yazi">
+        Bu tarihten önce biten dönemlerin ödemesi istenmez. Katıldığı dönem ortasıysa ücret kalan haftalara göre hesaplanır.
+        Ödeme alınmış dönemlere dokunulmaz.
+      </p>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button className="birincil kucuk" disabled={bekliyor || !tarih} onClick={() => kaydet(tarih)}>Kaydet</button>
+        {grup.uyeKatilim?.[kisi.id] && (
+          <button className="metin" disabled={bekliyor} onClick={() => kaydet('')}>Grup başından beri</button>
+        )}
+        <button className="metin" onClick={() => onBitti(false)}>Vazgeç</button>
+      </div>
+    </div>
+  );
+}
+
 export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, koclar, onGrupDegisti }) {
   const ilk = grup.donemBaslangic ? donemBul(grup.donemBaslangic, bugun()) || donemNo(grup.donemBaslangic, 0) : null;
   const [no, setNo] = useState(ilk?.no ?? 0);
   const [veri, setVeri] = useState(null);
   const [acik, setAcik] = useState(null); // {kisiId, mod: 'odeme'|'liste'}
   const [hata, setHata] = useState('');
+  const [bilgi, setBilgi] = useState('');
   const donem = grup.donemBaslangic ? donemNo(grup.donemBaslangic, no) : null;
 
   const yukle = async () => {
@@ -82,6 +144,18 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
     yukle();
   }, [grup.id, no]);
 
+  async function dahilAyarla(k, r, dahil) {
+    setHata('');
+    setBilgi('');
+    if (!dahil && !window.confirm(`${k.ad} ${donem.no + 1}. dönemden muaf tutulsun mu? Bu dönem için ödeme istenmez.`)) return;
+    try {
+      await donemDahilAyarla(grup, donem, tanim, k.id, r, dahil, benim);
+      await yukle();
+    } catch (e) {
+      setHata(hataMesaji(e));
+    }
+  }
+
   if (!grup.donemBaslangic || !tanim) {
     return (
       <div className="bos-durum">
@@ -93,7 +167,10 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
     );
   }
 
-  const uyeler = (grup.uyeIds || []).map((id) => kisiler.find((k) => k.id === id) || { id, ad: 'Kişi' });
+  const tumUyeler = (grup.uyeIds || []).map((id) => kisiler.find((k) => k.id === id) || { id, ad: 'Kişi' });
+  // Bu dönemden sonra katılanlar bu dönemde gösterilmez ve ödeme istenmez
+  const sonraKatilan = tumUyeler.filter((k) => grup.uyeKatilim?.[k.id] && grup.uyeKatilim[k.id] > donem.bit);
+  const uyeler = tumUyeler.filter((k) => !sonraKatilan.includes(k));
   const eksikler = veri ? uyeler.filter((k) => !veri.kayitlar[k.id]) : [];
   const ozet = veri
     ? uyeler.reduce(
@@ -131,6 +208,12 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
           {ozet.odeyen}/{ozet.kayit} kişi ödedi · Tahsil edilen {tl(ozet.tahsil)} / {tl(ozet.toplam)}
         </p>
       )}
+      {sonraKatilan.length > 0 && (
+        <p className="aciklama kucuk-yazi">
+          Bu dönemden sonra katılanlar (bu dönem ödemesi yok): {sonraKatilan.map((k) => `${k.ad} (${kisaTarih(grup.uyeKatilim[k.id])})`).join(', ')}
+        </p>
+      )}
+      {bilgi && <p className="bilgi">{bilgi}</p>}
       {yonetici && eksikler.length > 0 && (
         <div className="uyari-kutu">
           <span>{eksikler.length} üyenin bu dönem kaydı yok.</span>{' '}
@@ -162,15 +245,20 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                 <div className="paket-ust">
                   <div className="esnek">
                     <strong>{k.ad}</strong>
+                    {grup.uyeKatilim?.[k.id] && (
+                      <span className="aciklama kucuk-yazi">Katılım {kisaTarih(grup.uyeKatilim[k.id])}</span>
+                    )}
                     <span className="aciklama kucuk-yazi">
-                      {r
+                      {r && r.durum === 'iptal' && (r.fiyatNotu === DONEM_HARIC || r.fiyatNotu === KATILIM_ONCESI)
+                        ? r.fiyatNotu
+                        : r
                         ? `${tl(r.uygulananFiyat)} · Ödenen ${tl(od.odenen)}${od.kalan > 0 ? ` · Kalan ${tl(od.kalan)}` : ''}${
                             yonetici && r.fiyatNotu ? ` · ${r.fiyatNotu}` : ''
                           }`
                         : 'Bu dönem kaydı yok'}
                     </span>
                   </div>
-                  {od && <DurumRozeti durum={od.durum} />}
+                  {od && !(r.durum === 'iptal' && (r.fiyatNotu === DONEM_HARIC || r.fiyatNotu === KATILIM_ONCESI)) && <DurumRozeti durum={od.durum} />}
                 </div>
                 {r && !ac && (
                   <div className="dugme-satiri">
@@ -178,12 +266,42 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                       <button className="birincil kucuk" onClick={() => setAcik({ kisiId: k.id, mod: 'odeme' })}>Ödeme al</button>
                     )}
                     <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'liste' })}>Ödemeler</button>
+                    {yonetici && <DahilDugmesi r={r} od={od} onDegis={(dahil) => dahilAyarla(k, r, dahil)} />}
+                    {yonetici && (
+                      <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'katilim' })}>Katılım</button>
+                    )}
                     {yonetici && (
                       <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'ozel' })}>
                         {grup.ozelFiyatlar?.[k.id] ? `Özel ücret: ${tl(grup.ozelFiyatlar[k.id].fiyat)}` : 'Özel ücret'}
                       </button>
                     )}
                   </div>
+                )}
+                {!r && yonetici && !ac && (
+                  <div className="dugme-satiri">
+                    <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'katilim' })}>Katılım</button>
+                    <button className="metin" onClick={() => dahilAyarla(k, null, false)}>Bu döneme dahil değil</button>
+                  </div>
+                )}
+                {ac === 'katilim' && (
+                  <KatilimFormu
+                    grup={grup}
+                    kisi={k}
+                    tanim={tanim}
+                    odemeler={veri.odemeler}
+                    benim={benim}
+                    onBitti={async (degisti, sonuc) => {
+                      setAcik(null);
+                      if (!degisti) return;
+                      setBilgi(
+                        `${k.ad}: katılım güncellendi.` +
+                          (sonuc?.iptal ? ` ${sonuc.iptal} önceki dönem kaydı kaldırıldı.` : '') +
+                          (sonuc?.odemeli ? ` ${sonuc.odemeli} önceki dönemde ödeme alınmış, o kayıtlar değiştirilmedi.` : '')
+                      );
+                      await onGrupDegisti?.();
+                      await yukle();
+                    }}
+                  />
                 )}
                 {ac === 'ozel' && (
                   <OzelUcretFormu
