@@ -287,3 +287,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Cihaz değişikliği: `kurumlar/fitkon.cihazDegisimi[test] = {tarih, not}` (Testler > Cihaz değişiklikleri, yönetici). Raporda değişimden önceki/sonraki ölçümler karşılaştırılmaz (yerine norm), grafik ve rekor yalnızca aynı cihaz dönemi; Test verilerinde uyarı.
 - Raporda "Dünya normlarına göre değerlendirme" bölümü; Test verilerinde "Dünya normu" sütunu ve seviye özeti.
 - Ödeme: kişi Paket sekmesinde önceki dönemlerden ödenmemiş grup/abonelik kayıtları üstte uyarı + ödeme formunda uyarı. Portal aylık abonelikte ders sayısı göstermez.
+
+## Koçlara göre tahsilat (maaş için)
+- Tahsilatlar > "Derse giren koça göre": grup ödemesi → grubun kocIds; diğerleri → kişinin kocIds. Birden fazla koçta her koça tamamı yazılır. Ödemeye `dersKocIds` ödeme anında yazılır (odemeEkle); eski ödemelerde güncel atama kullanılır.
+- Maaş tablosunda gösterilmeyecek koçlar: `kurumlar/fitkon.tahsilat.gizliKoclar` (ör. kurucu). Maaş hesabı şimdilik elle.
+- Sadece ödeme için tutulan gruplar (ders saati yok) Bugün/Takvim/portal ders listesinde görünmez; dönem kayıtları ve hatırlatmalar sürer — ek ayar gerekmez.

@@ -830,3 +830,8 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .dunya-satir small { color: var(--soluk); }
 .cubuk-iz u { position: absolute; top: -5px; bottom: -5px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--marka); z-index: 3; text-decoration: none; }
 .cubuk-deger .dunya-not { color: var(--soluk); }
+.koc-tablo tr.tikla { cursor: pointer; }
+.koc-tablo tr.tikla:hover th, .koc-tablo tr.tikla:hover td { background: var(--cip); }
+.koc-dokum td { background: var(--kart); text-align: left; }
+.koc-dokum li { padding: 2px 0; }
+.koc-dokum ul { list-style: none; padding-left: 4px; margin: 4px 0; }

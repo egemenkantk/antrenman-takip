@@ -292,8 +292,26 @@ export async function donemDahilAyarla(grup, donem, tanim, kisiId, kayit, dahil,
 }
 
 // ---------- Ödemeler ----------
-export function odemeEkle({ kisiId, satilanPaketId, tutar, tarih, yontem, not }, yapan) {
+// Ödeme anındaki dersi veren koçlar (grup → grubun koçları, diğerleri → kişinin koçları).
+// Koç sonradan değişse de o ayın tahsilat dökümü bozulmasın diye ödemeye yazılır.
+async function dersKoclari(kisiId, satilanPaketId) {
+  try {
+    const p = (await getDoc(doc(db, 'satilanPaketler', satilanPaketId))).data();
+    if (p?.tur === 'grup' && p.grupId) {
+      const g = await getDoc(doc(db, 'gruplar', p.grupId));
+      if (g.exists()) return g.data().kocIds || [];
+    }
+    const k = await getDoc(doc(db, 'kisiler', kisiId));
+    return k.exists() ? k.data().kocIds || [] : [];
+  } catch {
+    return null; // okunamazsa tahsilat ekranı güncel atamaya bakar
+  }
+}
+
+export async function odemeEkle({ kisiId, satilanPaketId, tutar, tarih, yontem, not }, yapan) {
+  const kocIds = await dersKoclari(kisiId, satilanPaketId);
   return addDoc(collection(db, 'odemeler'), {
+    ...(kocIds ? { dersKocIds: kocIds } : {}),
     kisiId,
     satilanPaketId,
     tutar: Number(tutar) || 0,

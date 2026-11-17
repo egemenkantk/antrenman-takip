@@ -1,6 +1,9 @@
 // Tahsilatlar: ödeme tarihine göre aylık toplam, türe / gruba / koça göre kırılım, 12 aylık gidiş.
 // Maaş hesabı ay içinde alınan paradan yapıldığı için ay = ödemenin alındığı ay.
-import { useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { KURUM_ID } from '../config/marka';
 import { tarihGoster, TIP_ADI } from '../veri';
 import { kisaTarih } from '../program/model';
 import { tl, YONTEM_ADI, YONTEMLER } from './model.js';
@@ -98,6 +101,117 @@ function AylikGrafik({ aylar, seciliAy, onSec }) {
       </div>
       <figcaption className="aciklama kucuk-yazi">Bir aya dokununca o ayın özeti açılır.</figcaption>
     </figure>
+  );
+}
+
+// Derse giren koça göre: grup → grubun koçları, diğerleri → kişinin koçları (ödeme anında kaydedilen öncelikli).
+// Birden fazla koç varsa her koça tutarın tamamı yazılır. Maaş hesabına girmeyen koçlar (ör. kurucu) gizlenebilir.
+function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi }) {
+  const [gizli, setGizli] = useState(null);
+  const [acik, setAcik] = useState(null);
+  useEffect(() => {
+    getDoc(doc(db, 'kurumlar', KURUM_ID))
+      .then((s) => setGizli(s.data()?.tahsilat?.gizliKoclar || []))
+      .catch(() => setGizli([]));
+  }, []);
+  async function gizliAyarla(l) {
+    setGizli(l);
+    await setDoc(doc(db, 'kurumlar', KURUM_ID), { tahsilat: { gizliKoclar: l } }, { merge: true }).catch(() => {});
+  }
+
+  const satirlar = useMemo(() => {
+    const m = {};
+    for (const o of odemeler) {
+      const ids = o.dersKocIds || (o.sinif === 'grup' ? grupMap[o.p?.grupId]?.kocIds : kisiMap[o.kisiId]?.kocIds) || [];
+      const tutar = Number(o.tutar) || 0;
+      for (const id of ids.length ? ids : ['?']) {
+        const r = (m[id] ||= { id, toplam: 0, sinif: {}, kalemler: {} });
+        r.toplam += tutar;
+        r.sinif[o.sinif] = (r.sinif[o.sinif] || 0) + tutar;
+        // Döküm: grup dersleri grup grup, diğerleri kişi kişi
+        const anahtar = o.sinif === 'grup' ? 'g:' + (o.p?.grupId || '?') : o.sinif + ':' + o.kisiId;
+        const ad = o.sinif === 'grup' ? grupMap[o.p?.grupId]?.ad || o.p?.grupAdi || 'Grup' : `${o.k?.ad || 'Kişi'} · ${o.p?.paketAdi || SINIF_ADI[o.sinif]}`;
+        const k = (r.kalemler[anahtar] ||= { ad, sinif: o.sinif, tutar: 0, kisiler: new Set() });
+        k.tutar += tutar;
+        k.kisiler.add(o.kisiId);
+      }
+    }
+    return Object.values(m).sort((a, b) => (a.id === '?') - (b.id === '?') || b.toplam - a.toplam);
+  }, [odemeler, grupMap, kisiMap]);
+
+  if (!gizli || !satirlar.length) return null;
+  const gorunen = satirlar.filter((r) => !gizli.includes(r.id));
+  const ad = (id) => (id === '?' ? 'Koç atanmamış' : kocAdi(id, benim, koclar));
+
+  function indir() {
+    csvIndir(indirAdi, [
+      ['Koç', 'Kalem', 'Tür', 'Ödeyen kişi', 'Tutar'],
+      ...gorunen.flatMap((r) =>
+        Object.values(r.kalemler).map((k) => [ad(r.id), k.ad, SINIF_ADI[k.sinif], k.kisiler.size, String(k.tutar).replace('.', ',')])
+      ),
+    ]);
+  }
+
+  return (
+    <section>
+      <div className="baslik-satiri">
+        <h3>Derse giren koça göre · {ayAdi(ay)}</h3>
+        <button type="button" className="ikincil kucuk" onClick={indir}>Excel'e indir</button>
+      </div>
+      <p className="aciklama kucuk-yazi">
+        Grup ödemeleri grubun koçlarına, bireysel / düet / abonelik ödemeleri öğrencinin koçlarına yazılır. Birden fazla koç varsa her birine tutarın tamamı
+        yazılır (bu yüzden satırların toplamı ayın toplamından büyük olabilir). Satıra dokununca döküm açılır.
+      </p>
+      <div className="tablo-kap">
+        <table className="tablo koc-tablo">
+          <thead>
+            <tr><th>Koç</th>{SINIFLAR.map(([k, a]) => <th key={k}>{a}</th>)}<th>Toplam</th></tr>
+          </thead>
+          <tbody>
+            {gorunen.map((r) => (
+              <Fragment key={r.id}>
+                <tr className="tikla" onClick={() => setAcik(acik === r.id ? null : r.id)} aria-expanded={acik === r.id}>
+                  <th>{acik === r.id ? '▾ ' : '▸ '}{ad(r.id)}</th>
+                  {SINIFLAR.map(([k]) => <td key={k}>{r.sinif[k] ? tl(r.sinif[k]) : '—'}</td>)}
+                  <td><strong>{tl(r.toplam)}</strong></td>
+                </tr>
+                {acik === r.id && (
+                  <tr className="koc-dokum">
+                    <td colSpan={SINIFLAR.length + 2}>
+                      <ul className="sade-liste">
+                        {Object.values(r.kalemler)
+                          .sort((a, b) => SINIFLAR.findIndex(([k]) => k === a.sinif) - SINIFLAR.findIndex(([k]) => k === b.sinif) || b.tutar - a.tutar)
+                          .map((k) => (
+                            <li key={k.ad}>
+                              <i className={'seri-renk s-' + k.sinif} />
+                              {k.ad} · <strong>{tl(k.tutar)}</strong>
+                              {k.sinif === 'grup' ? ` · ${k.kisiler.size} kişi ödedi` : ''}
+                            </li>
+                          ))}
+                      </ul>
+                      {r.id !== '?' && (
+                        <button type="button" className="metin" onClick={() => gizliAyarla([...gizli, r.id])}>
+                          Bu koçu maaş tablosunda gösterme
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {gizli.length > 0 && (
+        <p className="aciklama kucuk-yazi">
+          Gösterilmeyen: {gizli.map((id) => (
+            <button key={id} type="button" className="metin" onClick={() => gizliAyarla(gizli.filter((x) => x !== id))}>
+              {kocAdi(id, benim, koclar)} (göster)
+            </button>
+          ))}
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -283,6 +397,10 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
             </table>
           </div>
         </section>
+      )}
+
+      {yonetici && (
+        <KocaGore odemeler={ayinkiler} ay={ay} grupMap={grupMap} kisiMap={kisiMap} koclar={koclar} benim={benim} indirAdi={`koclara-gore-${ay}.csv`} />
       )}
 
       {yonetici && kocSatirlari.length > 0 && (
