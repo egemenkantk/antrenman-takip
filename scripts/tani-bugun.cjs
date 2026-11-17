@@ -82,6 +82,14 @@ async function main() {
   }
   const ozs = await db.collection('gunOzel').where('tarih', '==', bugun).get();
   for (const d of ozs.docs) if (d.data().sahipTip === 'kisi') ekle(d.data().sahipId, 'ozel');
+  // Geçmiş dönemlerden ödenmemiş grup/abonelik kayıtları (sayı)
+  const sp = await db.collection('satilanPaketler').get();
+  const od = await db.collection('odemeler').get();
+  const odenen = {};
+  for (const o of od.docs) if (!o.data().silindi) odenen[o.data().satilanPaketId] = (odenen[o.data().satilanPaketId] || 0) + (Number(o.data().tutar) || 0);
+  const eski = sp.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => (p.tur === 'grup' || p.tur === 'abonelikDonem') && p.durum !== 'iptal' && p.donemBit && p.donemBit < bugun && (Number(p.uygulananFiyat) || 0) - (odenen[p.id] || 0) > 0);
+  console.log(`\n== Geçmiş dönemde ödenmemiş kayıt: ${eski.length} ==`);
+  for (const p of eski) console.log(JSON.stringify({ kayit: p.id, tur: p.tur, donemBas: p.donemBas, fiyat: p.uygulananFiyat, odenen: odenen[p.id] || 0 }));
   const cift = Object.entries(kaynak).filter(([, l]) => l.length > 1);
   for (const [id, l] of cift) console.log(JSON.stringify({ id, kartlar: l }));
   if (!cift.length) console.log('yok');

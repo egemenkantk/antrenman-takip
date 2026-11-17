@@ -133,8 +133,11 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
     if (!donem) return;
     try {
       const kayitlar = await grupDonemKayitlari(grup, donem);
-      const odemeler = (await Promise.all((grup.uyeIds || []).map((id) => kisiOdemeleri(id).catch(() => [])))).flat();
-      setVeri({ kayitlar, odemeler });
+      const [odemeler, paketler] = await Promise.all([
+        Promise.all((grup.uyeIds || []).map((id) => kisiOdemeleri(id).catch(() => []))).then((l) => l.flat()),
+        Promise.all((grup.uyeIds || []).map((id) => kisiPaketleri(id).catch(() => []))).then((l) => [...new Map(l.flat().map((p) => [p.id, p])).values()]),
+      ]);
+      setVeri({ kayitlar, odemeler, paketler });
     } catch (e) {
       setHata(hataMesaji(e));
     }
@@ -240,6 +243,14 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
             const r = veri.kayitlar[k.id];
             const od = r ? odemeDurumu(r, veri.odemeler) : null;
             const ac = acik?.kisiId === k.id ? acik.mod : null;
+            // Bu dönemden önceki ödenmemiş grup / aylık abonelik dönemleri (bu grup ya da başka)
+            const eskiler = (veri.paketler || [])
+              .filter((p) => p.kisiId === k.id && p.durum !== 'iptal' && (p.tur === 'grup' || p.tur === 'abonelikDonem') && p.donemBit && p.donemBit < donem.bas)
+              .map((p) => ({ p, od: odemeDurumu(p, veri.odemeler) }))
+              .filter((x) => x.od.kalan > 0)
+              .sort((a, b) => (a.p.donemBas || '').localeCompare(b.p.donemBas || ''));
+            const eskiAd = (p) => `${p.tur === 'grup' ? p.grupAdi || p.paketAdi || 'Grup' : p.paketAdi || 'Aylık abonelik'} · ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}`;
+            const eskiAcik = acik?.kisiId === k.id && acik.mod === 'eski' ? eskiler.find((x) => x.p.id === acik.id) : null;
             return (
               <li key={k.id} className="paket-karti">
                 <div className="paket-ust">
@@ -260,6 +271,28 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                   </div>
                   {od && !(r.durum === 'iptal' && (r.fiyatNotu === DONEM_HARIC || r.fiyatNotu === KATILIM_ONCESI)) && <DurumRozeti durum={od.durum} />}
                 </div>
+                {eskiler.length > 0 && (
+                  <p className="uyari-kutu kucuk-yazi">
+                    ⚠ Önceki dönemde ödenmemiş: {eskiler.map((x) => `${eskiAd(x.p)} (${tl(x.od.kalan)})`).join(', ')}{' '}
+                    {!eskiAcik && (
+                      <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'eski', id: eskiler[0].p.id })}>
+                        {eskiler.length > 1 ? 'En eski dönemin ödemesini al' : 'O dönemin ödemesini al'}
+                      </button>
+                    )}
+                  </p>
+                )}
+                {eskiAcik && (
+                  <OdemeFormu
+                    baslik={`Ödeme al · ${eskiAd(eskiAcik.p)}`}
+                    onrTutar={eskiAcik.od.kalan}
+                    onVazgec={() => setAcik(null)}
+                    onKaydet={async (v) => {
+                      await odemeEkle({ ...v, kisiId: k.id, satilanPaketId: eskiAcik.p.id }, benim);
+                      setAcik(null);
+                      await yukle();
+                    }}
+                  />
+                )}
                 {r && !ac && (
                   <div className="dugme-satiri">
                     {od.kalan > 0 && r.durum !== 'iptal' && (
@@ -322,6 +355,16 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                 )}
                 {r && ac === 'odeme' && (
                   <OdemeFormu
+                    uyari={
+                      eskiler.length > 0 ? (
+                        <p className="uyari-kutu kucuk-yazi">
+                          ⚠ Önceki dönemden ödenmemiş kayıt var: <strong>{eskiAd(eskiler[0].p)} ({tl(eskiler[0].od.kalan)})</strong>. Ödeme o döneme mi ait?{' '}
+                          <button type="button" className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'eski', id: eskiler[0].p.id })}>
+                            O dönemin ödemesini al
+                          </button>
+                        </p>
+                      ) : null
+                    }
                     onrTutar={od.kalan}
                     onVazgec={() => setAcik(null)}
                     onKaydet={async (v) => {
