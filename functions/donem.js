@@ -319,7 +319,7 @@ function kalanDersler(paketler, kayitlar) {
   const kesim = (p) => p.aktarimTarihi || (p.aktarim && p.olusturma?.toDate ? p.olusturma.toDate().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) : null);
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const tur = kayitTuru(d);
-    if (sayili.some((x) => x.tur === tur && kesim(x) && (x.baslangic || '') <= d.tarih && d.tarih < kesim(x))) continue;
+    if (sayili.some((x) => x.tur === tur && kesim(x) && (x.baslangic || '') <= d.tarih && d.tarih < kesim(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi))) continue;
     const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !dolu(x));
     if (!p) continue;
     kullanilan[p.id]++;

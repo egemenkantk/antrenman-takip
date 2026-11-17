@@ -145,7 +145,10 @@ export function dersleriDagit(paketler, kayitlar) {
   const dersler = kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih));
   for (const d of dersler) {
     const tur = kayitTuru(d);
-    const once = sayili.find((x) => x.tur === tur && aktarimKesimi(x) && (x.baslangic || '') <= d.tarih && d.tarih < aktarimKesimi(x));
+    // Bitmiş paket (bitisTarihi) yalnızca kendi tarih aralığındaki dersleri alır
+    const once = sayili.find(
+      (x) => x.tur === tur && aktarimKesimi(x) && (x.baslangic || '') <= d.tarih && d.tarih < aktarimKesimi(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi)
+    );
     if (once) {
       sonuc[once.id].dersler.push({ ...d, maliyet: dersMaliyeti(once, d), oncedenSayildi: true });
       continue;

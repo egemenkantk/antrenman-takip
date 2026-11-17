@@ -78,11 +78,12 @@ export async function tumPaketVerisi() {
   return { paketler: listele(p), odemeler: listele(o) };
 }
 
-export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu, oncekiDers = 0 }, yapan) {
+export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu, oncekiDers = 0, bitisTarihi = null }, yapan) {
   const fiyat = Number(uygulananFiyat ?? tanim.fiyat) || 0;
   if (fiyat !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat });
   const ref = await addDoc(collection(db, 'satilanPaketler'), {
-    ...(oncekiDers > 0 ? { oncekiDers: Number(oncekiDers), aktarim: true, aktarimTarihi: new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) } : {}),
+    ...(oncekiDers > 0 || bitisTarihi ? { oncekiDers: Number(oncekiDers) || 0, aktarim: true, aktarimTarihi: new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) } : {}),
+    ...(bitisTarihi ? { bitisTarihi } : {}),
     ...(tanim.eksikUcretleri && Object.keys(tanim.eksikUcretleri).length ? { eksikUcretleri: tanim.eksikUcretleri } : {}),
     kisiId: kisi.id,
     tur: tanim.tur || 'bireysel',

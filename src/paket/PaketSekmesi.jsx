@@ -125,6 +125,8 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
   const yonetici = fiyatYetki;
   // Devam eden paket aktarımı: siteye geçmeden önce yapılan dersler ve alınan ödeme
   const [onceki, setOnceki] = useState('');
+  const bitmis = devam === 'bitmis';
+  const [bitis, setBitis] = useState('');
   const [bekliyor, setBekliyor] = useState(false); // çift tıklamayla iki paket açılmasın
   const [odenen, setOdenen] = useState('');
   const [odemeTarihi, setOdemeTarihi] = useState(bugun());
@@ -159,11 +161,13 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
         setHata('');
         setBekliyor(true);
         try {
-          const n = Number(onceki) || 0;
-          if (devam && (n < 0 || n >= (Number(tanim.dersSayisi) || 0))) return setBekliyor(false), setHata(`Yapılan ders 0 ile ${(Number(tanim.dersSayisi) || 1) - 1} arasında olmalı.`);
+          // Bitmiş pakette bütün dersler yapılmıştır; aralıktaki site kayıtları pakete yazılır ama tekrar düşmez
+          const n = bitmis ? Number(tanim.dersSayisi) || 0 : Number(onceki) || 0;
+          if (bitmis && (!bitis || bitis < baslangic)) return setBekliyor(false), setHata('Son ders tarihi, başlangıçtan sonra olmalı.');
+          if (devam && !bitmis && (n < 0 || n >= (Number(tanim.dersSayisi) || 0))) return setBekliyor(false), setHata(`Yapılan ders 0 ile ${(Number(tanim.dersSayisi) || 1) - 1} arasında olmalı.`);
           await onKaydet({
             kisi, tanim, baslangic, uygulananFiyat: yonetici ? Number(fiyat) : tanim.fiyat, fiyatNotu: yonetici ? not : '',
-            ...(devam ? { devam: { oncekiDers: n, odenen: Number(odenen) || 0, odemeTarihi, yontem } } : {}),
+            ...(devam ? { devam: { oncekiDers: n, bitisTarihi: bitmis ? bitis : null, odenen: Number(odenen) || 0, odemeTarihi, yontem } } : {}),
           });
         } catch (err) {
           setHata(hataMesaji(err));
@@ -171,8 +175,14 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
         }
       }}
     >
-      <h3>{devam ? 'Devam eden paketi gir' : 'Paket ata'}</h3>
-      {devam && <p className="aciklama kucuk-yazi">Siteye geçmeden önce başlamış paket: kaç dersinin yapıldığını ve ne kadar ödendiğini girin. Kalan ders buradan devam eder.</p>}
+      <h3>{bitmis ? 'Bitmiş paketi gir' : devam ? 'Devam eden paketi gir' : 'Paket ata'}</h3>
+      {devam && !bitmis && <p className="aciklama kucuk-yazi">Siteye geçmeden önce başlamış paket: kaç dersinin yapıldığını ve ne kadar ödendiğini girin. Kalan ders buradan devam eder.</p>}
+      {bitmis && (
+        <p className="aciklama kucuk-yazi">
+          Dersleri bitmiş paket: başlangıç ve son ders tarihini girin. Bu aralıkta sitede tamamlanan dersler bu pakete yazılır, ders başı değeri koç listesinde hesaplanır;
+          paket bitmiş sayılır, yeni dersler sonraki pakete düşer.
+        </p>
+      )}
       <div className="form-izgara">
         <label className="alan">
           <span>Paket</span>
@@ -199,16 +209,22 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
             <input value={not} onChange={(e) => setNot(e.target.value)} />
           </label>
         )}
+        {bitmis && (
+          <label className="alan">
+            <span>Son ders tarihi</span>
+            <input type="date" value={bitis} max={bugun()} onChange={(e) => setBitis(e.target.value)} />
+          </label>
+        )}
         {devam && (
           <>
-            <label className="alan">
+            {!bitmis && <label className="alan">
               <span>Şimdiye kadar yapılan ders</span>
               <input type="number" min="0" max={(Number(tanim?.dersSayisi) || 1) - 1} value={onceki} onChange={(e) => setOnceki(e.target.value)} placeholder="Örn. 5" />
               <small className="ipucu">
-                Yalnızca siteye girilmemiş dersleri yazın; sitede yoklaması girilmiş dersler ayrıca düşer.
+                Bugüne kadar yapılan bütün dersleri yazın; sitede girilmiş geçmiş dersler paketten tekrar düşmez (yalnızca koç listesine yazılır).
                 {tanim && onceki !== '' ? ` Kalan: ${Math.max(0, (Number(tanim.dersSayisi) || 0) - (Number(onceki) || 0))} ders` : ''}
               </small>
-            </label>
+            </label>}
             <label className="alan">
               <span>Şimdiye kadar ödenen (₺)</span>
               <input type="number" min="0" value={odenen} onChange={(e) => setOdenen(e.target.value)} placeholder="0" />
@@ -505,7 +521,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
               ? `Ek ücret · ${tarihGoster(p.baslangic)}`
               : p.tur === 'abonelikDonem'
               ? `Abonelik ayı ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}${p.ekDers ? ` · +${p.ekDers} ek ders` : ''}`
-              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç`}
+              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç${p.bitisTarihi ? ` · ${tarihGoster(p.bitisTarihi)} bitti` : ''}`}
           </span>
         </div>
         <DurumRozeti durum={od.durum} />
@@ -697,6 +713,7 @@ export default function PaketSekmesi({ kisi, yonetici, fiyatYetki = false, benim
         <span className="dugme-satiri">
           {!ata && <button className="ikincil kucuk" onClick={() => setAta(true)}>+ Paket ata</button>}
           {!ata && <button className="ikincil kucuk" onClick={() => setAta('devam')}>⇪ Devam eden paketi gir</button>}
+          {!ata && <button className="ikincil kucuk" onClick={() => setAta('bitmis')}>⇪ Bitmiş paketi gir</button>}
           {yonetici && !ek && <button className="ikincil kucuk" onClick={() => setEk({})}>+ Ek ücret</button>}
         </span>
       </div>
@@ -707,12 +724,12 @@ export default function PaketSekmesi({ kisi, yonetici, fiyatYetki = false, benim
           kisi={kisi}
           tanimlar={veri.tanimlar}
           yonetici={yonetici || fiyatYetki}
-          devam={ata === 'devam'}
+          devam={ata === 'devam' || ata === 'bitmis' ? ata : false}
           onVazgec={() => setAta(false)}
           onKaydet={async (v) => {
             if (v.tanim.tur === 'abonelik') await abonelikAta({ ...v, aylikUcret: v.uygulananFiyat }, benim);
             else if (v.devam) {
-              const id = await paketAta({ ...v, oncekiDers: v.devam.oncekiDers }, benim);
+              const id = await paketAta({ ...v, oncekiDers: v.devam.oncekiDers, bitisTarihi: v.devam.bitisTarihi }, benim);
               if (v.devam.odenen > 0) {
                 await odemeEkle({ kisiId: kisi.id, satilanPaketId: id, tutar: v.devam.odenen, tarih: v.devam.odemeTarihi, yontem: v.devam.yontem, not: 'Aktarım · devam eden paket', ekAlanlar: { aktarim: true } }, benim);
               }
