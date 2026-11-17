@@ -24,7 +24,7 @@ export const HEDEFLER = [
   ['genel', 'Genel sağlık ve kondisyon'],
 ];
 export const HEDEF_ADI = Object.fromEntries(HEDEFLER);
-export const TIP_ADI = { sporcu: 'Sporcu', pt: 'PT danışanı' };
+export const TIP_ADI = { sporcu: 'Sporcu', pt: 'PT danışanı', cimnastik: 'Cimnastik' };
 export const ROL_ADI = { yonetici: 'Yönetici', koc: 'Koç', ogrenci: 'Öğrenci / danışan', veli: 'Veli' };
 
 const listele = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));

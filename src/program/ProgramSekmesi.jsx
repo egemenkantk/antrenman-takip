@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ProgramDuzenleyici from './ProgramDuzenleyici';
+import CimnastikDuzenleyici from '../cimnastik/CimnastikDuzenleyici';
 import { programlariGetir, programEkle, programGuncelle, programSil } from './veri';
 import { sahibinGunOzelleri } from '../bugun/veri';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
@@ -16,7 +17,8 @@ import {
   gunFarki,
   kisaTarih,
   gunBolumleri,
-  dozaj,
+  bolumNotu,
+  toplamSure,
   fazAdi,
   fazRengi,
   haftaSayisi,
@@ -35,13 +37,14 @@ function GunKarti({ b, g, i, hafta, kutuphane }) {
         <span>
           {b.plan === 'mac' && g.md != null ? (g.md > 0 ? `MD+${g.md}` : `MD${g.md}`) : GUN_ADI[gunHaftaGunu(b, i)]}
           {g.baslik ? <small> · {g.baslik}</small> : null}
+          {b.cimnastik && toplamSure(g) > 0 ? <small> · {toplamSure(g)} dk</small> : null}
         </span>
       </h4>
       {b.sade ? (
         <ul className="egzersizler">{satirlar(g.icerik?.liste).map((s, k) => <EgzersizSatiri key={k} satir={s} kutuphane={kutuphane} />)}</ul>
       ) : (
         bolumler.map((k) => {
-          const d = BOLUMLER[k]?.doz ? dozaj(hafta, i, k) : '';
+          const d = bolumNotu(b, hafta, i, g, k);
           const hareketler = satirlar(g.icerik?.[k]);
           if (!hareketler.length && !d) return null;
           return (
@@ -73,7 +76,8 @@ function BlokGorunumu({ b, ozeller }) {
       <div className="blok-bas">
         <div>
           <h3>
-            {b.ad} <span className="faz" style={{ background: fazRengi(b) }}>{fazAdi(b)}</span>
+            {b.ad}{' '}
+            {(!b.cimnastik || b.ad !== b.tema) && <span className="faz" style={{ background: fazRengi(b) }}>{b.cimnastik ? `Tema: ${fazAdi(b)}` : fazAdi(b)}</span>}
           </h3>
           <p className="aciklama">
             {kisaTarih(b.baslangic)} – {kisaTarih(gunEkle(blokBitis(b), -1))} · {n} hafta ·{' '}
@@ -124,7 +128,7 @@ function BlokGorunumu({ b, ozeller }) {
   );
 }
 
-export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenleyebilir, yapan }) {
+export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenleyebilir, yapan, cimnastik, varsayilanGunler, dersSuresi }) {
   const [bloklar, setBloklar] = useState(null);
   const [secili, setSecili] = useState(null);
   const [mod, setMod] = useState(null); // null | 'yeni' | 'duzenle'
@@ -154,6 +158,29 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
   const sonBitis = bloklar.length ? blokBitis(bloklar[bloklar.length - 1]) : null;
   const yeniBaslangic = sonBitis && sonBitis > bugun() ? sonBitis : bugun();
 
+  const cimMod = mod === 'duzenle' ? !!b?.cimnastik : !!cimnastik;
+  if (mod && cimMod) {
+    return (
+      <CimnastikDuzenleyici
+        ilk={mod === 'duzenle' ? b : null}
+        varsayilanBaslangic={yeniBaslangic}
+        varsayilanGunler={varsayilanGunler || []}
+        dersSuresi={dersSuresi || 60}
+        onVazgec={() => setMod(null)}
+        onKaydet={async (blok) => {
+          if (mod === 'duzenle') {
+            await programGuncelle(b.id, blok, yapan);
+            setMod(null);
+            await yukle(b.id);
+          } else {
+            const r = await programEkle(sahipTip, sahipId, blok, yapan);
+            setMod(null);
+            await yukle(r.id);
+          }
+        }}
+      />
+    );
+  }
   if (mod) {
     return (
       <ProgramDuzenleyici
@@ -182,10 +209,10 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
       {hata && <p className="hata">{hata}</p>}
       {bloklar.length === 0 ? (
         <div className="bos-durum">
-          <p>{sade ? 'Henüz haftalık plan yok.' : 'Henüz program bloğu yok.'}</p>
+          <p>{cimnastik ? 'Henüz dönem teması yok.' : sade ? 'Henüz haftalık plan yok.' : 'Henüz program bloğu yok.'}</p>
           {duzenleyebilir && (
             <button className="birincil kucuk" onClick={() => setMod('yeni')}>
-              {sade ? '+ Haftalık plan oluştur' : '+ Program bloğu oluştur'}
+              {cimnastik ? '+ Dönem teması oluştur' : sade ? '+ Haftalık plan oluştur' : '+ Program bloğu oluştur'}
             </button>
           )}
         </div>
@@ -206,7 +233,7 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
             })}
             {duzenleyebilir && (
               <button className="zc-blok yeni" onClick={() => setMod('yeni')}>
-                + {sade ? 'Yeni plan' : 'Sonraki blok'}
+                + {cimnastik ? 'Sonraki dönem' : sade ? 'Yeni plan' : 'Sonraki blok'}
               </button>
             )}
           </div>
@@ -224,7 +251,7 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
           {b && duzenleyebilir && (
             <div className="dugme-satiri">
               <button className="ikincil kucuk" onClick={() => setMod('duzenle')}>Düzenle</button>
-              <button
+              {!b.cimnastik && <button
                 className="ikincil kucuk"
                 onClick={async () => {
                   const ad = window.prompt('Şablon adı', b.ad);
@@ -239,7 +266,7 @@ export default function ProgramSekmesi({ sahipTip, sahipId, sade, hedef, duzenle
                 }}
               >
                 Şablon olarak kaydet
-              </button>
+              </button>}
               <button
                 className="metin tehlike"
                 onClick={async () => {

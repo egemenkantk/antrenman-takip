@@ -62,5 +62,7 @@ await t('koç aylık ücreti değiştiremez', assertFails(updateDoc(doc(koc, 'sa
 await t('koç ders değişikliği kaydeder', assertSucceeds(setDoc(doc(koc, 'dersDegisiklik', 'k1__2026-11-17'), { sahipTip: 'kisi', sahipId: 'k1', tarih: '2026-11-17', islem: 'tasi', yeniTarih: '2026-11-18', yeniSaat: '18:00' })));
 await t('öğrenci ders değişikliklerini doğrudan okuyamaz', assertFails(getDoc(doc(ogr, 'dersDegisiklik', 'k1__2026-11-17'))));
 await t('öğrenci ders değişikliği yazamaz', assertFails(setDoc(doc(ogr, 'dersDegisiklik', 'k1__2026-11-20'), { sahipId: 'k1', islem: 'iptal' })));
+await t('koç cimnastik beceri durumunu yazar', assertSucceeds(setDoc(doc(koc, 'kisiler', 'k1', 'ozel', 'beceriler'), { durum: { one_takla: { d: 'yapabiliyor', t: '2026-11-17' } } }, { merge: true })));
+await t('öğrenci beceri takibini okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'ozel', 'beceriler'))));
 await env.cleanup();
 if (hata) process.exit(1);

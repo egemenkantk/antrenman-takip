@@ -753,3 +753,24 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .ders-degistir .secim-cubugu { flex-wrap: wrap; margin: 6px 0; }
 .takvim-seans.iptal { opacity: 0.6; text-decoration: line-through; }
 .takvim-seans.degisen .ts-alt { color: #8a5a10; font-weight: 600; }
+
+/* ---------- Cimnastik ---------- */
+.sure-giris { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-weight: 400; }
+.sure-giris input { width: 4.2em; padding: 4px 6px; text-align: right; }
+.satir-form { display: flex; gap: 8px; margin-top: 12px; }
+.satir-form input { flex: 1; min-width: 0; }
+.beceri-izgara { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.beceri-grup { margin: 0; }
+.beceri-grup h4 { margin: 0 0 8px; }
+.beceri-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.beceri-liste li { display: flex; align-items: center; gap: 8px; }
+.beceri-liste li small { margin-left: auto; }
+.beceri-durum { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 1.5px solid var(--cizgi); background: var(--kart); color: var(--yazi); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; vertical-align: middle; }
+.beceri-durum.calisiyor { border-color: #b7791f; color: #b7791f; background: #fbf3e4; }
+.beceri-durum.yapabiliyor { border-color: #2e7d4f; background: #2e7d4f; color: #fff; }
+.beceri-lejant .beceri-durum { width: 18px; height: 18px; font-size: 0.7rem; cursor: default; }
+.beceri-tablo { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+.beceri-tablo th, .beceri-tablo td { padding: 6px 8px; border-bottom: 1px solid var(--cizgi); text-align: center; }
+.beceri-tablo th[scope='row'] { text-align: left; white-space: nowrap; font-weight: 600; }
+.beceri-tablo thead th { font-weight: 600; vertical-align: bottom; min-width: 72px; }
+.beceri-tablo tfoot td, .beceri-tablo tfoot th { color: var(--soluk); font-size: 0.8rem; }

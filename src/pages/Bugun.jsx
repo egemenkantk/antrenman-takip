@@ -14,7 +14,8 @@ import {
   coz,
   uzunTarih,
   gunBolumleri,
-  dozaj,
+  bolumNotu,
+  toplamSure,
   gununSeansi,
   seansOzeti,
   fazAdi,
@@ -164,7 +165,7 @@ function Plan({ s }) {
           <span>
             {s.gun.baslik || `${HARF[s.gunIdx]} günü`}
             <small>
-              {' '}· {b.ad}, {s.hafta + 1}. hafta{' '}
+              {' '}· {b.ad}, {s.hafta + 1}. hafta{b.cimnastik && toplamSure(s.gun) ? ` · ${toplamSure(s.gun)} dk` : ''}{' '}
               <span className="faz" style={{ background: fazRengi(b) }}>{fazAdi(b)}</span>
             </small>
           </span>
@@ -175,7 +176,7 @@ function Plan({ s }) {
         <ul className="egzersizler">{satirlar(s.gun.icerik?.liste).map((x, i) => <EgzersizSatiri key={i} satir={x} kutuphane={kutuphane} />)}</ul>
       ) : (
         gunBolumleri(b, s.gun).map((k) => {
-          const d = BOLUMLER[k]?.doz ? dozaj(s.rx, s.gunIdx, k) : '';
+          const d = bolumNotu(b, s.rx, s.gunIdx, s.gun, k);
           const h = satirlar(s.gun.icerik?.[k]);
           if (!h.length && !d) return null;
           return (
@@ -497,12 +498,12 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
 
               {!yok && c.tip === 'kisi' && (
                 <div className="seans-alt">
-                  <div className="satir-arasi">
+                  {c.k.tip !== 'cimnastik' && <div className="satir-arasi">
                     {gunluk['w:' + c.id] ? <WellnessRozeti w={gunluk['w:' + c.id]} /> : <span className="aciklama kucuk-yazi">Wellness girilmedi</span>}
                     <button className="metin" onClick={() => setAcik(acik === 'w:' + c.id ? null : 'w:' + c.id)}>
                       {gunluk['w:' + c.id] ? 'Düzenle' : 'Wellness gir'}
                     </button>
-                  </div>
+                  </div>}
                   {acik === 'w:' + c.id && (
                     <WellnessFormu
                       ilk={gunluk['w:' + c.id]}
@@ -551,7 +552,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                         <div className="satir-arasi">
                           <span className="kim"><Avatar k={k} /> {k.ad}{sakatMi(k) && <span className="sakatlik-nokta" title={k.aktifSakatliklar.map(sakatlikEtiketi).join(", ")}> ⚠</span>}</span>
                           <span className="uye-durum">
-                            {gunluk['w:' + k.id] ? <WellnessRozeti w={gunluk['w:' + k.id]} /> : (
+                            {k.tip === 'cimnastik' ? null : gunluk['w:' + k.id] ? <WellnessRozeti w={gunluk['w:' + k.id]} /> : (
                               <button className="metin" onClick={() => setAcik(acik === 'w:' + k.id ? null : 'w:' + k.id)}>+ wellness</button>
                             )}
                             <KayitOzeti r={gunluk['g:' + c.id + ':' + k.id]} />

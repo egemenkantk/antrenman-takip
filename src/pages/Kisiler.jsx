@@ -19,6 +19,7 @@ import {
 } from '../veri';
 import { TestlerSekmesi, KayitlarSekmesi } from './KisiKayitlari';
 import ProgramSekmesi from '../program/ProgramSekmesi';
+import { KisiBecerileri } from '../cimnastik/Beceriler';
 import RaporSekmesi from '../rapor/RaporSekmesi';
 import PosturSekmesi from '../postur/PosturSekmesi';
 import PaketSekmesi from '../paket/PaketSekmesi';
@@ -345,10 +346,21 @@ const SEKMELER = [
   ['rapor', 'Rapor', null],
   ['portal', 'Portal görünümü', null],
 ];
+// Cimnastik öğrencileri: bireysel program, ev programı, test, postür ve rapor yok; beceri takibi var
+const CIMNASTIK_GIZLI = ['program', 'ev', 'testler', 'postur', 'rapor'];
+function kisiSekmeleri(kisi) {
+  if (kisi.tip !== 'cimnastik') return SEKMELER;
+  const l = SEKMELER.filter(([id]) => !CIMNASTIK_GIZLI.includes(id));
+  l.splice(2, 0, ['beceri', 'Beceriler', null]);
+  return l;
+}
 
 function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti, onSilindi }) {
   const [sekme, setSekme] = useState('ozet');
   const [duzenle, setDuzenle] = useState(false);
+  useEffect(() => {
+    if (!kisiSekmeleri(kisi).some(([id]) => id === sekme)) setSekme('ozet');
+  }, [kisi.tip, sekme]);
   const [baglaSecim, setBaglaSecim] = useState('');
   const [hata, setHata] = useState('');
   const [tipler, setTipler] = useState([]);
@@ -400,7 +412,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       </header>
 
       <nav className="sekmeler" aria-label="Kişi kartı bölümleri">
-        {SEKMELER.filter(([id]) => id !== 'portal' || yonetici).map(([id, ad]) => (
+        {kisiSekmeleri(kisi).filter(([id]) => id !== 'portal' || yonetici).map(([id, ad]) => (
           <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>
             {ad}
           </button>
@@ -409,6 +421,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
 
       {hata && <p className="hata">{hata}</p>}
 
+      {sekme === 'beceri' && kisi.tip === 'cimnastik' && <KisiBecerileri kisiId={kisi.id} yapan={benim} />}
       {sekme === 'program' && (
         <RiskliKaliplar.Provider value={riskli}>
           {riskli.size > 0 && (
@@ -436,7 +449,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       {sekme === 'saglik' && <SaglikSekmesi kisi={kisi} yapan={benim} onKisiDegisti={onDegisti} />}
       {sekme === 'paket' && <PaketSekmesi kisi={kisi} yonetici={yonetici} benim={benim} koclar={koclar} />}
       {sekme === 'postur' && <PosturSekmesi kisi={kisi} yapan={benim} programYetkisi={programYetkisi} />}
-      {!['ozet', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal', 'saglik'].includes(sekme) && (
+      {!['ozet', 'beceri', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal', 'saglik'].includes(sekme) && (
         <div className="bos-durum">
           <p>
             Bu bölüm Aşama {SEKMELER.find((s) => s[0] === sekme)[2]} kapsamında gelecek.

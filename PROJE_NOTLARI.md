@@ -261,3 +261,9 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Bugün ekranında her kartta "🕒 Saat / gün" düğmesi; "Değişikliği geri al" belgeyi siler.
 - Taşınan ders eski günde soluk "taşındı" olarak, yeni günde "taşındı (asıl tarih)" etiketiyle ve asıl günün planıyla görünür. Takvim de aynı hesaplamayı (gunHesap.gununKartlari) kullanır.
 - Portal (öğrenci/veli) değişiklikleri portalVerisi üzerinden görür; koleksiyonu doğrudan okuyamaz. Değişiklik için otomatik bildirim henüz yok.
+
+## Cimnastik
+- Kişi tipi `cimnastik` (TIP_ADI). Kişi kartında Program, Ev programı, Testler, Postür ve Rapor sekmeleri gizli; Beceriler sekmesi var. Wellness Bugün ekranında ve portalda sorulmaz; portalda Ev programı ve Gelişim sayfaları yok. Test sayfalarına (test günü, takip, veriler) girmezler.
+- Grup alanı `cimnastik: true` ("Cimnastik grubu" onayı). Grup programı `CimnastikDuzenleyici` ile: blok alanları `cimnastik: true, faz: 'cimnastik', tema, not (dönemin hedefi)`, bölümler sabit `c_isinma, c_beceri, c_ana, c_oyun, c_soguma`, her günde `sure: {bölüm: dk}`; haftalık dozaj (ilerleme) yok.
+- Hazır dönem temaları `src/cimnastik/model.js` TEMALAR (yuvarlanma, denge, destek, sıçrama, esneklik, koordinasyon, parkur) — öneri içeriktir.
+- Beceri takibi: `kisiler/{id}/ozel/beceriler` { durum: {anahtar: {d: calisiyor|yapabiliyor, t, y}}, ekler: [] }. Yalnızca ekip (ozel kuralı); veliler görmez. Grup sayfasında "Beceriler" sekmesi üye × beceri tablosu.

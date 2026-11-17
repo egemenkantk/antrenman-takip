@@ -402,7 +402,7 @@ export default function Testler({ onGeri }) {
     Promise.all([kisileriGetir(ben), gruplariGetir(ben), subeleriGetir().catch(() => [])])
       .then(([k, g, s]) => {
         setSubeler(s);
-        setKisiler(k.filter((x) => x.aktif !== false));
+        setKisiler(k.filter((x) => x.aktif !== false && x.tip !== 'cimnastik')); // cimnastikte test bataryası yok
         setGruplar(g);
       })
       .catch((e) => setHata(hataMesaji(e)));

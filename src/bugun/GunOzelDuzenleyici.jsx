@@ -1,11 +1,13 @@
 // Bir seansı yalnızca seçili tarih için değiştirir; blok/sezon planı değişmez.
 import { useState } from 'react';
-import { BOLUMLER, BOLUM_SIRASI, BOLUM_RENK, gunBolumleri, dozaj, uzunTarih, HARF } from '../program/model';
+import { BOLUMLER, BOLUM_RENK, bolumSirasi, gunBolumleri, dozaj, uzunTarih, HARF } from '../program/model';
 import SiraliListe from '../program/SiraliListe';
 
 export default function GunOzelDuzenleyici({ seans, tarih, ad, varMi, onKaydet, onDinlenme, onPlanaDon, onVazgec }) {
   const sade = !!seans?.blok?.sade;
+  const cim = !!seans?.blok?.cimnastik;
   const ilkBolumler = seans?.gun ? gunBolumleri(seans.blok, seans.gun) : [];
+  const [sure, setSure] = useState({ ...(seans?.gun?.sure || {}) });
   const [baslik, setBaslik] = useState(seans?.gun?.baslik || '');
   const [bolumler, setBolumler] = useState(ilkBolumler);
   const [icerik, setIcerik] = useState({ ...(seans?.gun?.icerik || {}) });
@@ -43,7 +45,7 @@ export default function GunOzelDuzenleyici({ seans, tarih, ad, varMi, onKaydet, 
       ) : (
         <>
           <div className="cip-grubu kucuk">
-            {BOLUM_SIRASI.map((k) => (
+            {bolumSirasi(seans?.blok).map((k) => (
               <button
                 type="button"
                 key={k}
@@ -70,6 +72,17 @@ export default function GunOzelDuzenleyici({ seans, tarih, ad, varMi, onKaydet, 
                     value={icerik[k] || ''}
                     onChange={(e) => setIcerik({ ...icerik, [k]: e.target.value })}
                   />
+                  {cim && (
+                    <input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="dk"
+                      value={sure[k] ?? ''}
+                      onChange={(e) => setSure({ ...sure, [k]: e.target.value === '' ? '' : Number(e.target.value) })}
+                      aria-label={`${BOLUMLER[k].ad} süresi (dakika)`}
+                    />
+                  )}
                   {BOLUMLER[k].doz && (
                     <input
                       placeholder={BOLUMLER[k].ipucu}
@@ -102,6 +115,7 @@ export default function GunOzelDuzenleyici({ seans, tarih, ad, varMi, onKaydet, 
                 bolumler: sade ? [] : bolumler,
                 icerik: sade ? { liste: icerik.liste || '' } : Object.fromEntries(bolumler.map((k) => [k, icerik[k] || ''])),
                 doz: sade ? {} : Object.fromEntries(bolumler.filter((k) => BOLUMLER[k]?.doz).map((k) => [k, doz[k] || ''])),
+                ...(cim ? { cimnastik: true, sure: Object.fromEntries(bolumler.map((k) => [k, Number(sure[k]) || 0])) } : {}),
                 not,
                 blokId: seans?.blok?.id || null,
               })

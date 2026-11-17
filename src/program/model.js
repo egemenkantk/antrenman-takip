@@ -16,11 +16,20 @@ export const BOLUMLER = {
   denge: { ad: 'Denge', doz: true, ipucu: '3×30 sn tek ayak · gözler kapalı' },
   kardiyo: { ad: 'Kardiyovasküler dayanıklılık', doz: true, ipucu: '6×(30 sn : 30 sn) · Z4' },
   mobilite: { ad: 'Esneklik-mobilite', doz: true, ipucu: '15 dk akış' },
+  // Cimnastik grup dersleri (sabit beş bölüm, dozaj yerine süre)
+  c_isinma: { ad: 'Isınma', doz: false, cim: true },
+  c_beceri: { ad: 'Beceri', doz: false, cim: true },
+  c_ana: { ad: 'Ana bölüm', doz: false, cim: true },
+  c_oyun: { ad: 'Oyun', doz: false, cim: true },
+  c_soguma: { ad: 'Soğuma', doz: false, cim: true },
 };
-export const BOLUM_SIRASI = Object.keys(BOLUMLER);
+export const BOLUM_SIRASI = Object.keys(BOLUMLER).filter((k) => !BOLUMLER[k].cim);
+export const CIM_SIRASI = Object.keys(BOLUMLER).filter((k) => BOLUMLER[k].cim);
+export const bolumSirasi = (b) => (b?.cimnastik ? CIM_SIRASI : BOLUM_SIRASI);
 export const BOLUM_RENK = {
   isinma: '#7C8A99', kuvvet: '#18212C', kdevam: '#6B4FBB', core: '#7A6A1C', power: '#D9822B',
   hiz: '#2347D8', ceviklik: '#0E8A8A', denge: '#A0527A', kardiyo: '#C8341F', mobilite: '#2E7D4F',
+  c_isinma: '#7C8A99', c_beceri: '#E45D2B', c_ana: '#2347D8', c_oyun: '#2E7D4F', c_soguma: '#6B4FBB',
 };
 
 export const FAZLAR_SPORCU = {
@@ -34,9 +43,10 @@ export const FAZLAR_SPORCU = {
 export const FAZLAR_PT = { adaptasyon: 'Adaptasyon', temel: 'Temel', ilerleme: 'İlerleme' };
 export const FAZ_RENK = {
   genel: '#2E7D4F', ozel: '#2347D8', musabaka: '#C8341F', sezon_ici: '#7A3FD1', sezon_arasi: '#6B7785',
-  kuvvet: '#B7791F', adaptasyon: '#2E7D4F', temel: '#2347D8', ilerleme: '#C8341F',
+  kuvvet: '#B7791F', adaptasyon: '#2E7D4F', temel: '#2347D8', ilerleme: '#C8341F', cimnastik: '#A0527A',
 };
 export function fazAdi(b) {
+  if (b.cimnastik) return b.tema || 'Cimnastik';
   if (b.faz === 'ozelAd') return b.fazAdi || 'Diğer';
   return FAZLAR_SPORCU[b.faz] || FAZLAR_PT[b.faz] || 'Diğer';
 }
@@ -64,6 +74,12 @@ export const haftaSayisi = (b) => b.haftalar || (b.ilerleme || []).length || 6;
 export const blokBitis = (b) => gunEkle(b.baslangic, haftaSayisi(b) * 7);
 export const blokDurumu = (b, t = bugun()) => (t < b.baslangic ? 'planli' : t >= blokBitis(b) ? 'bitti' : 'simdi');
 export const gunBolumleri = (b, g) => (g?.bolumler?.length ? g.bolumler : b.bolumler || []);
+// Bölüm başlığının yanındaki kısa bilgi: sporcu bloklarında haftanın dozajı, cimnastikte süre
+export function bolumNotu(b, rx, gunIdx, gun, k) {
+  if (b?.cimnastik) return Number(gun?.sure?.[k]) ? `${gun.sure[k]} dk` : '';
+  return BOLUMLER[k]?.doz ? dozaj(rx, gunIdx, k) : '';
+}
+export const toplamSure = (gun) => Object.values(gun?.sure || {}).reduce((t, v) => t + (Number(v) || 0), 0);
 export const dozBolumleri = (b) => (b.bolumler || []).filter((k) => BOLUMLER[k]?.doz);
 export function dozaj(hafta, gunIdx, bolum) {
   if (!hafta) return '';
@@ -318,12 +334,12 @@ export function gununSeansi(bloklar, tarih, ozel, maclar = []) {
   const s = planliSeans(bloklar, tarih, maclar);
   if (!ozel) return s;
   if (ozel.dinlenme) return { blok: s?.blok || null, dinlenme: true, ozel: true, ozelNot: ozel.not || '' };
-  const gun = { baslik: ozel.baslik || '', bolumler: ozel.bolumler || [], icerik: ozel.icerik || {} };
+  const gun = { baslik: ozel.baslik || '', bolumler: ozel.bolumler || [], icerik: ozel.icerik || {}, sure: ozel.sure || {} };
   const gunIdx = s?.gunIdx ?? 0;
   const gunDoz = [];
   gunDoz[gunIdx] = ozel.doz || {};
   return {
-    blok: s?.blok || { sade: !!ozel.sade, bolumler: ozel.bolumler || [] },
+    blok: s?.blok || { sade: !!ozel.sade, cimnastik: !!ozel.cimnastik, bolumler: ozel.bolumler || [] },
     hafta: s?.hafta ?? 0,
     gunIdx,
     gun,
@@ -339,7 +355,7 @@ export function seansOzeti(s) {
   if (s.blok?.sade) return s.gun.icerik?.liste || '';
   return gunBolumleri(s.blok, s.gun)
     .map((k) => {
-      const d = dozaj(s.rx, s.gunIdx, k);
+      const d = bolumNotu(s.blok, s.rx, s.gunIdx, s.gun, k);
       const h = String(s.gun.icerik?.[k] || '').split('\n').map((x) => x.trim()).filter(Boolean).join(', ');
       if (!h && !d) return '';
       return `${BOLUMLER[k]?.ad || k}${d ? ` (${d})` : ''}: ${h}`;

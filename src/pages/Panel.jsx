@@ -71,7 +71,7 @@ function KisiListesi({ ben, seciliId, onSec, yenile }) {
                   {x.ad}
                   {(x.aktifSakatliklar || []).length > 0 && <span className="sakatlik-nokta" title="Aktif sakatlık"> ⚠</span>}
                 </strong>
-                <small>{x.tip === 'pt' ? HEDEF_ADI[x.hedef] || 'PT danışanı' : x.brans || 'Sporcu'}</small>
+                <small>{x.tip === 'pt' ? HEDEF_ADI[x.hedef] || 'PT danışanı' : x.tip === 'cimnastik' ? 'Cimnastik' : x.brans || 'Sporcu'}</small>
               </span>
             </button>
           </li>

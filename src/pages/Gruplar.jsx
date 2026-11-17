@@ -5,6 +5,7 @@ import { subeleriGetir, kullanicilariGetir, kisileriGetir, TIP_ADI } from '../ve
 import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
+import { GrupBecerileri } from '../cimnastik/Beceriler';
 import GrupOdemeleri, { DuetOdemeleri } from '../paket/GrupOdemeleri';
 import { paketTanimlariGetir, grupKaydiOlustur, grupDonemKayitlari } from '../paket/veri';
 import { donemBul, tl, GRUP_DERS_TURU, TUR_KISA } from '../paket/model.js';
@@ -26,6 +27,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
     not: ilk?.not || '',
     uyeIds: ilk?.uyeIds || [],
     dersTuru: ilk?.dersTuru || 'grup',
+    cimnastik: !!ilk?.cimnastik,
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
   });
@@ -50,6 +52,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
       if (f.dersTuru !== 'grup') {
         f.paketTanimId = '';
         f.donemBaslangic = '';
+        f.cimnastik = false;
       }
       if (f.paketTanimId && !f.donemBaslangic) {
         setBekliyor(false);
@@ -97,6 +100,11 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
         </small>
       ) : (
       <>
+      <label className="onay-kutusu">
+        <input type="checkbox" checked={f.cimnastik} onChange={(e) => setF({ ...f, cimnastik: e.target.checked })} />
+        <span>Cimnastik grubu</span>
+      </label>
+      <small className="ipucu">Programı Isınma · Beceri · Ana bölüm · Oyun · Soğuma bölümleriyle ve dönem temasıyla hazırlanır; beceri takibi açılır.</small>
       <div className="form-izgara">
         <label className="alan">
           <span>Dönem ücreti (4 hafta)</span>
@@ -297,13 +305,13 @@ export default function Gruplar({ onGeri }) {
         <button className="metin geri" onClick={() => setSecili(null)}>← Gruplar</button>
         <h2>{g.ad}{g.aktif === false ? ' (pasif)' : ''}</h2>
         <p className="aciklama">
-          {g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk
+          {g.cimnastik ? 'Cimnastik · ' : ''}{g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk
           {g.kocIds?.length ? ` · ${g.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
           {subeler.length > 1 ? ` · ${subeler.find((s) => s.id === g.subeId)?.ad || ''}` : ''}
         </p>
         {g.not && <p className="blok-not">{g.not}</p>}
         <nav className="sekmeler">
-          {[['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ['odeme', 'Ödemeler']].map(([id, ad]) => (
+          {[['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ...(g.cimnastik ? [['beceri', 'Beceriler']] : []), ['odeme', 'Ödemeler']].map(([id, ad]) => (
             <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>{ad}</button>
           ))}
         </nav>
@@ -330,8 +338,18 @@ export default function Gruplar({ onGeri }) {
           </>
         )}
         {sekme === 'program' && (
-          <ProgramSekmesi sahipTip="grup" sahipId={g.id} sade={false} duzenleyebilir={programYetkisi} yapan={ben.id} />
+          <ProgramSekmesi
+            sahipTip="grup"
+            sahipId={g.id}
+            sade={false}
+            duzenleyebilir={programYetkisi}
+            yapan={ben.id}
+            cimnastik={!!g.cimnastik}
+            varsayilanGunler={Object.keys(g.saatler || {}).map(Number)}
+            dersSuresi={Number(g.sure) || 60}
+          />
         )}
+        {sekme === 'beceri' && g.cimnastik && <GrupBecerileri uyeler={uyeler} yapan={ben.id} />}
         {sekme === 'odeme' && g.dersTuru && g.dersTuru !== 'grup' && (
           <DuetOdemeleri grup={g} kisiler={kisiler} />
         )}
@@ -390,7 +408,7 @@ export default function Gruplar({ onGeri }) {
               <div className="esnek">
                 <strong>{x.ad}</strong>
                 <span>
-                  {x.dersTuru && x.dersTuru !== 'grup' ? `${TUR_KISA[x.dersTuru]} · ` : ''}{saatOzeti(x.saatler)} · {(x.uyeIds || []).length} üye
+                  {x.cimnastik ? 'Cimnastik · ' : ''}{x.dersTuru && x.dersTuru !== 'grup' ? `${TUR_KISA[x.dersTuru]} · ` : ''}{saatOzeti(x.saatler)} · {(x.uyeIds || []).length} üye
                   {x.kocIds?.length ? ` · ${x.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
                 </span>
               </div>

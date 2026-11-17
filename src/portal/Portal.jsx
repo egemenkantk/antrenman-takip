@@ -122,7 +122,7 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
           </ul>
         )}
       </section>
-      <BugunFormu kisi={v.kisi} ben={ben} veli={veli} dersGunu={bugunDers} salt={salt} />
+      {v.kisi.tip !== 'cimnastik' && <BugunFormu kisi={v.kisi} ben={ben} veli={veli} dersGunu={bugunDers} salt={salt} />}
       {(bireysel.length > 0 || borc > 0) && (
         <section className="portal-kart">
           <h3>Paket</h3>
@@ -366,6 +366,11 @@ export default function Portal({ ben, onizlemeKisiId }) {
     portalVerisiGetir(secili).then(setV).catch((e) => setHata(hataMesaji(e)));
   }, [secili]);
 
+  // Cimnastik: ev programı, gelişim (test) ve wellness yok
+  const sayfalar = v?.kisi.tip === 'cimnastik' ? SAYFALAR.filter(([id]) => id !== 'program' && id !== 'gelisim') : SAYFALAR;
+  useEffect(() => {
+    if (!sayfalar.some(([id]) => id === sayfa)) setSayfa('ana');
+  }, [v?.kisi.tip, sayfa]);
   const ilkAd = useMemo(() => (v?.kisi.ad || '').split(' ')[0], [v]);
 
   if (!kisiIds.length) {
@@ -390,7 +395,7 @@ export default function Portal({ ben, onizlemeKisiId }) {
       {onizlemeKisiId && <p className="uyari-kutu kucuk-yazi">Önizleme: öğrenci ve velinin gördüğü ekran. Liste fiyatı, koç notları ve diğer kişiler görünmez.</p>}
       {!onizlemeKisiId && <h2>{veli ? v?.kisi.ad || '' : `Merhaba${ilkAd ? `, ${ilkAd}` : ''}`}</h2>}
       <nav className="sekmeler" aria-label="Portal bölümleri">
-        {SAYFALAR.map(([id, ad]) => (
+        {sayfalar.map(([id, ad]) => (
           <button key={id} className={'sekme' + (sayfa === id ? ' secili' : '')} onClick={() => setSayfa(id)}>{ad}</button>
         ))}
       </nav>
