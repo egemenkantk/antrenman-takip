@@ -431,7 +431,8 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
   if (!veri) return <p className="aciklama">Yükleniyor…</p>;
 
   const sirali = [...veri.paketler]
-    .filter((p) => p.tur !== 'abonelik' && p.tur !== 'abonelikDonem')
+    // Gruba katılmadan önceki dönem kayıtları kişinin listesinde gösterilmez
+    .filter((p) => p.tur !== 'abonelik' && p.tur !== 'abonelikDonem' && !(p.durum === 'iptal' && p.fiyatNotu === 'Katılımdan önceki dönem'))
     .sort((a, b) => (b.baslangic || '').localeCompare(a.baslangic || ''));
   const abonelikler = veri.paketler.filter((p) => p.tur === 'abonelik');
   const bitmis = (p) => {
