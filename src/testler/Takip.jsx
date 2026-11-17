@@ -10,6 +10,8 @@ import { bugun, gunEkle, kisaTarih } from '../program/model';
 import { ayEkle } from '../paket/model.js';
 import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, testBilgisi, testSirasi, degerGoster } from './tanimlar';
 import { kisininSonuclari } from './veri';
+import { normDegerlendir, normMetni, normVarMi, SEVIYELER, KAYNAKLAR } from './normlar';
+import { useCihazDegisimleri } from './cihaz';
 
 const TUM = TEST_KATEGORILERI.flatMap(([, l]) => l.map(([ad]) => ad));
 const CINSIYET = { K: 'Kız / kadın', E: 'Erkek' };
@@ -414,6 +416,7 @@ function Cubuklar({ satirlar, test, genelOrt, dusukIyi }) {
 
 export function TestVerileri({ kisiler, gruplar, subeler }) {
   const [capa] = useDonemCapasi();
+  const [cihaz] = useCihazDegisimleri();
   const [test0, setTest] = useState('CMJ (cm)');
   const [taraf, setTaraf] = useState('sag');
   const [aralik, setAralik] = useState('donem'); // donem | onceki | yil | tum
@@ -450,11 +453,13 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
           const l = sonuclar.filter((s) => s.kisiId === k.id && s.test === test && (!tarafli || s.taraf === taraf) && s.tarih >= bas && s.tarih <= bit);
           if (!l.length) return null;
           const sec = hangi === 'son' ? l.sort((a, b) => a.tarih.localeCompare(b.tarih)).pop() : l.reduce((m, s) => (iyi(s.deger, m.deger) ? s : m));
-          return { k, deger: sec.deger, tarih: sec.tarih, yil: dogumYili(k) };
+          return { k, deger: sec.deger, tarih: sec.tarih, yil: dogumYili(k), norm: normDegerlendir(test, sec.deger, k, sec.tarih) };
         })
         .filter(Boolean)
         .sort((a, b) => (bilgi.iyi === 'dusuk' ? a.deger - b.deger : b.deger - a.deger))
     : [];
+  const normlu = normVarMi(test) && satirlar.some((r) => r.norm);
+  const cihazUyarisi = !!(cihaz?.[test] && satirlar.some((r) => r.tarih < cihaz[test].tarih) && satirlar.some((r) => r.tarih >= cihaz[test].tarih));
   // Yüzdelik dilim: seçili gruptaki sıraya göre (1. = en iyi)
   const n = satirlar.length;
   satirlar.forEach((r, i) => (r.dilim = n > 1 ? Math.round(((n - 1 - i) / (n - 1)) * 100) : 100));
@@ -581,6 +586,27 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
           )}
           <Cubuklar satirlar={grupSatirlari} test={test} genelOrt={ist.ort} dusukIyi={dusukIyi} />
 
+          {normlu && (
+            <>
+              <h3>Dünya normuna göre</h3>
+              <div className="norm-ozet">
+                {SEVIYELER.map((ad, i) => {
+                  const n = satirlar.filter((r) => r.norm?.seviyeNo === i).length;
+                  return n ? <span key={ad} className={'r-seviye s' + i}>{ad}: {n}</span> : null;
+                }).reverse()}
+                {satirlar.some((r) => !r.norm) && <span className="aciklama kucuk-yazi">{satirlar.filter((r) => !r.norm).length} kişi değerlendirilemedi (yaş/cinsiyet eksik ya da yaşına norm yok)</span>}
+              </div>
+              <p className="aciklama kucuk-yazi">
+                Her kişi kendi yaşı ve cinsiyetine göre değerlendirilir. Kaynak: {[...new Set(satirlar.filter((r) => r.norm).map((r) => KAYNAKLAR[r.norm.kaynak].kisa))].join(', ')}.
+              </p>
+            </>
+          )}
+          {cihazUyarisi && (
+            <p className="uyari-kutu kucuk-yazi">
+              Bu testte ölçüm cihazı {kisaTarih(cihaz[test].tarih)} tarihinde değişti. Seçili aralıkta iki cihazın ölçümleri birlikte var; karşılaştırırken dikkat edin.
+            </p>
+          )}
+
           <h3>Zaman içinde (son 4 test dönemi, ortalama)</h3>
           <p className="aciklama kucuk-yazi">Aynı süzgeçlerdeki kişilerin her dönemdeki ortalaması ve o dönem ölçülen kişi sayısı.</p>
           <Cubuklar satirlar={trend.filter((t) => t.n)} test={test} dusukIyi={dusukIyi} />
@@ -592,7 +618,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
           <div className="tablo-kap">
             <table className="tablo">
               <thead>
-                <tr><th>#</th><th>Kişi</th><th>Doğum yılı</th><th>Branş</th><th>Değer</th><th>Tarih</th><th>Yüzdelik dilim</th></tr>
+                <tr><th>#</th><th>Kişi</th><th>Doğum yılı</th><th>Branş</th><th>Değer</th><th>Tarih</th><th>Yüzdelik dilim</th>{normlu && <th>Dünya normu</th>}</tr>
               </thead>
               <tbody>
                 {satirlar.map((r, i) => (
@@ -604,6 +630,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
                     <td><strong>{degerGoster(test, r.deger)}</strong></td>
                     <td>{kisaTarih(r.tarih)}</td>
                     <td><span className={'dilim d' + Math.min(3, Math.floor(r.dilim / 25))}>%{r.dilim}</span></td>
+                    {normlu && <td>{r.norm ? <span className={'r-seviye s' + r.norm.seviyeNo} title={normMetni(r.norm)}>{r.norm.seviye}</span> : <span className="aciklama">—</span>}</td>}
                   </tr>
                 ))}
               </tbody>

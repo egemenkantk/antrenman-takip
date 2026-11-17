@@ -811,3 +811,11 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .eski-borc li { margin: 2px 0; }
 .eski-borc .ic-form { margin-top: 6px; color: var(--yazi); }
 .ic-form .uyari-kutu { margin: 6px 0; }
+.r-seviye { display: inline-block; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; border: 1px solid currentColor; }
+.r-seviye.s0 { color: #a12a1b; background: #fdecea; }
+.r-seviye.s1 { color: #8a5a00; background: #fff4dc; }
+.r-seviye.s2 { color: #44505e; background: #eef1f4; }
+.r-seviye.s3 { color: #1f6b42; background: #e6f4ec; }
+.r-seviye.s4 { color: #fff; background: #2e7d4f; border-color: #2e7d4f; }
+.norm-ozet { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.cihaz-liste li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }

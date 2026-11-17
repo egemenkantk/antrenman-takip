@@ -6,6 +6,7 @@ import { KURUM_ID, MARKA } from '../config/marka';
 import { TIP_ADI, HEDEF_ADI, yasHesapla } from '../veri';
 import { TARAF_ADI, sayiGoster, degerGoster } from '../testler/tanimlar';
 import { testSatirlari, testTarihleri, grafikNoktalari, antrenmanOzeti, degisimMetni, TEST_ACIKLAMA } from './model';
+import { normDegerlendir, normMetni, KAYNAKLAR } from '../testler/normlar';
 import { bugun, gunEkle, gunFarki } from '../program/model';
 import { posturleriGetir } from '../postur/PosturSekmesi';
 import { BULGU, POSTUR, bulguMetni, egilim } from '../postur/tanimlar';
@@ -56,7 +57,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
   const [mod, setMod] = useState(sporcu ? 'test' : 'donem'); // test: iki test günü · donem: tarih aralığı
   const [A, setA] = useState('');
   const [B, setB] = useState('');
-  const [bolum, setBolum] = useState({ testler: sporcu, grafikler: sporcu, antrenman: true, postur: true, vucut: !sporcu, yorum: true });
+  const [bolum, setBolum] = useState({ testler: sporcu, norm: sporcu, grafikler: sporcu, antrenman: true, postur: true, vucut: !sporcu, yorum: true });
   const [yorum, setYorum] = useState({ degerlendirme: '', hedefler: '' });
   const [durum, setDurum] = useState('');
   const sayfa = useRef(null);
@@ -71,7 +72,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
       getDoc(doc(db, 'aktarim', 'sporcu-karti')).catch(() => null),
       posturleriGetir(kisi.id).catch(() => []),
     ]).then(([testler, kayitlar, wellness, taslak, kurum, eski, posturler]) => {
-      setVeri({ testler: testler.filter((t) => typeof t.deger === 'number'), kayitlar, wellness, posturler });
+      setVeri({ testler: testler.filter((t) => typeof t.deger === 'number'), kayitlar, wellness, posturler, cihaz: (kurum?.exists() && kurum.data().cihazDegisimi) || {} });
       if (taslak.exists()) setYorum({ degerlendirme: taslak.data().degerlendirme || '', hedefler: taslak.data().hedefler || '' });
       const k = kurum?.exists() ? kurum.data().rapor || {} : {};
       setMarka({ ad: k.ad || MARKA.ad, koc: k.koc || '', logo: k.logo || (eski?.exists() ? eski.data().logo : null) || null });
@@ -93,7 +94,15 @@ export default function RaporSekmesi({ kisi, yapan }) {
 
   if (!veri) return <p className="aciklama">Yükleniyor…</p>;
 
-  const testGruplari = B ? testSatirlari(veri.testler, mod === 'test' ? A : '', B, { vucut: bolum.vucut }) : [];
+  const testGruplari = B ? testSatirlari(veri.testler, mod === 'test' ? A : '', B, { vucut: bolum.vucut, cihaz: veri.cihaz }) : [];
+  // Dünya normlarına göre değerlendirme (yaş ve cinsiyet gerekir)
+  const normSatirlari = testGruplari
+    .filter((g) => g.kat !== 'Antropometri')
+    .flatMap((g) => g.satirlar)
+    .filter((r) => r.yeni)
+    .map((r) => ({ r, n: normDegerlendir(r.test, r.son.deger, kisi, r.son.tarih) }))
+    .filter((x) => x.n);
+  const normKaynaklari = [...new Set(normSatirlari.map((x) => x.n.kaynak))];
   const satirlar = testGruplari.flatMap((g) => g.satirlar);
   const kiyas = satirlar.filter((r) => r.iyi != null);
   const ozetBas = A || (mod === 'test' ? tarihler[0] : '');
@@ -216,7 +225,7 @@ export default function RaporSekmesi({ kisi, yapan }) {
         <fieldset>
           <legend>Bölümler</legend>
           {[
-            ...(sporcu ? [['testler', 'Test sonuçları ve açıklamalar'], ['grafikler', 'Gelişim grafikleri']] : []),
+            ...(sporcu ? [['testler', 'Test sonuçları ve açıklamalar'], ['norm', 'Dünya normlarına göre değerlendirme'], ['grafikler', 'Gelişim grafikleri']] : []),
             ['antrenman', 'Antrenman özeti'],
             ['postur', 'Postür özeti'],
             ['vucut', 'Vücut ölçüleri'],
@@ -333,7 +342,17 @@ export default function RaporSekmesi({ kisi, yapan }) {
                         </td>
                         {mod === 'test' && A && (
                           <td>
-                            {r.fark == null ? (
+                            {r.cihazDegisti ? (
+                              <>
+                                <span className="r-esit">Ölçüm cihazı değişti</span>
+                                <span className="r-acik">
+                                  {(() => {
+                                    const n = normDegerlendir(r.test, r.son.deger, kisi, r.son.tarih);
+                                    return n ? `Dünya normuna göre: ${normMetni(n)}` : 'Önceki ölçümle karşılaştırılamaz.';
+                                  })()}
+                                </span>
+                              </>
+                            ) : r.fark == null ? (
                               <span className="r-esit">—</span>
                             ) : Math.abs(r.fark) < 1e-9 ? (
                               <span className="r-esit">değişim yok</span>
@@ -354,10 +373,49 @@ export default function RaporSekmesi({ kisi, yapan }) {
             </div>
           )}
 
+          {B && bolum.norm && sporcu && (
+            <div className="r-bolum">
+              <h3>Dünya normlarına göre değerlendirme</h3>
+              {kisi.cinsiyet !== 'K' && kisi.cinsiyet !== 'E' ? (
+                <p className="r-not">Cinsiyet girilmediği için norm değerlendirmesi yapılamadı.</p>
+              ) : !kisi.dogumTarihi && !kisi.dogumYili ? (
+                <p className="r-not">Doğum tarihi girilmediği için norm değerlendirmesi yapılamadı.</p>
+              ) : normSatirlari.length === 0 ? (
+                <p className="r-not">Bu rapordaki testler için sporcunun yaşına uygun dünya normu bulunmuyor.</p>
+              ) : (
+                <>
+                  <table className="r-tablo">
+                    <thead>
+                      <tr><th>Test</th><th>Sonuç</th><th>Yaşıtlarının ortalaması</th><th>Değerlendirme</th></tr>
+                    </thead>
+                    <tbody>
+                      {normSatirlari.map(({ r, n }) => (
+                        <tr key={r.anahtar}>
+                          <td><b>{r.test}{r.taraf ? ` · ${TARAF_ADI[r.taraf]}` : ''}</b><span className="r-acik">{n.yas} yaş · {KAYNAKLAR[n.kaynak].kisa}</span></td>
+                          <td className="r-sayi">{degerGoster(r.test, r.son.deger)}</td>
+                          <td className="r-sayi">{n.ortalama != null ? degerGoster(r.test, Math.round(n.ortalama * 100) / 100) : '—'}</td>
+                          <td>
+                            <span className={'r-seviye s' + n.seviyeNo}>{n.seviye}</span>
+                            <span className="r-acik">{normMetni(n).split(' · ')[1]}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="r-not">
+                    Değerlendirme, aynı yaş ve cinsiyetteki çocukların sonuçlarına göre yapılır. Kaynaklar:{' '}
+                    {normKaynaklari.map((k) => KAYNAKLAR[k].uzun).join(' · ')}.
+                    {normKaynaklari.includes('tenis') && ' Tenisçi ortalamaları farklı çalışmaların ortalamasıdır; yön göstermek içindir.'}
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+
           {B && bolum.grafikler && sporcu && (() => {
             const g = satirlar
               .filter((r) => r.bilgi.kat !== 'Antropometri')
-              .map((r) => ({ r, n: grafikNoktalari(veri.testler, r.anahtar, B) }))
+              .map((r) => ({ r, n: grafikNoktalari(veri.testler, r.anahtar, B, veri.cihaz) }))
               .filter((x) => x.n.length > 1);
             return g.length ? (
               <div className="r-bolum">

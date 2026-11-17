@@ -52,7 +52,7 @@ export function degisimMetni(iyi, onceki, son) {
 }
 
 // Kategorilere göre gruplanmış karşılaştırma satırları
-export function testSatirlari(liste, A, B, { vucut = false } = {}) {
+export function testSatirlari(liste, A, B, { vucut = false, cihaz = {} } = {}) {
   const anahtarlar = [...new Set(liste.map(satirAnahtari))];
   const kategoriler = [...TEST_KATEGORILERI.map(([k]) => k), 'Diğer'];
   const sira = Object.keys(TESTLER);
@@ -74,13 +74,17 @@ export function testSatirlari(liste, A, B, { vucut = false } = {}) {
         if (!son) return null;
         const onceki = A ? tariheKadar(liste, k, A) : null;
         const yeni = !A || son.tarih > A;
-        const pv = onceki && yeni ? onceki.deger : null;
-        const tum = liste.filter((t) => satirAnahtari(t) === k && t.tarih <= B).map((t) => t.deger);
+        // Ölçüm cihazı iki test arasında değiştiyse karşılaştırma yapılmaz
+        const cd = cihaz[test];
+        const cihazDegisti = !!(cd && onceki && yeni && onceki.tarih < cd.tarih && son.tarih >= cd.tarih);
+        const pv = onceki && yeni && !cihazDegisti ? onceki.deger : null;
+        const ayniCihaz = (t) => !cd || (t.tarih >= cd.tarih) === (son.tarih >= cd.tarih);
+        const tum = liste.filter((t) => satirAnahtari(t) === k && t.tarih <= B && ayniCihaz(t)).map((t) => t.deger);
         const enIyi = bilgi.iyi === 'dusuk' ? Math.min(...tum) : Math.max(...tum);
         const fark = pv != null ? son.deger - pv : null;
         const iyi = fark == null || Math.abs(fark) < 1e-9 || bilgi.iyi === 'notr' ? null : bilgi.iyi === 'dusuk' ? fark < 0 : fark > 0;
         const rekor = bilgi.iyi !== 'notr' && tum.length > 1 && son.deger === enIyi && yeni && pv != null && son.deger !== pv;
-        return { anahtar: k, test, taraf: taraf || null, bilgi, son, onceki: pv, fark, iyi, rekor, yeni };
+        return { anahtar: k, test, taraf: taraf || null, bilgi, son, onceki: pv, fark, iyi, rekor, yeni, cihazDegisti };
       })
       .filter(Boolean);
     return { kat, satirlar };
@@ -89,10 +93,13 @@ export function testSatirlari(liste, A, B, { vucut = false } = {}) {
 }
 
 // Grafik için noktalar (B'ye kadar)
-export function grafikNoktalari(liste, anahtar, B) {
-  return liste
-    .filter((t) => satirAnahtari(t) === anahtar && t.tarih <= B)
-    .sort((a, b) => a.tarih.localeCompare(b.tarih));
+export function grafikNoktalari(liste, anahtar, B, cihaz = {}) {
+  const l = liste.filter((t) => satirAnahtari(t) === anahtar && t.tarih <= B).sort((a, b) => a.tarih.localeCompare(b.tarih));
+  // Cihaz değiştiyse yalnızca son ölçümle aynı cihazdaki noktalar çizilir
+  const cd = cihaz[anahtar.split('|')[0]];
+  if (!cd || !l.length) return l;
+  const yeni = l[l.length - 1].tarih >= cd.tarih;
+  return l.filter((t) => (t.tarih >= cd.tarih) === yeni);
 }
 
 // Antrenman özeti: kayıtlar (antrenmanKayitlari) ve wellness, [A, B] aralığı

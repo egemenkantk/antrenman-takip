@@ -280,3 +280,10 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - `grup.uyeKatilim[kisiId]` = katılım tarihi. Grubun Ödemeler sekmesinde yönetici "Katılım" ile dönem seçer ya da tarih girer (`katilimGuncelle`): katılımdan önce biten dönem kayıtları (ödemesizse) `durum: iptal, fiyatNotu: 'Katılımdan önceki dönem'`; katıldığı dönem orantılı, sonrakiler tam ücretle yeniden hesaplanır; ödemeli kayıtlara dokunulmaz.
 - Katılımı dönem bitişinden sonra olan üye o dönemde listelenmez ve kaydı açılmaz (istemci + sunucu donemKontrolu).
 - "Bu döneme dahil değil" (`donemDahilAyarla`): kayıt yoksa açılıp `iptal, fiyatNotu: 'Bu döneme dahil değil'` yapılır; "Döneme dahil et" geri alır. Sunucu mevcut kaydın üstüne yazmadığı için muafiyet kalıcıdır.
+
+## Dünya normları ve cihaz değişikliği
+- `src/testler/normlar.js`: Eurofit (Tomkinson 2018, 9–17 yaş: uzun atlama, kavrama, otur-uzan, 20 m mekik/beep), ABD okul normları (6–17: 1 dk mekik, barfiks (erkek 10+), şınav, 6–8 yaş otur-uzan), genç tenisçi meta-analiz ortalamaları (Axman 2025: CMJ, 10/20 m sürat, 505). `normDegerlendir(test, deger, kisi, tarih)` test günündeki yaş + cinsiyet ile seviye (5 kademe) döner. 18+ için norm yok.
+- Otur-uzan: bizim kutuda ayak tabanı 22 cm (Eurofit 15, ABD 23 cm'e çevrilir). Beep "8/5" → Léger dakika (L-1 + mekik/kademe mekik sayısı).
+- Cihaz değişikliği: `kurumlar/fitkon.cihazDegisimi[test] = {tarih, not}` (Testler > Cihaz değişiklikleri, yönetici). Raporda değişimden önceki/sonraki ölçümler karşılaştırılmaz (yerine norm), grafik ve rekor yalnızca aynı cihaz dönemi; Test verilerinde uyarı.
+- Raporda "Dünya normlarına göre değerlendirme" bölümü; Test verilerinde "Dünya normu" sütunu ve seviye özeti.
+- Ödeme: kişi Paket sekmesinde önceki dönemlerden ödenmemiş grup/abonelik kayıtları üstte uyarı + ödeme formunda uyarı. Portal aylık abonelikte ders sayısı göstermez.

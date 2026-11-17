@@ -3,6 +3,7 @@ import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
 import { kisileriGetir, kisiGuncelle, tarihGoster, subeleriGetir } from '../veri';
 import { TestTakibi, TestVerileri } from '../testler/Takip';
+import { CihazDegisimleri } from '../testler/cihaz';
 import { gruplariGetir } from '../gruplar/veri';
 import { bugun } from '../program/model';
 import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, sayiyaCevir, sayiGoster, degerCevir, BEEP_TEST } from '../testler/tanimlar';
@@ -415,7 +416,7 @@ export default function Testler({ onGeri }) {
       {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Testler</h2>
       <nav className="sekmeler">
-        {[['takip', 'Test takibi'], ['veriler', 'Test verileri'], ['gun', 'Test günü (elle giriş)'], ['performanz', 'Performanz raporu yükle']].map(([id, ad]) => (
+        {[['takip', 'Test takibi'], ['veriler', 'Test verileri'], ['gun', 'Test günü (elle giriş)'], ['performanz', 'Performanz raporu yükle'], ['cihaz', 'Cihaz değişiklikleri']].map(([id, ad]) => (
           <button key={id} className={'sekme' + (mod === id ? ' secili' : '')} onClick={() => { setAktarilan(null); setMod(id); }}>{ad}</button>
         ))}
       </nav>
@@ -433,6 +434,7 @@ export default function Testler({ onGeri }) {
         />
       )}
       {kisiler && mod === 'veriler' && <TestVerileri kisiler={kisiler} gruplar={gruplar} subeler={subeler} />}
+      {mod === 'cihaz' && <CihazDegisimleri yonetici={ben.rol === 'yonetici'} />}
     </div>
   );
 }
