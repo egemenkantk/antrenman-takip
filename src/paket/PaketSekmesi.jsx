@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
 import { tarihGoster } from '../veri';
-import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER } from './model.js';
+import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER, dersBasiUcret, kalanDeger } from './model.js';
 import {
   kisiPaketleri,
   kisiOdemeleri,
@@ -411,6 +411,9 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           </div>
           <span className={d.kalan <= 2 && p.durum !== 'iptal' ? 'uyari-yazi' : ''}>
             {p.dersSayisi} dersten {d.kullanilan} yapıldı · <strong>{d.kalan} kalan</strong>
+            {Number(p.uygulananFiyat) > 0 && (
+              <> · ders başı {tl(Math.round(dersBasiUcret(p)))} · kalan değer <strong>{tl(kalanDeger(p, d.kalan))}</strong></>
+            )}
           </span>
         </div>
       )}

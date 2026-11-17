@@ -103,6 +103,10 @@ export function sayilanDers(kayit) {
   if (kayit.katilim === 'geldi') return true;
   return kayit.katilim === 'gelmedi' && kayit.derstenDussun === true;
 }
+// Ders başı ücret ve paketin kalan değeri (kalan ders × ders başı)
+export const dersBasiUcret = (p) => (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
+export const kalanDeger = (p, kalanDers) => Math.round(dersBasiUcret(p) * Math.max(0, kalanDers));
+
 export function dersleriDagit(paketler, kayitlar) {
   // Aylık aboneliği olan günlerdeki bireysel dersler aboneliğe sayılır, bireysel paketten düşmez
   const abonelikler = paketler.filter((p) => p.tur === 'abonelik' && p.durum !== 'iptal');

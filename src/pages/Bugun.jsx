@@ -39,6 +39,7 @@ import DersDegistir, { DegisiklikEtiketi } from '../bugun/DersDegistir';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
 import { ekUcretEkle, farkKarari } from '../paket/veri';
+import PaketKalan from '../paket/PaketKalan';
 import { sakatlikTipleriGetir, riskliKaliplar, sakatlikEtiketi } from '../saglik/veri';
 import { RiskliKaliplar } from '../kutuphane/bilesenler';
 
@@ -543,6 +544,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                       {gunluk['b:' + c.id] ? 'Düzenle' : 'Antrenmanı tamamla'}
                     </button>
                   </div>
+                  {gunluk['b:' + c.id] && <PaketKalan kisiId={c.id} kayitId={bireyselKayitId(tarih)} surum={JSON.stringify(gunluk['b:' + c.id])} />}
                   {acik === 't:' + c.id && (
                     <TamamlaFormu
                       koclar={ekipKoclari}
@@ -601,6 +603,10 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                       {c.uyeler.some((k) => gunluk['g:' + c.id + ':' + k.id]) ? 'Yoklamayı düzenle' : 'Yoklama ve RPE gir'}
                     </button>
                   )}
+                  {(c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio') && acik !== 'y:' + c.id &&
+                    c.uyeler.filter((k) => gunluk['g:' + c.id + ':' + k.id]?.katilim === 'geldi').map((k) => (
+                      <PaketKalan key={k.id} kisiId={k.id} ad={k.ad} kayitId={grupKayitId(tarih, c.id)} surum={JSON.stringify(gunluk['g:' + c.id + ':' + k.id])} />
+                    ))}
                   {acik === 'y:' + c.id && (
                     <GrupYoklama
                       koclar={c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio' ? ekipKoclari : null}

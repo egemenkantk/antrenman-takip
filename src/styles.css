@@ -848,3 +848,4 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .aktarim-tablo td.kilitli { color: var(--soluk); font-size: 0.85rem; }
 .aktarim-tablo .satir-doldur { display: block; font-weight: 400; }
 .aktarim-tablo td { white-space: normal; min-width: 140px; }
+.paket-kalan { margin: 6px 0 0; font-size: 0.88rem; color: var(--soluk); } .paket-kalan strong { color: var(--yazi); }
