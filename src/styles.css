@@ -819,3 +819,8 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .r-seviye.s4 { color: #fff; background: #2e7d4f; border-color: #2e7d4f; }
 .norm-ozet { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
 .cihaz-liste li { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.norm-tablo-kart { margin: 16px 0; }
+.norm-tablo-kart h3 { margin-bottom: 2px; }
+.norm-tablo th, .norm-tablo td { text-align: center; }
+.norm-tablo th[scope='row'] { text-align: center; }
+.norm-tablo .norm-orta { background: var(--cip); font-weight: 700; }

@@ -181,3 +181,47 @@ export function normMetni(n) {
   const yon = n.sure ? (n.farkYuzde > 0 ? 'yavaş' : 'hızlı') : n.farkYuzde > 0 ? 'yüksek' : 'düşük';
   return `${n.seviye} · ortalamadan %${f} daha ${yon}`;
 }
+
+// ---------- Norm tablolarını göstermek için ----------
+const dakikaBeep = (m) => {
+  const L = Math.floor(m) + 1;
+  const s = Math.round((m - Math.floor(m)) * (MEKIK_SAYISI[L] || 12));
+  return s ? `${L}/${s}` : String(L);
+};
+// Tablo değerini bizim ölçeğimizde gösterilecek metne çevirir
+function gosterimDegeri(test, kaynak, v) {
+  if (test === BEEP_TEST) return dakikaBeep(v);
+  if (test === 'Otur-uzan (cm)') v = v + BIZIM_OTUR_UZAN_AYAK - (kaynak === 'eurofit' ? 15 : 23);
+  return (Math.round(v * 100) / 100).toLocaleString('tr-TR');
+}
+
+export const NORMLU_TESTLER = [...new Set([...Object.keys(EUROFIT), ...Object.keys(ABD), ...Object.keys(ABD_SINAV), ...Object.keys(TENIS)])];
+
+// Bir test için tüm norm tabloları: [{ kaynak, tur, basliklar, satirlar: { E: [[yas, [..]]], K: [...] } }]
+export function normTablolari(test) {
+  const l = [];
+  for (const [tablo, yuzdelikler, kaynak] of [
+    [EUROFIT[test], P_EUROFIT, 'eurofit'],
+    [ABD[test], P_ABD, 'abd'],
+    [ABD_SINAV[test], P_ABD_SINAV, 'abd'],
+  ]) {
+    if (!tablo) continue;
+    const satirlar = {};
+    for (const c of ['E', 'K']) {
+      satirlar[c] = Object.entries(tablo[c] || {})
+        .map(([yas, d]) => [Number(yas), d.map((v) => gosterimDegeri(test, kaynak, v))])
+        .sort((a, b) => a[0] - b[0]);
+    }
+    l.push({ kaynak, tur: 'yuzdelik', basliklar: yuzdelikler.map((p) => `P${p}`), yuzdelikler, satirlar });
+  }
+  if (TENIS[test]) {
+    const satirlar = {};
+    for (const c of ['E', 'K']) {
+      satirlar[c] = Object.entries(TENIS[test][c] || {})
+        .map(([yas, v]) => [Number(yas), [gosterimDegeri(test, 'tenis', v)]])
+        .sort((a, b) => a[0] - b[0]);
+    }
+    l.push({ kaynak: 'tenis', tur: 'ortalama', basliklar: ['Ortalama'], satirlar });
+  }
+  return l;
+}
