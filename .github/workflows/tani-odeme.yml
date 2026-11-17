@@ -27,5 +27,5 @@ jobs:
         run: |
           echo "$SA" > "$RUNNER_TEMP/sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
-          node scripts/tani-odeme.cjs
+          if [[ "$KISILER" == ders:* ]]; then AY="${KISILER#ders:}" node scripts/tani-ders.cjs; else node scripts/tani-odeme.cjs; fi
           rm -f "$RUNNER_TEMP/sa.json"
