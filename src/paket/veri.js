@@ -82,7 +82,7 @@ export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNo
   const fiyat = Number(uygulananFiyat ?? tanim.fiyat) || 0;
   if (fiyat !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat });
   const ref = await addDoc(collection(db, 'satilanPaketler'), {
-    ...(oncekiDers > 0 ? { oncekiDers: Number(oncekiDers), aktarim: true } : {}),
+    ...(oncekiDers > 0 ? { oncekiDers: Number(oncekiDers), aktarim: true, aktarimTarihi: new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) } : {}),
     ...(tanim.eksikUcretleri && Object.keys(tanim.eksikUcretleri).length ? { eksikUcretleri: tanim.eksikUcretleri } : {}),
     kisiId: kisi.id,
     tur: tanim.tur || 'bireysel',

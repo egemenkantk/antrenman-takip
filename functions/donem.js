@@ -315,8 +315,11 @@ function kalanDersler(paketler, kayitlar) {
   const kullanilan = Object.fromEntries(sayili.map((p) => [p.id, Number(p.oncekiDers) || 0]));
   const harcanan = Object.fromEntries(sayili.map((p) => [p.id, (Number(p.oncekiDers) || 0) * birim(p)]));
   const dolu = (x) => (tutarli(x) ? harcanan[x.id] >= (Number(x.uygulananFiyat) || 0) - 0.5 : kullanilan[x.id] >= (Number(x.dersSayisi) || 0));
+  // Aktarılmış paket: aktarım gününden önceki dersler oncekiDers'e dahil, tekrar düşmez
+  const kesim = (p) => p.aktarimTarihi || (p.aktarim && p.olusturma?.toDate ? p.olusturma.toDate().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) : null);
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const tur = kayitTuru(d);
+    if (sayili.some((x) => x.tur === tur && kesim(x) && (x.baslangic || '') <= d.tarih && d.tarih < kesim(x))) continue;
     const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !dolu(x));
     if (!p) continue;
     kullanilan[p.id]++;

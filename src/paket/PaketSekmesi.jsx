@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
 import { tarihGoster } from '../veri';
-import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER, dersBasiUcret, tutarli } from './model.js';
+import { aktarimKesimi, odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER, dersBasiUcret, tutarli } from './model.js';
 import {
   kisiPaketleri,
   kisiOdemeleri,
@@ -77,7 +77,9 @@ function GecmisDersFormu({ p, kayitlar, yonetici, benim, koclar, onBitti, onVazg
         )}
       </div>
       <p className="aciklama kucuk-yazi">
-        Ders bu paketten düşer ve dersi veren koçun o ayki özel ders listesine yazılır. Bu dersi "siteden önce yapılan ders" sayısına da yazdıysanız oradan bir azaltın.
+        {aktarimKesimi(p) && tarih && tarih < aktarimKesimi(p)
+          ? 'Bu tarih paketin aktarımından önce: ders paketten düşmez (aktarımda sayıldı), yalnızca dersi veren koçun o ayki özel ders listesine yazılır.'
+          : 'Ders bu paketten düşer ve dersi veren koçun o ayki özel ders listesine yazılır.'}
       </p>
       {hata && <p className="hata">{hata}</p>}
       <div className="dugme-satiri">
