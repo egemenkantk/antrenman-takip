@@ -4,7 +4,21 @@ const { PROJE } = require('../functions/ortak');
 async function main() {
   admin.initializeApp({ projectId: PROJE });
   const db = admin.firestore();
-  for (const id of String(process.env.KISILER || '').split(',').map((s) => s.trim()).filter(Boolean)) {
+  // "ozet:<sha256>" verilirse adında bu kelime (küçük harf) geçen kişiler bulunur; ad yazdırılmaz
+  let liste = String(process.env.KISILER || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const ozetler = liste.filter((x) => x.startsWith('ozet:')).map((x) => x.slice(5));
+  if (ozetler.length) {
+    const crypto = require('crypto');
+    const h = (t) => crypto.createHash('sha256').update(t).digest('hex');
+    const ks = await db.collection('kisiler').get();
+    liste = liste.filter((x) => !x.startsWith('ozet:'));
+    for (const d of ks.docs) {
+      const kelimeler = String(d.data().ad || '').toLocaleLowerCase('tr-TR').split(/\s+/);
+      if (kelimeler.some((k) => ozetler.includes(h(k)))) liste.push(d.id);
+    }
+    console.log('eşleşen kişi kaydı: ' + liste.length);
+  }
+  for (const id of liste) {
     const [ps, os, ks] = await Promise.all([
       db.collection('satilanPaketler').where('kisiId', '==', id).get(),
       db.collection('odemeler').where('kisiId', '==', id).get(),
