@@ -1,0 +1,31 @@
+# Gruba sonradan katılanların katılımdan önceki (ödemesiz) dönem kayıtlarını iptal eder.
+name: Katılım öncesi dönem kayıtları
+
+on:
+  workflow_dispatch:
+    inputs:
+      uygula:
+        description: '1 = iptal et, 0 = yalnızca kontrol'
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  temizle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --prefix functions
+      - name: Çalıştır
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          UYGULA: ${{ inputs.uygula }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node scripts/katilim-temizle.cjs
+          rm -f "$RUNNER_TEMP/sa.json"
