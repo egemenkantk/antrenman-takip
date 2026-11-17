@@ -1,0 +1,31 @@
+# Sorun giderme: kişi kimliklerine göre paket ve ödemeler (ad/telefon yazdırılmaz).
+name: Ödeme tanı
+
+on:
+  workflow_dispatch:
+    inputs:
+      kisiler:
+        description: 'Kişi belge kimlikleri (virgülle)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  tani:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --prefix functions
+      - name: Tanı
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          KISILER: ${{ inputs.kisiler }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node scripts/tani-odeme.cjs
+          rm -f "$RUNNER_TEMP/sa.json"
