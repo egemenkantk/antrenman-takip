@@ -292,3 +292,5 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Tahsilatlar > "Derse giren koça göre": grup ödemesi → grubun kocIds; diğerleri → kişinin kocIds. Birden fazla koçta her koça tamamı yazılır. Ödemeye `dersKocIds` ödeme anında yazılır (odemeEkle); eski ödemelerde güncel atama kullanılır.
 - Maaş tablosunda gösterilmeyecek koçlar: `kurumlar/fitkon.tahsilat.gizliKoclar` (ör. kurucu). Maaş hesabı şimdilik elle.
 - Sadece ödeme için tutulan gruplar (ders saati yok) Bugün/Takvim/portal ders listesinde görünmez; dönem kayıtları ve hatırlatmalar sürer — ek ayar gerekmez.
+- Yapılan özel dersler (Tahsilatlar): bireysel/düet/trio kayıtları dersleriDagit ile paketlere dağıtılır; ders `dersiVeren` (yoksa `kaydeden`) koça yazılır, değer = paket uygulananFiyat ÷ dersSayisi. Bugün ekranında yönetici bireysel "Antrenmanı tamamla" ve düet/trio yoklamasında "Dersi veren koç" seçer (koçlar kendi adına kaydeder). Gizli koçların dersleri başka koça yazılmaz.
+- "Tahsil eden" yalnızca bilgi: koç tablosu ve maaş dökümü tahsil edene göre değişmez.

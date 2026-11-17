@@ -6,7 +6,8 @@ import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { tarihGoster, TIP_ADI } from '../veri';
 import { kisaTarih } from '../program/model';
-import { tl, YONTEM_ADI, YONTEMLER } from './model.js';
+import { tl, YONTEM_ADI, YONTEMLER, dersleriDagit, dersSayili, TUR_KISA } from './model.js';
+import { bireyselKayitlar } from './veri';
 import { kocAdi } from './bilesenler';
 
 // Ödeme türü sınıfları (sabit sıra; renk sınıfa bağlı, sıraya değil)
@@ -106,9 +107,8 @@ function AylikGrafik({ aylar, seciliAy, onSec }) {
 
 // Derse giren koça göre: grup → grubun koçları, diğerleri → kişinin koçları (ödeme anında kaydedilen öncelikli).
 // Birden fazla koç varsa her koça tutarın tamamı yazılır. Maaş hesabına girmeyen koçlar (ör. kurucu) gizlenebilir.
-function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi }) {
+function useGizliKoclar() {
   const [gizli, setGizli] = useState(null);
-  const [acik, setAcik] = useState(null);
   useEffect(() => {
     getDoc(doc(db, 'kurumlar', KURUM_ID))
       .then((s) => setGizli(s.data()?.tahsilat?.gizliKoclar || []))
@@ -118,6 +118,98 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi }) {
     setGizli(l);
     await setDoc(doc(db, 'kurumlar', KURUM_ID), { tahsilat: { gizliKoclar: l } }, { merge: true }).catch(() => {});
   }
+  return [gizli, gizliAyarla];
+}
+
+// Yapılan özel dersler (bireysel / düet / trio): dersi veren koç, ders sayısı ve paket fiyatına göre ders başı değer.
+// Ders, yoklamada seçilen "dersi veren koç"a (yoksa kaydı girene) yazılır; başka koça yazılmaz.
+function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli }) {
+  const [kayitlar, setKayitlar] = useState(null);
+  const [acik, setAcik] = useState(null);
+  const kisiIds = useMemo(() => [...new Set(paketler.filter((p) => dersSayili(p.tur) && p.durum !== 'iptal').map((p) => p.kisiId))], [paketler]);
+  useEffect(() => {
+    Promise.all(kisiIds.map((id) => bireyselKayitlar(id).then((l) => [id, l]).catch(() => [id, []]))).then((l) => setKayitlar(Object.fromEntries(l)));
+  }, [kisiIds.join()]);
+
+  const satirlar = useMemo(() => {
+    if (!kayitlar) return null;
+    const m = {};
+    for (const kisiId of kisiIds) {
+      const pl = paketler.filter((p) => p.kisiId === kisiId);
+      const d = dersleriDagit(pl, kayitlar[kisiId] || []);
+      for (const p of pl) {
+        const dagilim = d.paketler[p.id];
+        if (!dagilim) continue;
+        const birim = (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
+        for (const ders of dagilim.dersler) {
+          if (ders.tarih.slice(0, 7) !== ay) continue;
+          const kocId = ders.dersiVeren || ders.kaydeden || '?';
+          const r = (m[kocId] ||= { id: kocId, dersler: new Set(), deger: 0, gelmedi: 0, kalemler: {} });
+          // Düet/trio dersi tek ders sayılır; değer her öğrencinin kendi paketinden gelir
+          r.dersler.add(ders.dersTuru ? `${ders.id}` : `${kisiId}:${ders.id}`);
+          r.deger += birim;
+          if (ders.katilim === 'gelmedi') r.gelmedi++;
+          const k = (r.kalemler[kisiId + p.id] ||= { ad: kisiMap[kisiId]?.ad || 'Kişi', paket: p.paketAdi || TUR_KISA[p.tur], tur: p.tur, fiyat: Number(p.uygulananFiyat) || 0, dersSayisi: Number(p.dersSayisi) || 0, birim, n: 0 });
+          k.n++;
+        }
+      }
+    }
+    return Object.values(m).sort((a, b) => b.deger - a.deger);
+  }, [kayitlar, paketler, ay]);
+
+  if (!satirlar || !gizli) return null;
+  const gorunen = satirlar.filter((r) => !gizli.includes(r.id));
+  if (!gorunen.length && !satirlar.length) return null;
+  const ad = (id) => (id === '?' ? 'Koç belirtilmemiş' : kocAdi(id, benim, koclar));
+  const yuvarla = (v) => Math.round(v);
+
+  return (
+    <section>
+      <h3>Yapılan özel dersler · {ayAdi(ay)}</h3>
+      <p className="aciklama kucuk-yazi">
+        Bireysel, düet ve trio derslerinde o ay kim kaç ders yaptı ve bu derslerin paket fiyatına göre değeri (paket fiyatı ÷ ders sayısı). Ders, yoklamada seçilen
+        "dersi veren koç"a yazılır; seçilmemişse kaydı girene. Gösterilmeyen koçların dersleri başka koça yazılmaz.
+      </p>
+      {gorunen.length === 0 ? (
+        <p className="aciklama">Bu ay gösterilecek özel ders yok.</p>
+      ) : (
+        <div className="tablo-kap">
+          <table className="tablo koc-tablo">
+            <thead><tr><th>Koç</th><th>Ders sayısı</th><th>Ders değeri</th></tr></thead>
+            <tbody>
+              {gorunen.map((r) => (
+                <Fragment key={r.id}>
+                  <tr className="tikla" onClick={() => setAcik(acik === r.id ? null : r.id)} aria-expanded={acik === r.id}>
+                    <th>{acik === r.id ? '▾ ' : '▸ '}{ad(r.id)}</th>
+                    <td>{r.dersler.size} ders{r.gelmedi ? <small className="aciklama"> · {r.gelmedi} gelmedi (düştü)</small> : null}</td>
+                    <td><strong>{tl(yuvarla(r.deger))}</strong></td>
+                  </tr>
+                  {acik === r.id && (
+                    <tr className="koc-dokum">
+                      <td colSpan={3}>
+                        <ul>
+                          {Object.values(r.kalemler).map((k) => (
+                            <li key={k.ad + k.paket}>
+                              {k.ad} · {k.paket}: {tl(k.fiyat)} / {k.dersSayisi} ders = ders başı {tl(yuvarla(k.birim))} · <strong>{k.n} ders</strong> ={' '}
+                              <strong>{tl(yuvarla(k.birim * k.n))}</strong>
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, gizli, gizliAyarla }) {
+  const [acik, setAcik] = useState(null);
 
   const satirlar = useMemo(() => {
     const m = {};
@@ -222,6 +314,7 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
   const [sube, setSube] = useState('');
   const [tip, setTip] = useState('');
   const [sinif, setSinif] = useState('');
+  const [gizli, gizliAyarla] = useGizliKoclar();
 
   const paketMap = useMemo(() => Object.fromEntries(veri.paketler.map((p) => [p.id, p])), [veri.paketler]);
   const kisiMap = useMemo(() => Object.fromEntries(kisiler.map((k) => [k.id, k])), [kisiler]);
@@ -400,8 +493,9 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
       )}
 
       {yonetici && (
-        <KocaGore odemeler={ayinkiler} ay={ay} grupMap={grupMap} kisiMap={kisiMap} koclar={koclar} benim={benim} indirAdi={`koclara-gore-${ay}.csv`} />
+        <KocaGore odemeler={ayinkiler} ay={ay} grupMap={grupMap} kisiMap={kisiMap} koclar={koclar} benim={benim} indirAdi={`koclara-gore-${ay}.csv`} gizli={gizli} gizliAyarla={gizliAyarla} />
       )}
+      {yonetici && <OzelDersler ay={ay} paketler={veri.paketler} kisiMap={kisiMap} koclar={koclar} benim={benim} gizli={gizli} />}
 
       {yonetici && kocSatirlari.length > 0 && (
         <section>

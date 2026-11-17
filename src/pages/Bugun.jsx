@@ -3,7 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji } from '../auth/hesap';
-import { kisileriGetir, subeleriGetir } from '../veri';
+import { kisileriGetir, subeleriGetir, kullanicilariGetir } from '../veri';
 import { gruplariGetir } from '../gruplar/veri';
 import {
   BOLUMLER,
@@ -192,7 +192,21 @@ function Plan({ s }) {
   );
 }
 
-function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec }) {
+// Dersi veren koç (maaş dökümünde ders bu koça yazılır). Seçim yalnızca yöneticide; koç kendi dersini kaydeder.
+function DersiVerenSecici({ koclar, deger, onChange }) {
+  if (!koclar?.length) return null;
+  return (
+    <label className="alan">
+      <span>Dersi veren koç</span>
+      <select value={deger} onChange={(e) => onChange(e.target.value)}>
+        {koclar.map((k) => <option key={k.id} value={k.id}>{k.ad}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec, koclar, benId }) {
+  const [dersiVeren, setDersiVeren] = useState(ilk?.dersiVeren || ilk?.kaydeden || benId);
   const [katilim, setKatilim] = useState(ilk?.katilim || 'geldi');
   const [agri, setAgri] = useState(ilk?.agri ?? null);
   const [rpe, setRpe] = useState(ilk?.rpe ?? null);
@@ -213,6 +227,7 @@ function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec }) {
           {agriSor && <AgriSecici deger={agri} onChange={setAgri} />}
         </>
       )}
+      <DersiVerenSecici koclar={koclar} deger={dersiVeren} onChange={setDersiVeren} />
       <label className="alan">
         <span>Ders sonu notu</span>
         <input value={not} onChange={(e) => setNot(e.target.value)} placeholder="Örn. sol diz hafif ağrı, squat derinliği arttı" />
@@ -225,7 +240,7 @@ function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec }) {
           onClick={async () => {
             setBekliyor(true);
             try {
-              await onKaydet({ katilim, rpe: katilim === 'geldi' ? rpe : null, sure: katilim === 'geldi' ? Number(sure) || null : null, not, ...(agriSor ? { agri: katilim === 'geldi' ? agri : null } : {}) });
+              await onKaydet({ dersiVeren, katilim, rpe: katilim === 'geldi' ? rpe : null, sure: katilim === 'geldi' ? Number(sure) || null : null, not, ...(agriSor ? { agri: katilim === 'geldi' ? agri : null } : {}) });
             } finally {
               setBekliyor(false);
             }
@@ -239,7 +254,9 @@ function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec }) {
   );
 }
 
-function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec }) {
+function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId }) {
+  const ilkVeren = Object.values(kayitlar).find((x) => x?.dersiVeren || x?.kaydeden);
+  const [dersiVeren, setDersiVeren] = useState(ilkVeren?.dersiVeren || ilkVeren?.kaydeden || benId);
   const [satir, setSatir] = useState(() =>
     Object.fromEntries(uyeler.map((k) => [k.id, { katilim: kayitlar[k.id]?.katilim || 'geldi', rpe: kayitlar[k.id]?.rpe ?? null, agri: kayitlar[k.id]?.agri ?? null }]))
   );
@@ -270,6 +287,7 @@ function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec }) {
           <span>Ortak not</span>
           <input value={not} onChange={(e) => setNot(e.target.value)} />
         </label>
+        <DersiVerenSecici koclar={koclar} deger={dersiVeren} onChange={setDersiVeren} />
       </div>
       <div className="dugme-satiri">
         <button
@@ -279,7 +297,7 @@ function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec }) {
           onClick={async () => {
             setBekliyor(true);
             try {
-              await onKaydet(satir, Number(sure) || null, not);
+              await onKaydet(satir, Number(sure) || null, not, dersiVeren);
             } finally {
               setBekliyor(false);
             }
@@ -310,6 +328,14 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
   const [tarih, setTarih] = useState(baslangicTarihi || bugun());
   const [temel, setTemel] = useState(null); // { kisiler, gruplar, programlar, subeler }
   const [ozeller, setOzeller] = useState([]);
+  // Yönetici "dersi veren koç"u seçebilsin diye ekip listesi (koçlar kullanıcı listesini okuyamaz)
+  const [ekipKoclari, setEkipKoclari] = useState(null);
+  useEffect(() => {
+    if (!yonetici) return;
+    kullanicilariGetir()
+      .then((l) => setEkipKoclari(l.filter((u) => (u.rol === 'koc' || u.rol === 'yonetici') && u.aktif !== false).map((u) => ({ id: u.id, ad: u.ad || u.id }))))
+      .catch(() => setEkipKoclari(null));
+  }, [yonetici]);
   const [degisiklikler, setDegisiklikler] = useState([]);
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [gunluk, setGunluk] = useState({}); // anahtar → belge
@@ -519,6 +545,8 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                   </div>
                   {acik === 't:' + c.id && (
                     <TamamlaFormu
+                      koclar={ekipKoclari}
+                      benId={ben.id}
                       ilk={gunluk['b:' + c.id]}
                       agriSor={sakatMi(c.k)}
                       onVazgec={() => setAcik(null)}
@@ -575,12 +603,15 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                   )}
                   {acik === 'y:' + c.id && (
                     <GrupYoklama
+                      koclar={c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio' ? ekipKoclari : null}
+                      benId={ben.id}
                       uyeler={c.uyeler}
                       kayitlar={Object.fromEntries(c.uyeler.map((k) => [k.id, gunluk['g:' + c.id + ':' + k.id]]))}
                       onVazgec={() => setAcik(null)}
-                      onKaydet={(satir, sure, not) =>
+                      onKaydet={(satir, sure, not, dersiVeren) =>
                         hataliOlabilir(async () => {
                           const ortak = {
+                            dersiVeren: dersiVeren || ben.id,
                             tarih,
                             tur: c.s?.gun?.baslik || c.ad,
                             seansTipi: 'grup',
