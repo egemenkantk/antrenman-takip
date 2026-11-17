@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { tarihGoster, TIP_ADI } from '../veri';
 import { kisaTarih } from '../program/model';
-import { tl, YONTEM_ADI, YONTEMLER, dersleriDagit, dersSayili, TUR_KISA } from './model.js';
+import { tl, YONTEM_ADI, YONTEMLER, dersleriDagit, TUR_KISA, dersBasiUcret, kayitTuru, sayilanDers, abonelikKapsar } from './model.js';
 import { bireyselKayitlar } from './veri';
 import { kocAdi } from './bilesenler';
 
@@ -126,7 +126,8 @@ function useGizliKoclar() {
 function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = null }) {
   const [kayitlar, setKayitlar] = useState(null);
   const [acik, setAcik] = useState(null);
-  const kisiIds = useMemo(() => [...new Set(paketler.filter((p) => dersSayili(p.tur) && p.durum !== 'iptal').map((p) => p.kisiId))], [paketler]);
+  // Bütün kişilerin özel dersleri sayılır (paketi olsun olmasın); grup dersleri hariç
+  const kisiIds = useMemo(() => Object.keys(kisiMap).filter((id) => kisiMap[id]?.tip !== 'cimnastik'), [kisiMap]);
   useEffect(() => {
     Promise.all(kisiIds.map((id) => bireyselKayitlar(id).then((l) => [id, l]).catch(() => [id, []]))).then((l) => setKayitlar(Object.fromEntries(l)));
   }, [kisiIds.join()]);
@@ -134,26 +135,45 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
   const satirlar = useMemo(() => {
     if (!kayitlar) return null;
     const m = {};
+    const ekle = (kisiId, ders, kalemAnahtar, kalem, deger) => {
+      if (ders.tarih.slice(0, 7) !== ay) return;
+      const kocId = ders.dersiVeren || ders.kaydeden || '?';
+      const r = (m[kocId] ||= { id: kocId, dersler: new Set(), deger: 0, gelmedi: 0, paketsiz: 0, kalemler: {} });
+      // Düet/trio dersi tek ders sayılır; değer her öğrencinin kendi paketinden gelir
+      r.dersler.add(ders.dersTuru ? `${ders.id}` : `${kisiId}:${ders.id}`);
+      r.deger += deger || 0;
+      if (ders.katilim === 'gelmedi') r.gelmedi++;
+      if (kalem.paketsiz) r.paketsiz++;
+      const k = (r.kalemler[kalemAnahtar] ||= { ...kalem, n: 0, toplam: 0, eksik: 0 });
+      k.n++;
+      k.toplam += deger || 0;
+      if (kalem.birim != null && deger != null && Math.abs(deger - kalem.birim) > 0.5) k.eksik++;
+    };
     for (const kisiId of kisiIds) {
+      const ad = kisiMap[kisiId]?.ad || 'Kişi';
       const pl = paketler.filter((p) => p.kisiId === kisiId);
-      const d = dersleriDagit(pl, kayitlar[kisiId] || []);
+      const tum = kayitlar[kisiId] || [];
+      const d = dersleriDagit(pl, tum);
+      // 1) Pakete düşen dersler (aktarımda sayılanlar dahil)
       for (const p of pl) {
         const dagilim = d.paketler[p.id];
         if (!dagilim) continue;
-        const birim = (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
+        const birim = dersBasiUcret(p);
         for (const ders of dagilim.dersler) {
-          if (ders.tarih.slice(0, 7) !== ay) continue;
-          const kocId = ders.dersiVeren || ders.kaydeden || '?';
-          const r = (m[kocId] ||= { id: kocId, dersler: new Set(), deger: 0, gelmedi: 0, kalemler: {} });
-          // Düet/trio dersi tek ders sayılır; değer her öğrencinin kendi paketinden gelir
-          r.dersler.add(ders.dersTuru ? `${ders.id}` : `${kisiId}:${ders.id}`);
-          r.deger += ders.maliyet ?? birim;
-          if (ders.katilim === 'gelmedi') r.gelmedi++;
-          const k = (r.kalemler[kisiId + p.id] ||= { ad: kisiMap[kisiId]?.ad || 'Kişi', paket: p.paketAdi || TUR_KISA[p.tur], tur: p.tur, fiyat: Number(p.uygulananFiyat) || 0, dersSayisi: Number(p.dersSayisi) || 0, birim, n: 0 });
-          k.n++;
-          k.toplam = (k.toplam || 0) + (ders.maliyet ?? birim);
-          if (ders.maliyet != null && Math.abs(ders.maliyet - birim) > 0.5) k.eksik = (k.eksik || 0) + 1;
+          ekle(kisiId, ders, kisiId + p.id, { ad, paket: p.paketAdi || TUR_KISA[p.tur], tur: p.tur, fiyat: Number(p.uygulananFiyat) || 0, dersSayisi: Number(p.dersSayisi) || 0, birim }, ders.maliyet ?? birim);
         }
+      }
+      // 2) Aylık abonelikteki bireysel dersler: aylık ücret ÷ aylık ders hakkı
+      const abonelikler = pl.filter((p) => p.tur === 'abonelik' && p.durum !== 'iptal');
+      for (const ders of tum.filter((k) => kayitTuru(k) === 'bireysel' && sayilanDers(k))) {
+        const a = abonelikler.find((x) => abonelikKapsar(x, ders.tarih));
+        if (!a) continue;
+        const birim = (Number(a.aylikUcret) || 0) / (Number(a.aylikDers) || 12);
+        ekle(kisiId, ders, kisiId + a.id, { ad, paket: a.paketAdi || 'Aylık abonelik', tur: 'abonelik', fiyat: Number(a.aylikUcret) || 0, dersSayisi: Number(a.aylikDers) || 12, birim, aylik: true }, birim);
+      }
+      // 3) Paketi olmayan (ya da paketi dolmuş) dersler: sayılır, değeri yok
+      for (const ders of d.paketsizDersler) {
+        ekle(kisiId, ders, kisiId + ':paketsiz:' + ders.tur, { ad, paket: `${TUR_KISA[ders.tur] || 'Özel'} · paket yok`, tur: ders.tur, paketsiz: true }, 0);
       }
     }
     return Object.values(m).sort((a, b) => b.deger - a.deger);
@@ -169,7 +189,7 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
     <section>
       <h3>Yapılan özel dersler · {ayAdi(ay)}</h3>
       <p className="aciklama kucuk-yazi">
-        Bireysel, düet ve trio derslerinde o ay kim kaç ders yaptı ve bu derslerin paket fiyatına göre değeri (paket fiyatı ÷ ders sayısı). Ders, yoklamada seçilen
+        Bireysel, düet, trio ve aylık abonelikteki bireysel derslerde o ay kim kaç ders yaptı ve bu derslerin değeri (paket fiyatı ÷ ders sayısı; abonelikte aylık ücret ÷ aylık ders hakkı). Paketi girilmemiş dersler sayılır ama değeri yazılmaz. Ders, yoklamada seçilen
         "dersi veren koç"a yazılır; seçilmemişse kaydı girene. Gösterilmeyen koçların dersleri başka koça yazılmaz.
       </p>
       {gorunen.length === 0 ? (
@@ -183,7 +203,11 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
                 <Fragment key={r.id}>
                   <tr className="tikla" onClick={() => setAcik(acik === r.id ? null : r.id)} aria-expanded={acik === r.id}>
                     <th>{acik === r.id ? '▾ ' : '▸ '}{ad(r.id)}</th>
-                    <td>{r.dersler.size} ders{r.gelmedi ? <small className="aciklama"> · {r.gelmedi} gelmedi (düştü)</small> : null}</td>
+                    <td>
+                      {r.dersler.size} ders
+                      {r.gelmedi ? <small className="aciklama"> · {r.gelmedi} gelmedi (düştü)</small> : null}
+                      {r.paketsiz ? <small className="uyari-yazi"> · {r.paketsiz} ders paketsiz</small> : null}
+                    </td>
                     <td><strong>{tl(yuvarla(r.deger))}</strong></td>
                   </tr>
                   {acik === r.id && (
@@ -192,9 +216,17 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
                         <ul>
                           {Object.values(r.kalemler).map((k) => (
                             <li key={k.ad + k.paket}>
-                              {k.ad} · {k.paket}: {tl(k.fiyat)} / {k.dersSayisi} ders = ders başı {tl(yuvarla(k.birim))} · <strong>{k.n} ders</strong> ={' '}
-                              <strong>{tl(yuvarla(k.toplam))}</strong>
-                              {k.eksik ? <small className="aciklama"> · {k.eksik} ders tek/eksik katılım ücretiyle</small> : null}
+                              {k.paketsiz ? (
+                                <>
+                                  {k.ad} · <span className="uyari-yazi">{k.paket}</span> · <strong>{k.n} ders</strong> <small className="aciklama">(paket girilince değeri hesaplanır)</small>
+                                </>
+                              ) : (
+                                <>
+                                  {k.ad} · {k.paket}: {tl(k.fiyat)} / {k.dersSayisi} ders{k.aylik ? ' (aylık)' : ''} = ders başı {tl(yuvarla(k.birim))} · <strong>{k.n} ders</strong> ={' '}
+                                  <strong>{tl(yuvarla(k.toplam))}</strong>
+                                  {k.eksik ? <small className="aciklama"> · {k.eksik} ders tek/eksik katılım ücretiyle</small> : null}
+                                </>
+                              )}
                             </li>
                           ))}
                         </ul>

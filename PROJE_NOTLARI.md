@@ -314,3 +314,4 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Paket kartı: '+ Geçmiş ders gir' (bireysel; tarih, katılım, dersi veren) ve yönetici için 'Siteden önceki dersleri düzelt' (oncekiDers) — aktarım sonrası elle teyitli giriş.
 - Aktarılmış pakette (aktarim/aktarimTarihi; eski kayıtlarda olusturma günü) aktarım gününden önceki dersler paketten düşmez (oncekiDers'e dahil), dersler listesinde oncedenSayildi:true ile koç ders dökümüne girer. Sunucu kalanDersler aynı.
 - Kişi başlangıç tarihi `kisiler.baslangicTarihi` (yeni kişide bugün): gununKartlari bu tarihten önce kişiyi (bireysel kart ve grup üyeliği) göstermez; grup üyeleri ayrıca uyeKatilim'den önce görünmez.
+- Yapılan özel dersler tablosu: tüm kişilerin bireysel/düet/trio kayıtları (paketli: paket maliyeti; abonelik kapsamındaki bireysel: aylikUcret/aylikDers; paketsiz: sayılır, değer 0 ve uyarı). Grup dersleri hariç.
