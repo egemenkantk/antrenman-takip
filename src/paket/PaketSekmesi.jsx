@@ -290,7 +290,47 @@ function FiyatFormu({ paket, onKaydet, onVazgec }) {
   );
 }
 
-function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, setHata }) {
+// Önceki dönemlerden ödemesi eksik kalan grup / aylık abonelik kayıtları
+function eskiBorclariBul(paketler, odemeler) {
+  return paketler
+    .filter((p) => p.durum !== 'iptal' && (p.tur === 'grup' || p.tur === 'abonelikDonem') && p.donemBit && p.donemBit < bugun())
+    .map((p) => ({ p, od: odemeDurumu(p, odemeler) }))
+    .filter((x) => x.od.kalan > 0)
+    .sort((a, b) => (a.p.donemBas || '').localeCompare(b.p.donemBas || ''));
+}
+const borcAdi = (p) => `${p.tur === 'grup' ? p.grupAdi || p.paketAdi || 'Grup' : p.paketAdi || 'Aylık abonelik'} · ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}`;
+
+function EskiBorcUyarisi({ borclar, odemeIcin, setOdemeIcin, benim, onDegisti, setHata }) {
+  if (!borclar.length) return null;
+  return (
+    <div className="uyari-kutu eski-borc" id="eski-borclar">
+      <strong>⚠ Önceki dönemlerde ödenmemiş {borclar.length} kayıt var</strong>
+      <ul className="sade-liste">
+        {borclar.map(({ p, od }) => (
+          <li key={p.id}>
+            {borcAdi(p)} · <strong>{tl(od.kalan)}</strong> bekliyor{od.odenen > 0 ? ' (kısmi)' : ''}{' '}
+            {odemeIcin !== p.id && <button className="metin" onClick={() => setOdemeIcin(p.id)}>Ödeme al</button>}
+            {odemeIcin === p.id && (
+              <OdemeFormu
+                baslik={`Ödeme al · ${borcAdi(p)}`}
+                onrTutar={od.kalan}
+                onVazgec={() => setOdemeIcin(null)}
+                onKaydet={async (v) => {
+                  setHata('');
+                  await odemeEkle({ ...v, kisiId: p.kisiId, satilanPaketId: p.id }, benim);
+                  setOdemeIcin(null);
+                  await onDegisti();
+                }}
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, setHata, eskiBorclar = [], eskiOdemeAc }) {
   const [acik, setAcik] = useState(false);
   const [mod, setMod] = useState(null); // 'odeme' | 'fiyat'
   const od = odemeDurumu(p, odemeler);
@@ -348,6 +388,18 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, 
           onrTutar={od.kalan || ''}
           onVazgec={() => setMod(null)}
           onKaydet={(v) => calistir(() => odemeEkle({ ...v, kisiId: p.kisiId, satilanPaketId: p.id }, benim))}
+          uyari={(() => {
+            const onceki = eskiBorclar.find((x) => x.p.id !== p.id && (x.p.donemBas || '') < (p.donemBas || p.baslangic || '9999'));
+            if (!onceki) return null;
+            return (
+              <p className="uyari-kutu kucuk-yazi">
+                ⚠ Önceki dönemden ödenmemiş kayıt var: <strong>{borcAdi(onceki.p)} ({tl(onceki.od.kalan)})</strong>. Ödeme o döneme mi ait?{' '}
+                <button type="button" className="metin" onClick={() => { setMod(null); eskiOdemeAc(onceki.p.id); }}>
+                  O dönemin ödemesini al
+                </button>
+              </p>
+            );
+          })()}
         />
       )}
       {mod === 'fiyat' && (
@@ -401,6 +453,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
   const [ata, setAta] = useState(false);
   const [ek, setEk] = useState(null); // {tarih, aciklama, ilgiliKayitId}
   const [bitenler, setBitenler] = useState(false);
+  const [odemeIcin, setOdemeIcin] = useState(null);
   const [hata, setHata] = useState('');
 
   const yukle = async () => {
@@ -444,6 +497,11 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
     return dagitim.paketler[p.id]?.kalan === 0;
   };
   const acikPaketler = sirali.filter((p) => !bitmis(p));
+  const eskiBorclar = eskiBorclariBul(veri.paketler, veri.odemeler);
+  const eskiOdemeAc = (id) => {
+    setOdemeIcin(id);
+    setTimeout(() => document.getElementById('eski-borclar')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0);
+  };
   const bitenPaketler = sirali.filter(bitmis);
   const toplamKalan = veri.paketler.reduce((t, p) => t + (p.durum === 'iptal' ? 0 : odemeDurumu(p, veri.odemeler).kalan), 0);
   // Eksik katılımlı düet/trio dersleri: fark ücreti eklenmemiş ve "gerek yok" denmemiş olanlar
@@ -465,7 +523,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
     .slice(0, 10);
 
   const kart = (p) => (
-    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} yonetici={yonetici} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} />
+    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} yonetici={yonetici} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} eskiBorclar={eskiBorclar} eskiOdemeAc={eskiOdemeAc} />
   );
 
   return (
@@ -478,6 +536,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
         </span>
       </div>
       {hata && <p className="hata">{hata}</p>}
+      <EskiBorcUyarisi borclar={eskiBorclar} odemeIcin={odemeIcin} setOdemeIcin={setOdemeIcin} benim={benim} onDegisti={yukle} setHata={setHata} />
       {ata && (
         <PaketAtaFormu
           kisi={kisi}

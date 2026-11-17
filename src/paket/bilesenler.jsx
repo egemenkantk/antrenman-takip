@@ -9,7 +9,7 @@ export function DurumRozeti({ durum }) {
   return <span className={'odeme-rozet ' + durum}>{DURUM_ADI[durum]}</span>;
 }
 
-export function OdemeFormu({ ilk, onrTutar, onKaydet, onVazgec, baslik = 'Ödeme al' }) {
+export function OdemeFormu({ ilk, onrTutar, onKaydet, onVazgec, baslik = 'Ödeme al', uyari = null }) {
   const [f, setF] = useState({
     tutar: ilk?.tutar ?? (onrTutar || ''),
     tarih: ilk?.tarih || bugun(),
@@ -35,6 +35,7 @@ export function OdemeFormu({ ilk, onrTutar, onKaydet, onVazgec, baslik = 'Ödeme
       }}
     >
       <strong>{baslik}</strong>
+      {uyari}
       <div className="form-izgara">
         <label className="alan">
           <span>Tutar (₺)</span>

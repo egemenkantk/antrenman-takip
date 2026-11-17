@@ -807,3 +807,7 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .grafik-sutun:first-child .grafik-ipucu, .grafik-sutun:nth-child(2) .grafik-ipucu { left: 0; transform: none; }
 .grafik-sutun:last-child .grafik-ipucu, .grafik-sutun:nth-last-child(2) .grafik-ipucu { left: auto; right: 0; transform: none; }
 .tahsilat section h3 { margin-top: 18px; }
+.eski-borc ul { margin: 6px 0 0; }
+.eski-borc li { margin: 2px 0; }
+.eski-borc .ic-form { margin-top: 6px; color: var(--yazi); }
+.ic-form .uyari-kutu { margin: 6px 0; }
