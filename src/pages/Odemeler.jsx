@@ -101,12 +101,12 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
         {(f.tur === 'duet' || f.tur === 'trio') && (
           <>
             <label className="alan">
-              <span>Tek gelirse ders başı ücret (₺)</span>
+              <span>Tek gelirse o kişinin ders başı ücreti (₺)</span>
               <input type="number" min="0" value={f.eksik1} onChange={(e) => setF({ ...f, eksik1: e.target.value })} placeholder="Örn. bireysel ders ücreti" />
             </label>
             {f.tur === 'trio' && (
               <label className="alan">
-                <span>İki kişi gelirse ders başı ücret (₺)</span>
+                <span>İki kişi gelirse kişi başı ders ücreti (₺)</span>
                 <input type="number" min="0" value={f.eksik2} onChange={(e) => setF({ ...f, eksik2: e.target.value })} />
               </label>
             )}
