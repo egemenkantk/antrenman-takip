@@ -155,7 +155,12 @@ export function normDegerlendir(test, deger, kisi, tarih) {
     let ort = satir[2];
     ort = Math.round(ort * 10) / 10;
     if (test === 'Otur-uzan (cm)') ort = Math.round((ort + BIZIM_OTUR_UZAN_AYAK - (kaynak === 'eurofit' ? 15 : 23)) * 10) / 10;
-    return { tur: 'yuzdelik', kaynak, yas, yuzdelik: r.p, kenar: r.kenar, seviyeNo: no, seviye: SEVIYELER[no], ortalama: test === BEEP_TEST ? null : ort };
+    if (test === BEEP_TEST) {
+      // P50 dakikasını seviye/mekik sayısına çevir (8/5 → 8,05)
+      const L = Math.floor(satir[2]) + 1;
+      ort = L + Math.round((satir[2] - Math.floor(satir[2])) * (MEKIK_SAYISI[L] || 12)) / 100;
+    }
+    return { tur: 'yuzdelik', kaynak, yas, yuzdelik: r.p, kenar: r.kenar, ustunde: r.p > 50, seviyeNo: no, seviye: SEVIYELER[no], ortalama: ort };
   }
 
   // Ortalama tabloları (sporcu referansı)
@@ -165,7 +170,7 @@ export function normDegerlendir(test, deger, kisi, tarih) {
     const fark = ((deger - ort) / ort) * 100;
     const iyiYonde = dusukIyi ? -fark : fark;
     const no = iyiYonde > 10 ? 4 : iyiYonde > 3 ? 3 : iyiYonde >= -3 ? 2 : iyiYonde >= -10 ? 1 : 0;
-    return { tur: 'ortalama', kaynak: 'tenis', yas, farkYuzde: Math.round(fark * 10) / 10, sure: dusukIyi, seviyeNo: no, seviye: SEVIYELER[no], ortalama: ort };
+    return { tur: 'ortalama', kaynak: 'tenis', yas, farkYuzde: Math.round(fark * 10) / 10, sure: dusukIyi, ustunde: iyiYonde > 0, seviyeNo: no, seviye: SEVIYELER[no], ortalama: ort };
   }
   return null;
 }

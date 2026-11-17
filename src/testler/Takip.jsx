@@ -10,7 +10,8 @@ import { bugun, gunEkle, kisaTarih } from '../program/model';
 import { ayEkle } from '../paket/model.js';
 import { TEST_KATEGORILERI, TESTLER, TARAF_ADI, testBilgisi, testSirasi, degerGoster } from './tanimlar';
 import { kisininSonuclari } from './veri';
-import { normDegerlendir, normMetni, normVarMi, SEVIYELER, KAYNAKLAR } from './normlar';
+const BEEP = 'Beep test (seviye/mekik)';
+import { normDegerlendir, normMetni, normVarMi, KAYNAKLAR } from './normlar';
 import { useCihazDegisimleri } from './cihaz';
 
 const TUM = TEST_KATEGORILERI.flatMap(([, l]) => l.map(([ad]) => ad));
@@ -374,7 +375,7 @@ function istatistik(degerler) {
 // Süre gibi "düşük daha iyi" testlerde çubuk boyu değeri gösterir, sıralama en iyiden başlar.
 function Cubuklar({ satirlar, test, genelOrt, dusukIyi }) {
   if (!satirlar.length) return null;
-  const max = Math.max(...satirlar.map((r) => r.ort), genelOrt || 0) || 1;
+  const max = Math.max(...satirlar.map((r) => Math.max(r.ort, r.dunyaOrt || 0)), genelOrt || 0) || 1;
   const fark = (v) => {
     if (genelOrt == null || !genelOrt) return null;
     const y = ((v - genelOrt) / Math.abs(genelOrt)) * 100;
@@ -402,10 +403,12 @@ function Cubuklar({ satirlar, test, genelOrt, dusukIyi }) {
             <span className="cubuk-iz">
               <i style={{ width: `${(r.ort / max) * 100}%` }} />
               {genelOrt != null && <em style={{ left: `${(genelOrt / max) * 100}%` }} aria-hidden="true" />}
+              {r.dunyaOrt != null && <u style={{ left: `${(r.dunyaOrt / max) * 100}%` }} title={`Dünya ortalaması ${degerGoster(test, r.dunyaOrt)}`} aria-hidden="true" />}
             </span>
             <span className="cubuk-deger">
               <strong>{degerGoster(test, r.ort)}</strong>
               {fk && <small className={fk.sinif}>{fk.metin}</small>}
+              {r.dunyaOrt != null && <small className="dunya-not">🌍 dünya ort. {degerGoster(test, test === BEEP ? r.dunyaOrt : Math.round(r.dunyaOrt * 10) / 10)}</small>}
             </span>
           </div>
         );
@@ -459,6 +462,22 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
         .sort((a, b) => (bilgi.iyi === 'dusuk' ? a.deger - b.deger : b.deger - a.deger))
     : [];
   const normlu = normVarMi(test) && satirlar.some((r) => r.norm);
+  // Dünya ortalaması: her kişinin kendi yaş/cinsiyet normunun ortalaması ile bizim ortalamamız
+  const dunya = (() => {
+    const l = satirlar.filter((r) => r.norm?.ortalama != null);
+    if (!l.length) return null;
+    const beklenen = l.reduce((t, r) => t + r.norm.ortalama, 0) / l.length;
+    const bizim = l.reduce((t, r) => t + r.deger, 0) / l.length;
+    const fark = Math.round(((bizim - beklenen) / beklenen) * 100);
+    const iyi = bilgi.iyi === 'dusuk' ? fark < 0 : fark > 0;
+    const yon = bilgi.iyi === 'dusuk' ? (fark < 0 ? 'daha hızlı' : 'daha yavaş') : fark > 0 ? 'üstünde' : 'altında';
+    return {
+      beklenen, bizim, fark, iyi, n: l.length, eksik: satirlar.length - l.length,
+      ustunde: l.filter((r) => r.norm.ustunde).length,
+      metin: fark === 0 ? 'dünya ortalamasında' : `%${Math.abs(fark)} ${yon}`,
+      kaynak: [...new Set(l.map((r) => KAYNAKLAR[r.norm.kaynak].kisa))].join(', '),
+    };
+  })();
   const cihazUyarisi = !!(cihaz?.[test] && satirlar.some((r) => r.tarih < cihaz[test].tarih) && satirlar.some((r) => r.tarih >= cihaz[test].tarih));
   // Yüzdelik dilim: seçili gruptaki sıraya göre (1. = en iyi)
   const n = satirlar.length;
@@ -479,7 +498,11 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
   satirlar.forEach((r) => (kume[grupAdi(r)] ||= []).push(r));
   const dusukIyi = bilgi.iyi === 'dusuk';
   const grupSatirlari = Object.entries(kume)
-    .map(([ad, l]) => ({ ad, n: l.length, kisi: grupla !== 'kisi' && l.length === 1 ? l[0].k.ad : null, ort: l.reduce((t, x) => t + x.deger, 0) / l.length }))
+    .map(([ad, l]) => {
+      const nl = l.filter((x) => x.norm?.ortalama != null);
+      const dunyaOrt = ['yil', 'yil2', 'cinsiyet'].includes(grupla) && nl.length ? nl.reduce((t, x) => t + x.norm.ortalama, 0) / nl.length : null;
+      return { ad, n: l.length, kisi: grupla !== 'kisi' && l.length === 1 ? l[0].k.ad : null, ort: l.reduce((t, x) => t + x.deger, 0) / l.length, dunyaOrt };
+    })
     .sort((a, b) =>
       grupla === 'kisi' ? (dusukIyi ? a.ort - b.ort : b.ort - a.ort) : grupla === 'yil' || grupla === 'yil2' ? a.ad.localeCompare(b.ad, 'tr') : dusukIyi ? a.ort - b.ort : b.ort - a.ort
     );
@@ -565,6 +588,13 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
             <div><b>{degerGoster(test, bilgi.iyi === 'dusuk' ? ist.max : ist.min)}</b><span>en düşük</span></div>
             {test !== 'Beep test (seviye/mekik)' && <div><b>±{degerGoster(test, ist.sd)}</b><span>standart sapma</span></div>}
           </div>
+          {dunya && (
+            <p className="dunya-satir">
+              🌍 <b>Dünya ortalaması (yaşlarına göre): {degerGoster(test, test === BEEP ? dunya.beklenen : Math.round(dunya.beklenen * 10) / 10)}</b> · Bizim ortalamamız: {degerGoster(test, test === BEEP ? dunya.bizim : Math.round(dunya.bizim * 10) / 10)}{' '}
+              <span className={dunya.iyi ? 'iyi' : dunya.fark === 0 ? '' : 'kotu'}>({dunya.metin})</span> · Yaşıtlarının ortalamasının üstünde: <b>{dunya.ustunde}/{dunya.n} kişi</b>
+              {dunya.eksik > 0 && <> · {dunya.eksik} kişi değerlendirilemedi</>} · <small>Kaynak: {dunya.kaynak}</small>
+            </p>
+          )}
 
           <h3>Karşılaştırma</h3>
           <div className="filtreler">
@@ -577,6 +607,7 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
             {grupla === 'kisi'
               ? `Seçili ${ist.n} kişi en iyiden en düşüğe. Dikey çizgi hepsinin ortalaması.`
               : `Her çubuk o ${GRUPLAMA[grupla].toLocaleLowerCase('tr')} içindeki kişilerin ortalaması; dikey çizgi seçili ${ist.n} kişinin genel ortalaması.`}
+            {normlu && ['yil', 'yil2', 'cinsiyet'].includes(grupla) ? ' Turuncu işaret o grubun yaş ve cinsiyetine göre dünya ortalaması.' : ''}
             {dusukIyi ? ' Bu testte düşük değer daha iyi (kısa çubuk daha iyi).' : ''}
           </p>
           {tekKisilik && (
@@ -586,21 +617,6 @@ export function TestVerileri({ kisiler, gruplar, subeler }) {
           )}
           <Cubuklar satirlar={grupSatirlari} test={test} genelOrt={ist.ort} dusukIyi={dusukIyi} />
 
-          {normlu && (
-            <>
-              <h3>Dünya normuna göre</h3>
-              <div className="norm-ozet">
-                {SEVIYELER.map((ad, i) => {
-                  const n = satirlar.filter((r) => r.norm?.seviyeNo === i).length;
-                  return n ? <span key={ad} className={'r-seviye s' + i}>{ad}: {n}</span> : null;
-                }).reverse()}
-                {satirlar.some((r) => !r.norm) && <span className="aciklama kucuk-yazi">{satirlar.filter((r) => !r.norm).length} kişi değerlendirilemedi (yaş/cinsiyet eksik ya da yaşına norm yok)</span>}
-              </div>
-              <p className="aciklama kucuk-yazi">
-                Her kişi kendi yaşı ve cinsiyetine göre değerlendirilir. Kaynak: {[...new Set(satirlar.filter((r) => r.norm).map((r) => KAYNAKLAR[r.norm.kaynak].kisa))].join(', ')}.
-              </p>
-            </>
-          )}
           {cihazUyarisi && (
             <p className="uyari-kutu kucuk-yazi">
               Bu testte ölçüm cihazı {kisaTarih(cihaz[test].tarih)} tarihinde değişti. Seçili aralıkta iki cihazın ölçümleri birlikte var; karşılaştırırken dikkat edin.

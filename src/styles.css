@@ -824,3 +824,9 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .norm-tablo th, .norm-tablo td { text-align: center; }
 .norm-tablo th[scope='row'] { text-align: center; }
 .norm-tablo .norm-orta { background: var(--cip); font-weight: 700; }
+.dunya-satir { margin: 8px 0 4px; padding: 8px 12px; border-radius: 12px; background: var(--kart); border: 1px solid var(--cizgi); font-size: 0.9rem; line-height: 1.5; }
+.dunya-satir .iyi { color: #2e7d4f; font-weight: 600; }
+.dunya-satir .kotu { color: #b7791f; font-weight: 600; }
+.dunya-satir small { color: var(--soluk); }
+.cubuk-iz u { position: absolute; top: -5px; bottom: -5px; width: 4px; margin-left: -2px; border-radius: 2px; background: var(--marka); z-index: 3; text-decoration: none; }
+.cubuk-deger .dunya-not { color: var(--soluk); }
