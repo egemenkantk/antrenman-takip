@@ -67,6 +67,21 @@ async function main() {
     if (d.tarih === bugun || d.yeniTarih === bugun) console.log(`değişiklik: sahip ${d.sahipTip}:${d.sahipId} ${d.islem} ${d.tarih}->${d.yeniTarih || ''} ${d.yeniSaat || ''}`);
     if (d.islem === 'tasi' && d.yeniTarih === bugun && d.tarih !== bugun && d.sahipTip === 'kisi') ekle(d.sahipId, 'gelen');
   }
+  // Program bloğuna göre bugün seansı olanlar (sabit saat olmasa da kart çıkar)
+  const ps = await db.collection('programlar').where('sahipTip', '==', 'kisi').get();
+  for (const d of ps.docs) {
+    const b = d.data();
+    if (!b.baslangic) continue;
+    const bit = new Date(b.baslangic + 'T00:00:00Z');
+    bit.setUTCDate(bit.getUTCDate() + 7 * (b.haftalar || (b.ilerleme || []).length || 6));
+    const bitS = bit.toISOString().slice(0, 10);
+    if (b.baslangic <= bugun && bugun < bitS && b.plan !== 'mac' && (b.haftaGunleri || []).includes(hg)) {
+      const k = kisiler.find((x) => x.id === b.sahipId);
+      if (k && k.aktif !== false) ekle(b.sahipId, 'program:' + d.id);
+    }
+  }
+  const ozs = await db.collection('gunOzel').where('tarih', '==', bugun).get();
+  for (const d of ozs.docs) if (d.data().sahipTip === 'kisi') ekle(d.data().sahipId, 'ozel');
   const cift = Object.entries(kaynak).filter(([, l]) => l.length > 1);
   for (const [id, l] of cift) console.log(JSON.stringify({ id, kartlar: l }));
   if (!cift.length) console.log('yok');
