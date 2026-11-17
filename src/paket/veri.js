@@ -37,8 +37,19 @@ export async function paketTanimlariGetir() {
     (a, b) => (a.ad || '').localeCompare(b.ad || '', 'tr')
   );
 }
-export function paketTanimKaydet(eski, veri, yapan) {
-  if (eski?.id) return updateDoc(doc(db, 'paketTanimlari', eski.id), { ...veri, guncelleyen: yapan, guncelleme: serverTimestamp() });
+export async function paketTanimKaydet(eski, veri, yapan) {
+  if (eski?.id) {
+    await updateDoc(doc(db, 'paketTanimlari', eski.id), { ...veri, guncelleyen: yapan, guncelleme: serverTimestamp() });
+    // Düet/trio eksik katılım ücreti: bu tanımla satılmış, henüz ücreti olmayan açık paketlere de yaz
+    if (veri.eksikUcretleri && Object.keys(veri.eksikUcretleri).length) {
+      const l = listele(await getDocs(query(collection(db, 'satilanPaketler'), where('paketTanimId', '==', eski.id))));
+      for (const p of l) {
+        if (p.durum === 'iptal' || (p.eksikUcretleri && Object.keys(p.eksikUcretleri).length)) continue;
+        await updateDoc(doc(db, 'satilanPaketler', p.id), { eksikUcretleri: veri.eksikUcretleri });
+      }
+    }
+    return;
+  }
   return addDoc(collection(db, 'paketTanimlari'), { ...veri, aktif: true, kurumId: KURUM_ID, olusturan: yapan, olusturma: serverTimestamp() });
 }
 
@@ -72,6 +83,7 @@ export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNo
   if (fiyat !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat });
   const ref = await addDoc(collection(db, 'satilanPaketler'), {
     ...(oncekiDers > 0 ? { oncekiDers: Number(oncekiDers), aktarim: true } : {}),
+    ...(tanim.eksikUcretleri && Object.keys(tanim.eksikUcretleri).length ? { eksikUcretleri: tanim.eksikUcretleri } : {}),
     kisiId: kisi.id,
     tur: tanim.tur || 'bireysel',
     paketTanimId: tanim.id,

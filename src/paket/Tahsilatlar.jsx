@@ -147,10 +147,12 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
           const r = (m[kocId] ||= { id: kocId, dersler: new Set(), deger: 0, gelmedi: 0, kalemler: {} });
           // Düet/trio dersi tek ders sayılır; değer her öğrencinin kendi paketinden gelir
           r.dersler.add(ders.dersTuru ? `${ders.id}` : `${kisiId}:${ders.id}`);
-          r.deger += birim;
+          r.deger += ders.maliyet ?? birim;
           if (ders.katilim === 'gelmedi') r.gelmedi++;
           const k = (r.kalemler[kisiId + p.id] ||= { ad: kisiMap[kisiId]?.ad || 'Kişi', paket: p.paketAdi || TUR_KISA[p.tur], tur: p.tur, fiyat: Number(p.uygulananFiyat) || 0, dersSayisi: Number(p.dersSayisi) || 0, birim, n: 0 });
           k.n++;
+          k.toplam = (k.toplam || 0) + (ders.maliyet ?? birim);
+          if (ders.maliyet != null && Math.abs(ders.maliyet - birim) > 0.5) k.eksik = (k.eksik || 0) + 1;
         }
       }
     }
@@ -191,7 +193,8 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = nul
                           {Object.values(r.kalemler).map((k) => (
                             <li key={k.ad + k.paket}>
                               {k.ad} · {k.paket}: {tl(k.fiyat)} / {k.dersSayisi} ders = ders başı {tl(yuvarla(k.birim))} · <strong>{k.n} ders</strong> ={' '}
-                              <strong>{tl(yuvarla(k.birim * k.n))}</strong>
+                              <strong>{tl(yuvarla(k.toplam))}</strong>
+                              {k.eksik ? <small className="aciklama"> · {k.eksik} ders tek/eksik katılım ücretiyle</small> : null}
                             </li>
                           ))}
                         </ul>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
 import { tarihGoster } from '../veri';
-import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER, dersBasiUcret, kalanDeger } from './model.js';
+import { odemeDurumu, dersleriDagit, tl, KITLE_ADI, TUR_KISA, dersSayili, eksikKatilim, kayitTuru, abonelikDonemBul, abonelikDersleri, taahhutBilgisi, YONTEMLER, dersBasiUcret, tutarli } from './model.js';
 import {
   kisiPaketleri,
   kisiOdemeleri,
@@ -412,7 +412,10 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           <span className={d.kalan <= 2 && p.durum !== 'iptal' ? 'uyari-yazi' : ''}>
             {p.dersSayisi} dersten {d.kullanilan} yapıldı · <strong>{d.kalan} kalan</strong>
             {Number(p.uygulananFiyat) > 0 && (
-              <> · ders başı {tl(Math.round(dersBasiUcret(p)))} · kalan değer <strong>{tl(kalanDeger(p, d.kalan))}</strong></>
+              <>
+                {' '}· ders başı {tl(Math.round(dersBasiUcret(p)))}
+                {d.eksikDers ? ` (${d.eksikDers} ders eksik katılım ücretiyle düştü)` : ''} · kalan tutar <strong>{tl(d.kalanTl)}</strong>
+              </>
             )}
           </span>
         </div>
@@ -552,7 +555,9 @@ export default function PaketSekmesi({ kisi, yonetici, fiyatYetki = false, benim
   // Eksik katılımlı düet/trio dersleri: fark ücreti eklenmemiş ve "gerek yok" denmemiş olanlar
   const ekKayitlari = new Set(veri.paketler.filter((p) => p.tur === 'ek' && p.ilgiliKayitId).map((p) => p.ilgiliKayitId));
   const eksikler = veri.kayitlar
+    // Tutarla düşen (eksik katılım ücreti tanımlı) paketlerde fark ücreti gerekmez
     .filter((k) => eksikKatilim(k) && !k.farkGerekYok && !ekKayitlari.has(k.id))
+    .filter((k) => !veri.paketler.some((p) => tutarli(p) && dagitim?.paketler[p.id]?.dersler.some((x) => x.id === k.id)))
     .sort((a, b) => b.tarih.localeCompare(a.tarih));
   const farkGerekYok = async (k) => {
     try {

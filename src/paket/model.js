@@ -107,6 +107,17 @@ export function sayilanDers(kayit) {
 export const dersBasiUcret = (p) => (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
 export const kalanDeger = (p, kalanDers) => Math.round(dersBasiUcret(p) * Math.max(0, kalanDers));
 
+// Düet/trio eksik katılım: paket "eksikUcretleri" ({1: tek kişi ders başı, 2: iki kişi …}) taşıyorsa paket TUTARLA düşer:
+// tam katılımlı ders düet/trio ders başı ücretiyle, eksik katılımlı ders o kişi sayısının ücretiyle.
+export const tutarli = (p) => (p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0);
+export function dersMaliyeti(p, d) {
+  const birim = dersBasiUcret(p);
+  if (!tutarli(p) || !d) return birim;
+  const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
+  if (!(n > 0) || !(boy > 0) || n >= boy) return birim;
+  return Number(p.eksikUcretleri?.[n]) || birim;
+}
+
 export function dersleriDagit(paketler, kayitlar) {
   // Aylık aboneliği olan günlerdeki bireysel dersler aboneliğe sayılır, bireysel paketten düşmez
   const abonelikler = paketler.filter((p) => p.tur === 'abonelik' && p.durum !== 'iptal');
@@ -115,20 +126,43 @@ export function dersleriDagit(paketler, kayitlar) {
     .filter((p) => dersSayili(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || (a.id || '').localeCompare(b.id || ''));
   // oncekiDers: siteye geçmeden önce bu paketten yapılmış dersler (devam eden paket aktarımı)
-  const sonuc = Object.fromEntries(sayili.map((p) => [p.id, { kullanilan: Number(p.oncekiDers) || 0, dersler: [] }]));
+  const sonuc = Object.fromEntries(
+    sayili.map((p) => {
+      const once = Number(p.oncekiDers) || 0;
+      return [p.id, { kullanilan: once, dersler: [], harcanan: once * dersBasiUcret(p), eksikDers: 0 }];
+    })
+  );
+  const doluMu = (x) =>
+    tutarli(x)
+      ? sonuc[x.id].harcanan >= (Number(x.uygulananFiyat) || 0) - 0.5
+      : sonuc[x.id].kullanilan >= (Number(x.dersSayisi) || 0);
   const disarida = [];
   const dersler = kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih));
   for (const d of dersler) {
     const tur = kayitTuru(d);
-    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && sonuc[x.id].kullanilan < (Number(x.dersSayisi) || 0));
+    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !doluMu(x));
     if (!p) {
       disarida.push({ ...d, tur });
       continue;
     }
+    const maliyet = dersMaliyeti(p, d);
     sonuc[p.id].kullanilan++;
-    sonuc[p.id].dersler.push(d);
+    sonuc[p.id].harcanan += maliyet;
+    if (maliyet !== dersBasiUcret(p)) sonuc[p.id].eksikDers++;
+    sonuc[p.id].dersler.push({ ...d, maliyet });
   }
-  for (const p of sayili) sonuc[p.id].kalan = Math.max(0, (Number(p.dersSayisi) || 0) - sonuc[p.id].kullanilan);
+  for (const p of sayili) {
+    const r = sonuc[p.id];
+    const fiyat = Number(p.uygulananFiyat) || 0;
+    if (tutarli(p)) {
+      r.kalanTl = Math.round(fiyat - r.harcanan);
+      // Kalan ders: kalan tutarın tam katılımlı ders ücretine bölümü (aşağı yuvarlanır)
+      r.kalan = Math.max(0, Math.floor(r.kalanTl / (dersBasiUcret(p) || 1) + 1e-6));
+    } else {
+      r.kalan = Math.max(0, (Number(p.dersSayisi) || 0) - r.kullanilan);
+      r.kalanTl = kalanDeger(p, r.kalan);
+    }
+  }
   return { paketler: sonuc, paketsizDersler: disarida };
 }
 

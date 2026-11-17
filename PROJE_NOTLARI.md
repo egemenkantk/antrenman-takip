@@ -304,3 +304,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Ara hafta: `grup.donemAralari = [{tarih, hafta}]` — "tarih" günü başlayacak dönem "hafta" ertelenir, sonrakiler kayar. donemNo/donemBul (istemci paket/model.js, sunucu functions/donem.js) üçüncü parametre olarak alır; ara haftasında sunucu kayıt açmaz. Yalnızca başlamamış dönem ertelenir.
 - Geçmiş dönemleri aktar (GrupOdemeleri, yönetici): üye × dönem tablosu (Ödendi: tutar/gerçek ödeme tarihi/yöntem; Ödenmedi; Yoktu). Ödeme notu "Aktarım · N. dönem (tarih aralığı)". Kayıt/ödemelerde `aktarimId`; `grup.aktarimlar` listesinden "geri al" (ödemeler silindi:true, açılan kayıtlar silinir, katılım eski haline).
 - Özel ders: kişi Paket sekmesi "Devam eden paketi gir" — `satilanPaketler.oncekiDers` (siteden önce yapılan ders) kullanılan sayısına eklenir (istemci dersleriDagit + sunucu kalanDersler); ödenen tutar gerçek tarihle "Aktarım · devam eden paket" notuyla girilir.
+
+## Düet/trio eksik katılım: tutarla düşme
+- Paket tanımında `eksikUcretleri` ({1: tek gelirse ders başı, 2: trio'da iki kişi}) — tanım kaydedilince ücreti olmayan açık satılmış paketlere de kopyalanır; yeni atamada pakete yazılır.
+- `tutarli(p)` paketlerde dersleriDagit tutar bazlı: tam katılım = uygulananFiyat/dersSayisi, eksik katılım = eksikUcretleri[gelenSayisi]. Sonuç: kalanTl, kalan (= kalanTl / tam ders ücreti, aşağı), eksikDers; her ders `maliyet` taşır. Sunucu kalanDersler aynı hesap.
+- Bu paketlerde fark ücreti sorulmaz (Bugün FarkKutusu, Paket sekmesi eksikler listesi). Tahsilatlar özel ders değeri ders maliyetiyle.

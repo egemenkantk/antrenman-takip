@@ -21,6 +21,8 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
     haftalikDers: ilk?.haftalikDers || 3,
     taahhutAy: ilk?.taahhutAy ?? 6,
     fiyat: ilk?.fiyat ?? '',
+    eksik1: ilk?.eksikUcretleri?.[1] ?? '',
+    eksik2: ilk?.eksikUcretleri?.[2] ?? '',
   });
   const [hata, setHata] = useState('');
   return (
@@ -40,6 +42,9 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             kitle: f.kitle,
             dersSayisi: dersSayili(f.tur) || f.tur === 'abonelik' ? Number(f.dersSayisi) : null,
             ...(f.tur === 'abonelik' ? { haftalikDers: Number(f.haftalikDers) || 3, taahhutAy: Number(f.taahhutAy) || 0 } : {}),
+            ...(f.tur === 'duet' || f.tur === 'trio'
+              ? { eksikUcretleri: { ...(Number(f.eksik1) > 0 ? { 1: Number(f.eksik1) } : {}), ...(f.tur === 'trio' && Number(f.eksik2) > 0 ? { 2: Number(f.eksik2) } : {}) } }
+              : {}),
             fiyat: Number(f.fiyat),
           });
         } catch (err) {
@@ -93,11 +98,31 @@ function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
             </label>
           </>
         )}
+        {(f.tur === 'duet' || f.tur === 'trio') && (
+          <>
+            <label className="alan">
+              <span>Tek gelirse ders başı ücret (₺)</span>
+              <input type="number" min="0" value={f.eksik1} onChange={(e) => setF({ ...f, eksik1: e.target.value })} placeholder="Örn. bireysel ders ücreti" />
+            </label>
+            {f.tur === 'trio' && (
+              <label className="alan">
+                <span>İki kişi gelirse ders başı ücret (₺)</span>
+                <input type="number" min="0" value={f.eksik2} onChange={(e) => setF({ ...f, eksik2: e.target.value })} />
+              </label>
+            )}
+          </>
+        )}
         <label className="alan">
           <span>{f.tur === 'grup' ? '4 haftalık dönem ücreti (₺)' : f.tur === 'abonelik' ? 'Aylık ücret (₺)' : f.tur === 'bireysel' ? 'Paket fiyatı (₺)' : 'Kişi başı paket fiyatı (₺)'}</span>
           <input type="number" min="0" value={f.fiyat} onChange={(e) => setF({ ...f, fiyat: e.target.value })} />
         </label>
       </div>
+      {(f.tur === 'duet' || f.tur === 'trio') && (
+        <p className="aciklama kucuk-yazi">
+          Eksik katılım ücreti girilirse paket tutarla düşer: eşi/eşleri geldiğinde {f.tur === 'duet' ? 'düet' : 'trio'} ders ücreti, tek gelince tek kişilik ücret pakete yazılır;
+          fark ücreti eklemek gerekmez. Bu tanımla satılmış ve eksik ücreti olmayan açık paketlere de uygulanır.
+        </p>
+      )}
       {ilk && <p className="aciklama kucuk-yazi">Fiyat değişikliği yalnızca bundan sonraki satışlara ve dönemlere uygulanır; eski kayıtlar değişmez.</p>}
       {hata && <p className="hata">{hata}</p>}
       <div className="dugme-satiri">

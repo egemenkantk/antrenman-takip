@@ -299,18 +299,35 @@ function sayilanDers(k) {
   if (!kayitTuru(k)) return false;
   return k.katilim === 'geldi' || (k.katilim === 'gelmedi' && k.derstenDussun === true);
 }
+// İstemcideki paket/model.js dersleriDagit ile aynı: düet/trio "eksikUcretleri" varsa paket tutarla düşer
 function kalanDersler(paketler, kayitlar) {
   const sayili = paketler
     .filter((p) => DERS_SAYILI.includes(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || a.id.localeCompare(b.id));
+  const birim = (p) => (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
+  const tutarli = (p) => (p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0);
+  const maliyet = (p, d) => {
+    const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
+    if (!tutarli(p) || !(n > 0) || !(boy > 0) || n >= boy) return birim(p);
+    return Number(p.eksikUcretleri[n]) || birim(p);
+  };
   // oncekiDers: siteye geçmeden önce bu paketten yapılmış dersler (aktarım)
   const kullanilan = Object.fromEntries(sayili.map((p) => [p.id, Number(p.oncekiDers) || 0]));
+  const harcanan = Object.fromEntries(sayili.map((p) => [p.id, (Number(p.oncekiDers) || 0) * birim(p)]));
+  const dolu = (x) => (tutarli(x) ? harcanan[x.id] >= (Number(x.uygulananFiyat) || 0) - 0.5 : kullanilan[x.id] >= (Number(x.dersSayisi) || 0));
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const tur = kayitTuru(d);
-    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
-    if (p) kullanilan[p.id]++;
+    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !dolu(x));
+    if (!p) continue;
+    kullanilan[p.id]++;
+    harcanan[p.id] += maliyet(p, d);
   }
-  return sayili.map((p) => ({ p, kullanilan: kullanilan[p.id], kalan: (Number(p.dersSayisi) || 0) - kullanilan[p.id] }));
+  return sayili.map((p) => {
+    const kalan = tutarli(p)
+      ? Math.max(0, Math.floor(((Number(p.uygulananFiyat) || 0) - harcanan[p.id]) / (birim(p) || 1) + 1e-6))
+      : (Number(p.dersSayisi) || 0) - kullanilan[p.id];
+    return { p, kullanilan: kullanilan[p.id], kalan };
+  });
 }
 async function sonDersKontrolu(db, admin, KURUM_ID, kisiId) {
   const [ps, ks] = await Promise.all([

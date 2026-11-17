@@ -38,7 +38,7 @@ import { degisiklikleriGetir } from '../takvim/degisiklik';
 import DersDegistir, { DegisiklikEtiketi } from '../bugun/DersDegistir';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
-import { ekUcretEkle, farkKarari } from '../paket/veri';
+import { ekUcretEkle, farkKarari, kisiPaketleri } from '../paket/veri';
 import PaketKalan from '../paket/PaketKalan';
 import { sakatlikTipleriGetir, riskliKaliplar, sakatlikEtiketi } from '../saglik/veri';
 import { RiskliKaliplar } from '../kutuphane/bilesenler';
@@ -67,7 +67,7 @@ function AgriSecici({ deger, onChange }) {
   );
 }
 const sakatMi = (k) => (k?.aktifSakatliklar || []).length > 0;
-import { TUR_KISA } from '../paket/model.js';
+import { TUR_KISA, tutarli } from '../paket/model.js';
 
 // Düet/trioda eksik katılım: gelenlere fark ücreti (tutarı yönetici girer)
 function FarkKutusu({ fark, ben, onBitti }) {
@@ -77,6 +77,22 @@ function FarkKutusu({ fark, ben, onBitti }) {
   );
   const [hata, setHata] = useState('');
   const kayitId = grupKayitId(fark.tarih, fark.grupId);
+  // Paketinde eksik katılım ücreti tanımlıysa ders zaten tek kişilik ücretle düştü; fark sorulmaz
+  const [otomatik, setOtomatik] = useState(null);
+  useEffect(() => {
+    Promise.all(fark.gelenler.map((k) => kisiPaketleri(k.id).catch(() => [])))
+      .then((l) => setOtomatik(l.every((pl) => pl.some((p) => p.tur === fark.dersTuru && p.durum !== 'iptal' && tutarli(p)))))
+      .catch(() => setOtomatik(false));
+  }, [fark.grupId, fark.tarih]);
+  if (otomatik === null) return null;
+  if (otomatik) {
+    return (
+      <p className="bilgi kucuk-yazi">
+        {TUR_KISA[fark.dersTuru]} dersine {fark.gelenler.length}/{fark.grupBoyu} kişi geldi; gelenlerin paketinden eksik katılım ücreti düştü.{' '}
+        <button className="metin" onClick={onBitti}>Tamam</button>
+      </p>
+    );
+  }
   if (!fark.yonetici) {
     return (
       <p className="uyari-kutu kucuk-yazi">

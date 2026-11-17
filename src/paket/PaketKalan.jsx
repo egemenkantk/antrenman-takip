@@ -1,7 +1,7 @@
 // Bugün ekranı: özel ders tamamlanınca o dersin düştüğü paket, ders başı ücret ve kalan tutar
 import { useEffect, useState } from 'react';
 import { kisiPaketleri, bireyselKayitlar } from './veri';
-import { dersleriDagit, dersBasiUcret, kalanDeger, tl, TUR_KISA } from './model.js';
+import { dersleriDagit, dersBasiUcret, tl, TUR_KISA } from './model.js';
 
 export default function PaketKalan({ kisiId, kayitId, ad, surum }) {
   const [b, setB] = useState(null);
@@ -15,7 +15,9 @@ export default function PaketKalan({ kisiId, kayitId, ad, surum }) {
         if (iptal) return;
         if (!p) return setB(d.paketsizDersler.some((k) => k.id === kayitId) ? { paketsiz: true } : null);
         const r = d.paketler[p.id];
-        setB({ ad: p.paketAdi || TUR_KISA[p.tur], birim: Math.round(dersBasiUcret(p)), kalanDers: r.kalan, kalanTl: kalanDeger(p, r.kalan), fiyatli: Number(p.uygulananFiyat) > 0 });
+        const ders = r.dersler.find((k) => k.id === kayitId);
+        const eksik = ders && Math.abs(ders.maliyet - dersBasiUcret(p)) > 0.5;
+        setB({ ad: p.paketAdi || TUR_KISA[p.tur], birim: Math.round(ders?.maliyet ?? dersBasiUcret(p)), eksik, kalanDers: r.kalan, kalanTl: r.kalanTl, fiyatli: Number(p.uygulananFiyat) > 0 });
       })
       .catch(() => {});
     return () => {
@@ -28,7 +30,7 @@ export default function PaketKalan({ kisiId, kayitId, ad, surum }) {
     <p className={'paket-kalan' + (b.kalanDers <= 1 ? ' uyari-yazi' : '')}>
       {ad ? <b>{ad}</b> : null}
       {ad ? ' · ' : ''}
-      {b.ad}: {b.fiyatli ? <>bu ders {tl(b.birim)} düştü · </> : null}
+      {b.ad}: {b.fiyatli ? <>bu ders {tl(b.birim)}{b.eksik ? ' (tek/eksik katılım ücreti)' : ''} düştü · </> : null}
       kalan <strong>{b.kalanDers} ders{b.fiyatli ? ` / ${tl(b.kalanTl)}` : ''}</strong>
     </p>
   );
