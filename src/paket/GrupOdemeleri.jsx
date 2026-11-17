@@ -5,6 +5,7 @@ import { donemBul, donemNo, odemeDurumu, tl, dersleriDagit, TUR_KISA } from './m
 import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bireyselKayitlar, odemeEkle, grupOzelFiyat, paketGuncelle, katilimGuncelle, donemDahilAyarla, DONEM_HARIC, KATILIM_ONCESI } from './veri';
 import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
+import { AraHaftalar, GecmisAktarim, AktarimListesi } from './DonemAraclari';
 
 function OzelUcretFormu({ grup, kisi, tanim, kayit, donem, benim, onBitti }) {
   const ozel = grup.ozelFiyatlar?.[kisi.id];
@@ -72,8 +73,8 @@ function KatilimFormu({ grup, kisi, tanim, odemeler, benim, onBitti }) {
   const [bekliyor, setBekliyor] = useState(false);
   const [hata, setHata] = useState('');
   const donemler = [];
-  const son = (donemBul(grup.donemBaslangic, bugun())?.no ?? 0) + 1;
-  for (let n = 0; n <= son; n++) donemler.push(donemNo(grup.donemBaslangic, n));
+  const son = (donemBul(grup.donemBaslangic, bugun(), grup.donemAralari)?.no ?? 0) + 1;
+  for (let n = 0; n <= son; n++) donemler.push(donemNo(grup.donemBaslangic, n, grup.donemAralari));
   async function kaydet(t) {
     setHata('');
     setBekliyor(true);
@@ -124,13 +125,14 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
   // Ek yetkiler: dönem/katılım ayarı (grupOdeme), kişiye özel ücret (ozelFiyat)
   const donemYetki = yonetici || !!yetki.donem;
   const fiyatYetki = yonetici || !!yetki.fiyat;
-  const ilk = grup.donemBaslangic ? donemBul(grup.donemBaslangic, bugun()) || donemNo(grup.donemBaslangic, 0) : null;
+  const ilk = grup.donemBaslangic ? donemBul(grup.donemBaslangic, bugun(), grup.donemAralari) || donemNo(grup.donemBaslangic, 0, grup.donemAralari) : null;
   const [no, setNo] = useState(ilk?.no ?? 0);
   const [veri, setVeri] = useState(null);
   const [acik, setAcik] = useState(null); // {kisiId, mod: 'odeme'|'liste'}
   const [hata, setHata] = useState('');
   const [bilgi, setBilgi] = useState('');
-  const donem = grup.donemBaslangic ? donemNo(grup.donemBaslangic, no) : null;
+  const [aktarim, setAktarim] = useState(false);
+  const donem = grup.donemBaslangic ? donemNo(grup.donemBaslangic, no, grup.donemAralari) : null;
 
   const yukle = async () => {
     if (!donem) return;
@@ -207,6 +209,28 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
         </div>
         <button className="ikincil kucuk" onClick={() => setNo(no + 1)} aria-label="Sonraki dönem">›</button>
       </div>
+      {yonetici && (
+        <div className="donem-araclari">
+          <AraHaftalar grup={grup} onDegisti={async () => { await onGrupDegisti?.(); }} />
+          {!aktarim && <button className="metin" onClick={() => setAktarim(true)}>⇪ Geçmiş dönemleri aktar</button>}
+          <AktarimListesi grup={grup} benim={benim} onDegisti={async () => { await onGrupDegisti?.(); await yukle(); }} />
+        </div>
+      )}
+      {aktarim && (
+        <GecmisAktarim
+          grup={grup}
+          kisiler={kisiler}
+          tanim={tanim}
+          benim={benim}
+          onVazgec={() => setAktarim(false)}
+          onBitti={async (mesaj) => {
+            setAktarim(false);
+            setBilgi(mesaj);
+            await onGrupDegisti?.();
+            await yukle();
+          }}
+        />
+      )}
       {hata && <p className="hata">{hata}</p>}
       {!veri && <p className="aciklama">Yükleniyor…</p>}
       {ozet && (

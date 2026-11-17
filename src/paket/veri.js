@@ -67,10 +67,11 @@ export async function tumPaketVerisi() {
   return { paketler: listele(p), odemeler: listele(o) };
 }
 
-export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu }, yapan) {
+export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu, oncekiDers = 0 }, yapan) {
   const fiyat = Number(uygulananFiyat ?? tanim.fiyat) || 0;
   if (fiyat !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat });
-  return addDoc(collection(db, 'satilanPaketler'), {
+  const ref = await addDoc(collection(db, 'satilanPaketler'), {
+    ...(oncekiDers > 0 ? { oncekiDers: Number(oncekiDers), aktarim: true } : {}),
     kisiId: kisi.id,
     tur: tanim.tur || 'bireysel',
     paketTanimId: tanim.id,
@@ -86,6 +87,7 @@ export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNo
     olusturan: yapan,
     olusturma: serverTimestamp(),
   });
+  return ref.id;
 }
 export async function paketGuncelle(p, veri, yapan) {
   await updateDoc(doc(db, 'satilanPaketler', p.id), { ...veri, guncelleyen: yapan, guncelleme: serverTimestamp() });
@@ -234,13 +236,13 @@ export async function katilimGuncelle(grup, kisiId, tarih, tanim, odemeler, yapa
   await updateDoc(doc(db, 'gruplar', grup.id), { [`uyeKatilim.${kisiId}`]: tarih || deleteField() });
   const sonuc = { iptal: 0, guncel: 0, odemeli: 0 };
   if (!grup.donemBaslangic || !tanim) return sonuc;
-  const simdi = donemBul(grup.donemBaslangic, bugun())?.no ?? 0;
+  const simdi = donemBul(grup.donemBaslangic, bugun(), grup.donemAralari)?.no ?? 0;
   const odenen = (id) => odemeler.filter((o) => !o.silindi && o.satilanPaketId === id).reduce((t, o) => t + (Number(o.tutar) || 0), 0);
   const ozel = grup.ozelFiyatlar?.[kisiId];
   const liste = Number(tanim.fiyat) || 0;
   const tam = ozel ? Number(ozel.fiyat) || 0 : liste;
   for (let n = 0; n <= simdi + 1; n++) {
-    const d = donemNo(grup.donemBaslangic, n);
+    const d = donemNo(grup.donemBaslangic, n, grup.donemAralari);
     const s = await getDoc(doc(db, 'satilanPaketler', grupKayitKimligi(grup.id, d.bas, kisiId)));
     if (!s.exists()) continue;
     const r = { id: s.id, ...s.data() };
@@ -311,10 +313,11 @@ async function dersKoclari(kisiId, satilanPaketId) {
   }
 }
 
-export async function odemeEkle({ kisiId, satilanPaketId, tutar, tarih, yontem, not }, yapan) {
+export async function odemeEkle({ kisiId, satilanPaketId, tutar, tarih, yontem, not, ekAlanlar = {} }, yapan) {
   const kocIds = await dersKoclari(kisiId, satilanPaketId);
   return addDoc(collection(db, 'odemeler'), {
     ...(kocIds ? { dersKocIds: kocIds } : {}),
+    ...ekAlanlar,
     kisiId,
     satilanPaketId,
     tutar: Number(tutar) || 0,

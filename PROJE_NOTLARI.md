@@ -298,3 +298,9 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## Koç ek yetkileri (kullanicilar.ekYetkiler)
 - programDuzenle, kisiEkle (kişi yalnızca koça atanır), grupYonet (kendi grubunda üye/saat/süre — sunucu `grupDuzenleKoc` yazar, yalnızca koçun zaten erişebildiği kişiler eklenir, grupKocIds sunucuda eşitlenir), grupOdeme (kendi grubunda dönem kaydı, katılım, döneme dahil değil), ozelFiyat (liste dışı fiyat; işlem geçmişine "liste-disi-fiyat"/"fiyat-degisti"), tahsilatOzeti (Tahsilatlar'da yalnızca kendi satırı).
 - İstemci: `yetkili(ben, y)` (src/auth/hesap.js). Kurallar: `yetkisiVar`, `grupKocu`.
+
+## Dönem araçları ve aktarım
+- Grup formunda "İlk dönemin başlangıcı" girilince dönem takvimi önizlemesi (DonemTakvimi).
+- Ara hafta: `grup.donemAralari = [{tarih, hafta}]` — "tarih" günü başlayacak dönem "hafta" ertelenir, sonrakiler kayar. donemNo/donemBul (istemci paket/model.js, sunucu functions/donem.js) üçüncü parametre olarak alır; ara haftasında sunucu kayıt açmaz. Yalnızca başlamamış dönem ertelenir.
+- Geçmiş dönemleri aktar (GrupOdemeleri, yönetici): üye × dönem tablosu (Ödendi: tutar/gerçek ödeme tarihi/yöntem; Ödenmedi; Yoktu). Ödeme notu "Aktarım · N. dönem (tarih aralığı)". Kayıt/ödemelerde `aktarimId`; `grup.aktarimlar` listesinden "geri al" (ödemeler silindi:true, açılan kayıtlar silinir, katılım eski haline).
+- Özel ders: kişi Paket sekmesi "Devam eden paketi gir" — `satilanPaketler.oncekiDers` (siteden önce yapılan ders) kullanılan sayısına eklenir (istemci dersleriDagit + sunucu kalanDersler); ödenen tutar gerçek tarihle "Aktarım · devam eden paket" notuyla girilir.

@@ -835,3 +835,16 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 .koc-dokum td { background: var(--kart); text-align: left; }
 .koc-dokum li { padding: 2px 0; }
 .koc-dokum ul { list-style: none; padding-left: 4px; margin: 4px 0; }
+.donem-takvimi { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.donem-cip { font-size: 0.8rem; padding: 3px 10px; border-radius: 999px; background: var(--cip); color: var(--yazi); }
+.donem-cip.simdi { background: var(--marka); color: #fff; font-weight: 600; }
+.donem-araclari { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; margin: 6px 0; }
+.donem-araclari .ara-haftalar { flex-basis: 100%; }
+.aktarim-tablo td, .aktarim-tablo th { vertical-align: top; min-width: 120px; }
+.aktarim-tablo td select, .aktarim-tablo td input { display: block; box-sizing: border-box; width: 100%; min-width: 0; margin-top: 3px; padding: 4px 6px; font-size: 0.82rem; }
+.aktarim-tablo td.secili-odendi { background: #e6f4ec; }
+.aktarim-tablo td.secili-odenmedi { background: #fff4dc; }
+.aktarim-tablo td.secili-yok { background: var(--cip); }
+.aktarim-tablo td.kilitli { color: var(--soluk); font-size: 0.85rem; }
+.aktarim-tablo .satir-doldur { display: block; font-weight: 400; }
+.aktarim-tablo td { white-space: normal; min-width: 140px; }

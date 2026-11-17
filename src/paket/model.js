@@ -27,15 +27,37 @@ export const tl = (n) =>
 
 // ---------- Grup dönemleri ----------
 // Grubun ilk dönem başlangıcından itibaren 28 günlük dönemler. tarih hangi döneme düşüyor?
-export function donemBul(donemBaslangic, tarih) {
+// aralar: grup.donemAralari = [{ tarih, hafta }] — "tarih" günü başlayacak dönem "hafta" hafta ertelenir
+// (bayram, tatil gibi özel durumlar). Sonraki bütün dönemler de o kadar kayar.
+export function donemBul(donemBaslangic, tarih, aralar = []) {
   if (!donemBaslangic || !tarih || tarih < donemBaslangic) return null;
-  const no = Math.floor(gunFarki(donemBaslangic, tarih) / DONEM_GUN);
-  return donemNo(donemBaslangic, no);
+  if (!aralar?.length) {
+    const no = Math.floor(gunFarki(donemBaslangic, tarih) / DONEM_GUN);
+    return donemNo(donemBaslangic, no);
+  }
+  // Aralı takvimde sırayla ilerle; aradaki haftalarda bir sonraki dönem "arada" işaretiyle döner
+  for (let n = 0; n < 1000; n++) {
+    const d = donemNo(donemBaslangic, n, aralar);
+    if (tarih < d.bas) return { ...d, arada: true };
+    if (tarih <= d.bit) return d;
+  }
+  return null;
 }
-export function donemNo(donemBaslangic, no) {
+export function donemNo(donemBaslangic, no, aralar = []) {
   if (no < 0) return null;
-  const bas = gunEkle(donemBaslangic, no * DONEM_GUN);
-  return { no, bas, bit: gunEkle(bas, DONEM_GUN - 1) };
+  if (!aralar?.length) {
+    const bas = gunEkle(donemBaslangic, no * DONEM_GUN);
+    return { no, bas, bit: gunEkle(bas, DONEM_GUN - 1) };
+  }
+  let bas = donemBaslangic;
+  let ara = 0;
+  for (let i = 0; i <= no; i++) {
+    if (i > 0) bas = gunEkle(bas, DONEM_GUN);
+    ara = 0;
+    for (const a of aralar) if (a.tarih === bas) ara += Number(a.hafta) || 0;
+    if (ara) bas = gunEkle(bas, ara * 7);
+  }
+  return { no, bas, bit: gunEkle(bas, DONEM_GUN - 1), ...(ara ? { araSonrasi: ara } : {}) };
 }
 
 // Dönem ortasında katılan: kalan haftalara göre orantılı (katıldığı hafta dahil)
@@ -88,7 +110,8 @@ export function dersleriDagit(paketler, kayitlar) {
   const sayili = paketler
     .filter((p) => dersSayili(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || (a.id || '').localeCompare(b.id || ''));
-  const sonuc = Object.fromEntries(sayili.map((p) => [p.id, { kullanilan: 0, dersler: [] }]));
+  // oncekiDers: siteye geçmeden önce bu paketten yapılmış dersler (devam eden paket aktarımı)
+  const sonuc = Object.fromEntries(sayili.map((p) => [p.id, { kullanilan: Number(p.oncekiDers) || 0, dersler: [] }]));
   const disarida = [];
   const dersler = kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih));
   for (const d of dersler) {

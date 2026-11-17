@@ -7,6 +7,7 @@ import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
 import { GrupBecerileri } from '../cimnastik/Beceriler';
 import GrupOdemeleri, { DuetOdemeleri } from '../paket/GrupOdemeleri';
+import { DonemTakvimi } from '../paket/DonemAraclari';
 import { paketTanimlariGetir, grupKaydiOlustur, grupDonemKayitlari } from '../paket/veri';
 import { donemBul, tl, GRUP_DERS_TURU, TUR_KISA } from '../paket/model.js';
 import { bugun } from '../program/model';
@@ -135,6 +136,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
           <input type="date" value={f.donemBaslangic} onChange={(e) => setF({ ...f, donemBaslangic: e.target.value })} />
         </label>
       </div>
+      {f.donemBaslangic && <DonemTakvimi bas={f.donemBaslangic} aralar={ilk?.donemAralari || []} />}
       <small className="ipucu">Dönemler bu tarihten itibaren 4'er hafta ilerler. Grup paketlerini "Paketler ve ödemeler → Paket tanımları"ndan eklersin.</small>
       </>
       )}
@@ -300,7 +302,7 @@ export default function Gruplar({ onGeri }) {
               // Ek yetkili koç: sunucu üyeleri/saatleri kaydeder ve erişimleri eşitler
               const { yeniler } = await grupDuzenleKoc({ grupId: g.id, ...veri });
               const tanim = tanimlar.find((t) => t.id === g.paketTanimId);
-              const donem = tanim && g.donemBaslangic && donemBul(g.donemBaslangic, bugun());
+              const donem = tanim && g.donemBaslangic && donemBul(g.donemBaslangic, bugun(), g.donemAralari);
               if (donem && yeniler?.length && yetkili(ben, 'grupOdeme')) {
                 const grup = { ...g, ...veri, uyeKatilim: { ...(g.uyeKatilim || {}), ...Object.fromEntries(yeniler.map((id) => [id, g.uyeKatilim?.[id] || bugun()])) } };
                 const mevcut = await grupDonemKayitlari({ ...grup, uyeIds: yeniler }, donem);
@@ -315,7 +317,7 @@ export default function Gruplar({ onGeri }) {
             const id = await grupKaydet(eski, veri, ben.id);
             // Dönem ortasında eklenen üyeler için bu dönemin kaydını hemen aç (orantılı ücret)
             const tanim = tanimlar.find((t) => t.id === veri.paketTanimId);
-            const donem = tanim && donemBul(veri.donemBaslangic, bugun());
+            const donem = tanim && donemBul(veri.donemBaslangic, bugun(), eski?.donemAralari);
             const yeniler = eski ? veri.uyeIds.filter((x) => !(eski.uyeIds || []).includes(x)) : [];
             if (donem && yeniler.length) {
               const grup = { ...veri, id };

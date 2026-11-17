@@ -17,11 +17,30 @@ const istanbulBugun = () => new Date().toLocaleDateString('en-CA', { timeZone: '
 const kisa = (s) => coz(s).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 const tl = (n) => (Number(n) || 0).toLocaleString('tr-TR') + ' ₺';
 
-function donemBul(bas, tarih) {
-  if (!bas || tarih < bas) return null;
-  const no = Math.floor(gunFarki(bas, tarih) / DONEM_GUN);
-  const b = gunEkle(bas, no * DONEM_GUN);
+// aralar: grup.donemAralari = [{ tarih, hafta }] — istemcideki paket/model.js ile aynı hesap
+function donemNoAra(bas, no, aralar) {
+  let b = bas;
+  for (let i = 0; i <= no; i++) {
+    if (i > 0) b = gunEkle(b, DONEM_GUN);
+    let ara = 0;
+    for (const a of aralar) if (a.tarih === b) ara += Number(a.hafta) || 0;
+    if (ara) b = gunEkle(b, ara * 7);
+  }
   return { no, bas: b, bit: gunEkle(b, DONEM_GUN - 1) };
+}
+function donemBul(bas, tarih, aralar = []) {
+  if (!bas || tarih < bas) return null;
+  if (!aralar?.length) {
+    const no = Math.floor(gunFarki(bas, tarih) / DONEM_GUN);
+    const b = gunEkle(bas, no * DONEM_GUN);
+    return { no, bas: b, bit: gunEkle(b, DONEM_GUN - 1) };
+  }
+  for (let n = 0; n < 1000; n++) {
+    const d = donemNoAra(bas, n, aralar);
+    if (tarih < d.bas) return null; // ara haftası: dönem yok, kayıt açılmaz
+    if (tarih <= d.bit) return d;
+  }
+  return null;
 }
 function orantili(ucret, donemBas, katilim) {
   const hafta = Math.min(3, Math.floor(gunFarki(donemBas, katilim) / 7));
@@ -50,7 +69,7 @@ async function donemKontrolu(db, admin, KURUM_ID, bugun = istanbulBugun()) {
     const g = { id: gd.id, ...gd.data() };
     const tanim = tanimlar[g.paketTanimId];
     if (g.aktif === false || !tanim || !g.donemBaslangic || (g.dersTuru && g.dersTuru !== 'grup')) continue;
-    const donem = donemBul(g.donemBaslangic, bugun);
+    const donem = donemBul(g.donemBaslangic, bugun, g.donemAralari || []);
     if (!donem) continue;
     const uyeler = g.uyeIds || [];
     if (!uyeler.length) continue;
@@ -284,7 +303,8 @@ function kalanDersler(paketler, kayitlar) {
   const sayili = paketler
     .filter((p) => DERS_SAYILI.includes(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || a.id.localeCompare(b.id));
-  const kullanilan = Object.fromEntries(sayili.map((p) => [p.id, 0]));
+  // oncekiDers: siteye geçmeden önce bu paketten yapılmış dersler (aktarım)
+  const kullanilan = Object.fromEntries(sayili.map((p) => [p.id, Number(p.oncekiDers) || 0]));
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const tur = kayitTuru(d);
     const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && kullanilan[x.id] < (Number(x.dersSayisi) || 0));
