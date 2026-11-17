@@ -12,6 +12,11 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     programlar.filter((p) => p.sahipId === id).sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || ''));
   const ozelOf = (id) => ozeller.find((o) => o.sahipId === id && o.tarih === tarih) || null;
   const kisininGruplari = (id) => gruplar.filter((g) => g.aktif !== false && (g.uyeIds || []).includes(id)).map((g) => g.id);
+  // Güne özel düzenleme hariç, programda bugün seans var mı
+  const programli = (id, mac) => {
+    const p = gununSeansi(bloklari(id), tarih, null, mac);
+    return !!(p && !p.dinlenme && p.gun);
+  };
   const sonuc = [];
 
   for (const g of gruplar) {
@@ -29,6 +34,8 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     }
     const deg = degOf(g.id);
     if (saat == null && !ozel && !planli && !deg) continue;
+    // Bu güne taşınan ders varsa ve bugün sabit saat/planlı seans yoksa, güne özel düzenleme o derse aittir: ikinci kart açılmaz
+    if (saat == null && gelenler(g.id).length && !programli(g.id, maclar(etkinlikler, { tip: 'grup', id: g.id }))) continue;
     sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', sure: g.sure, s, ozel, uyeler, g, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
   }
   for (const k of kisiler) {
@@ -47,6 +54,8 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     }
     const deg = degOf(k.id);
     if (saat == null && !ozel && !planli && !deg) continue;
+    // Bu güne taşınan ders varsa ve bugün sabit saat/planlı seans yoksa, güne özel düzenleme o derse aittir: ikinci kart açılmaz
+    if (saat == null && gelenler(k.id).length && !programli(k.id, mac)) continue;
     sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', s, ozel, k, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
   }
   return sonuc.sort((a, b) => (a.saat || '99').localeCompare(b.saat || '99') || a.ad.localeCompare(b.ad, 'tr'));
