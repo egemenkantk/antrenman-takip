@@ -27,7 +27,10 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     const s = gununSeansi(bloklari(g.id), tarih, ozel, maclar(etkinlikler, { tip: 'grup', id: g.id }));
     const saat = g.saatler?.[hg];
     const planli = s && !s.dinlenme && s.gun;
-    const uyeler = (g.uyeIds || []).map((id) => kisiler.find((k) => k.id === id)).filter((k) => k && k.aktif !== false);
+    // Başlangıç tarihi (kişi) ya da gruba katılım tarihinden önceki günlerde üye görünmez
+    const uyeler = (g.uyeIds || [])
+      .map((id) => kisiler.find((k) => k.id === id))
+      .filter((k) => k && k.aktif !== false && !(k.baslangicTarihi && tarih < k.baslangicTarihi) && !(g.uyeKatilim?.[k.id] && tarih < g.uyeKatilim[k.id]));
     for (const d of gelenler(g.id)) {
       const s2 = gununSeansi(bloklari(g.id), d.tarih, ozelOf(g.id), maclar(etkinlikler, { tip: 'grup', id: g.id }));
       sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: d.yeniSaat || '', sure: g.sure, s: s2, ozel: null, uyeler, g, degisiklik: d, durum: 'gelen' });
@@ -40,6 +43,7 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
   }
   for (const k of kisiler) {
     if (k.aktif === false) continue;
+    if (k.baslangicTarihi && tarih < k.baslangicTarihi) continue; // başlamadan önceki günlerde görünmez
     if (sube && !(k.subeIds || []).includes(sube)) continue;
     if (benimId && !(k.kocIds || []).includes(benimId)) continue;
     const ozel = ozelOf(k.id);

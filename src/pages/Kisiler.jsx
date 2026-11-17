@@ -30,7 +30,7 @@ import SaglikSekmesi from '../saglik/SaglikSekmesi';
 import { BransOzeti, BransTestOnerisi } from '../saglik/Kutuphane';
 import { sakatlikTipleriGetir, riskliKaliplar, sakatlikEtiketi } from '../saglik/veri';
 import { RiskliKaliplar } from '../kutuphane/bilesenler';
-import { HAFTA_GUNLERI } from '../program/model';
+import { HAFTA_GUNLERI, bugun } from '../program/model';
 import { saatOzeti } from './Gruplar';
 
 const BOS = {
@@ -153,6 +153,7 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
       tip: f.tip,
       ad: f.ad.trim(),
       dogumTarihi: f.dogumTarihi || '',
+      baslangicTarihi: f.baslangicTarihi || '',
       cinsiyet: f.cinsiyet || '',
       telefon,
       subeIds: f.subeIds,
@@ -209,6 +210,11 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
         <label className="alan">
           <span>Doğum tarihi</span>
           <input type="date" value={f.dogumTarihi} onChange={set('dogumTarihi')} />
+        </label>
+        <label className="alan">
+          <span>Başlangıç tarihi</span>
+          <input type="date" value={f.baslangicTarihi || ''} onChange={set('baslangicTarihi')} />
+          <small className="ipucu">Bugün ekranı ve takvimde bu tarihten önce görünmez.</small>
         </label>
         <label className="alan">
           <span>Cinsiyet</span>
@@ -497,6 +503,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
         <>
           {kisi.tip === 'sporcu' && kisi.brans && <BransOzeti brans={kisi.brans} />}
           <dl className="bilgi-izgara">
+            {kisi.baslangicTarihi && <div><dt>Başlangıç</dt><dd>{tarihGoster(kisi.baslangicTarihi)}</dd></div>}
             <div><dt>Doğum tarihi</dt><dd>{kisi.dogumTarihi ? tarihGoster(kisi.dogumTarihi) : kisi.dogumYili ? `${kisi.dogumYili} (yıl)` : '—'}</dd></div>
             <div><dt>Boy / kilo</dt><dd>{kisi.boy ? `${kisi.boy} cm` : '—'} / {kisi.kilo ? `${String(kisi.kilo).replace('.', ',')} kg` : '—'}</dd></div>
             {kisi.seviye && <div><dt>Seviye</dt><dd>{kisi.seviye}</dd></div>}
@@ -691,7 +698,7 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
 
       {yeni && (
         <KisiForm
-          ilk={{ subeIds: subeler.length === 1 ? [subeler[0].id] : [] }}
+          ilk={{ subeIds: subeler.length === 1 ? [subeler[0].id] : [], baslangicTarihi: bugun() }}
           subeler={subeler}
           koclar={koclar}
           yonetici={yonetici}
