@@ -46,6 +46,10 @@ service cloud.firestore {
         || get(/databases/$(database)/documents/kurumlar/fitkon).data.get('portal', {}).get('gelisim', true) != false;
     }
     function kisiyiYonetebilir(id) { return yonetici() || kisininKocu(id); }
+    // Grubun koçu (grup belgesindeki kocIds)
+    function grupKocu(grupId) {
+      return koc() && benimId() in get(/databases/$(database)/documents/gruplar/$(grupId)).data.get('kocIds', []);
+    }
 
     function degisenler() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
@@ -72,7 +76,12 @@ service cloud.firestore {
         || (koc() && benimId() in resource.data.get('kocIds', []))
         || (koc() && benimId() in resource.data.get('grupKocIds', []))
         || kisiyeBagli(kisiId);
-      allow create: if yonetici();
+      // Ek yetki "kisiEkle": koç yeni kişi açabilir; kişi yalnızca kendisine atanır
+      allow create: if yonetici()
+        || (yetkisiVar('kisiEkle')
+            && request.resource.data.kocIds == [benimId()]
+            && request.resource.data.get('grupKocIds', []) == []
+            && request.resource.data.aktif == true);
       // Koç kişi kaydını güncelleyebilir ama koç atamasını, aktifliği ve kurumu değiştiremez
       allow update: if yonetici()
         || (kisininKocu(kisiId) && !degisenler().hasAny(['kocIds', 'grupKocIds', 'aktif', 'kurumId']));
@@ -135,6 +144,11 @@ service cloud.firestore {
     match /gruplar/{grupId} {
       allow read: if yonetici() || (koc() && benimId() in resource.data.get('kocIds', []));
       allow write: if yonetici();
+      // Üye/saat değişikliği koç için sunucudan (grupDuzenleKoc) yapılır. Burada yalnızca:
+      // katılım tarihleri (grupOdeme ya da grupYonet) ve kişiye özel ücretler (ozelFiyat)
+      allow update: if koc() && benimId() in resource.data.get('kocIds', [])
+        && (degisenler().hasOnly(['uyeKatilim', 'guncelleyen', 'guncelleme']) && (yetkisiVar('grupOdeme') || yetkisiVar('grupYonet'))
+            || degisenler().hasOnly(['ozelFiyatlar', 'guncelleyen', 'guncelleme']) && yetkisiVar('ozelFiyat'));
     }
     match /grupDonemleri/{id} {
       allow read: if ekip();
@@ -182,14 +196,21 @@ service cloud.firestore {
       allow read: if yonetici() || kisininKocu(resource.data.kisiId);
       // Koç paket atayabilir ama kişiye özel fiyat veremez
       // Grup dönem kayıtlarını ve ek ücretleri yalnızca yönetici (ve her sabahki otomatik kontrol) açar
+      // Ek yetkiler: "ozelFiyat" liste dışı fiyat; "grupOdeme" kendi grubunun dönem kayıtları (ücret sistemce hesaplanır)
       allow create: if yonetici()
         || (kisininKocu(request.resource.data.kisiId)
             && request.resource.data.tur in ['bireysel', 'duet', 'trio', 'abonelik', 'abonelikDonem']
-            && request.resource.data.uygulananFiyat == request.resource.data.listeFiyati
-            && request.resource.data.get('aylikUcret', 0) == request.resource.data.get('aylikListe', 0));
+            && ((request.resource.data.uygulananFiyat == request.resource.data.listeFiyati
+                 && request.resource.data.get('aylikUcret', 0) == request.resource.data.get('aylikListe', 0))
+                || yetkisiVar('ozelFiyat')))
+        || (request.resource.data.tur == 'grup' && yetkisiVar('grupOdeme') && grupKocu(request.resource.data.grupId));
       allow update: if yonetici()
         || (kisininKocu(resource.data.kisiId)
-            && !degisenler().hasAny(['uygulananFiyat', 'listeFiyati', 'fiyatNotu', 'kisiId', 'aylikUcret', 'aylikListe', 'dersHakki']));
+            && !degisenler().hasAny(['uygulananFiyat', 'listeFiyati', 'fiyatNotu', 'kisiId', 'aylikUcret', 'aylikListe', 'dersHakki']))
+        || (kisininKocu(resource.data.kisiId) && yetkisiVar('ozelFiyat')
+            && !degisenler().hasAny(['kisiId', 'listeFiyati', 'aylikListe', 'grupId', 'tur']))
+        || (resource.data.tur == 'grup' && yetkisiVar('grupOdeme') && grupKocu(resource.data.grupId)
+            && !degisenler().hasAny(['kisiId', 'grupId', 'tur', 'donemBas', 'donemBit']));
       allow delete: if yonetici();
     }
     match /odemeler/{id} {

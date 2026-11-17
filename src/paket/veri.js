@@ -67,7 +67,9 @@ export async function tumPaketVerisi() {
   return { paketler: listele(p), odemeler: listele(o) };
 }
 
-export function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu }, yapan) {
+export async function paketAta({ kisi, tanim, baslangic, uygulananFiyat, fiyatNotu }, yapan) {
+  const fiyat = Number(uygulananFiyat ?? tanim.fiyat) || 0;
+  if (fiyat !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat });
   return addDoc(collection(db, 'satilanPaketler'), {
     kisiId: kisi.id,
     tur: tanim.tur || 'bireysel',
@@ -96,6 +98,7 @@ export async function paketGuncelle(p, veri, yapan) {
 // Ana kayıt (tur "abonelik"): başlangıç, aylık ücret, ders hakkı, taahhüt bilgisi. Ödemeler dönem kayıtlarına girer.
 export async function abonelikAta({ kisi, tanim, baslangic, aylikUcret, fiyatNotu }, yapan) {
   const ucret = Number(aylikUcret ?? tanim.fiyat) || 0;
+  if (ucret !== (Number(tanim.fiyat) || 0)) await gecmiseYaz(yapan, 'liste-disi-fiyat', { kisiId: kisi.id, paket: tanim.ad, liste: Number(tanim.fiyat) || 0, fiyat: ucret });
   const ref = await addDoc(collection(db, 'satilanPaketler'), {
     kisiId: kisi.id,
     tur: 'abonelik',

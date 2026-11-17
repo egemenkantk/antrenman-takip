@@ -120,7 +120,10 @@ function KatilimFormu({ grup, kisi, tanim, odemeler, benim, onBitti }) {
   );
 }
 
-export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, koclar, onGrupDegisti }) {
+export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = {}, benim, koclar, onGrupDegisti }) {
+  // Ek yetkiler: dönem/katılım ayarı (grupOdeme), kişiye özel ücret (ozelFiyat)
+  const donemYetki = yonetici || !!yetki.donem;
+  const fiyatYetki = yonetici || !!yetki.fiyat;
   const ilk = grup.donemBaslangic ? donemBul(grup.donemBaslangic, bugun()) || donemNo(grup.donemBaslangic, 0) : null;
   const [no, setNo] = useState(ilk?.no ?? 0);
   const [veri, setVeri] = useState(null);
@@ -217,7 +220,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
         </p>
       )}
       {bilgi && <p className="bilgi">{bilgi}</p>}
-      {yonetici && eksikler.length > 0 && (
+      {donemYetki && eksikler.length > 0 && (
         <div className="uyari-kutu">
           <span>{eksikler.length} üyenin bu dönem kaydı yok.</span>{' '}
           <button
@@ -264,7 +267,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                         ? r.fiyatNotu
                         : r
                         ? `${tl(r.uygulananFiyat)} · Ödenen ${tl(od.odenen)}${od.kalan > 0 ? ` · Kalan ${tl(od.kalan)}` : ''}${
-                            yonetici && r.fiyatNotu ? ` · ${r.fiyatNotu}` : ''
+                            fiyatYetki && r.fiyatNotu ? ` · ${r.fiyatNotu}` : ''
                           }`
                         : 'Bu dönem kaydı yok'}
                     </span>
@@ -299,18 +302,18 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, benim, k
                       <button className="birincil kucuk" onClick={() => setAcik({ kisiId: k.id, mod: 'odeme' })}>Ödeme al</button>
                     )}
                     <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'liste' })}>Ödemeler</button>
-                    {yonetici && <DahilDugmesi r={r} od={od} onDegis={(dahil) => dahilAyarla(k, r, dahil)} />}
-                    {yonetici && (
+                    {donemYetki && <DahilDugmesi r={r} od={od} onDegis={(dahil) => dahilAyarla(k, r, dahil)} />}
+                    {donemYetki && (
                       <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'katilim' })}>Katılım</button>
                     )}
-                    {yonetici && (
+                    {fiyatYetki && (
                       <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'ozel' })}>
                         {grup.ozelFiyatlar?.[k.id] ? `Özel ücret: ${tl(grup.ozelFiyatlar[k.id].fiyat)}` : 'Özel ücret'}
                       </button>
                     )}
                   </div>
                 )}
-                {!r && yonetici && !ac && (
+                {!r && donemYetki && !ac && (
                   <div className="dugme-satiri">
                     <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'katilim' })}>Katılım</button>
                     <button className="metin" onClick={() => dahilAyarla(k, null, false)}>Bu döneme dahil değil</button>

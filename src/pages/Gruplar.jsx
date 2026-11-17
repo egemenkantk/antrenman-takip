@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
-import { hataMesaji } from '../auth/hesap';
+import { hataMesaji, yetkili, grupDuzenleKoc } from '../auth/hesap';
 import { subeleriGetir, kullanicilariGetir, kisileriGetir, TIP_ADI } from '../veri';
 import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
@@ -17,7 +17,7 @@ export const saatOzeti = (saatler = {}) =>
     .map(([g, ad]) => `${ad} ${saatler[g] || ''}`.trim())
     .join(' · ');
 
-function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec }) {
+function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec, kisitli = false }) {
   const [f, setF] = useState({
     ad: ilk?.ad || '',
     subeId: ilk?.subeId || subeler[0]?.id || '',
@@ -48,6 +48,16 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
     if (!f.ad.trim()) return setHata('Grup adı gerekli.');
     if (!Object.keys(f.saatler).length) return setHata('En az bir ders günü seç.');
     setBekliyor(true);
+    if (kisitli) {
+      // Koç (ek yetki): yalnızca üyeler, saatler ve süre — sunucu kaydeder
+      try {
+        await onKaydet({ uyeIds: f.uyeIds, saatler: f.saatler, sure: Number(f.sure) || 60 });
+      } catch (err) {
+        setHata(hataMesaji(err));
+        setBekliyor(false);
+      }
+      return;
+    }
     try {
       if (f.dersTuru !== 'grup') {
         f.paketTanimId = '';
@@ -70,24 +80,29 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
 
   return (
     <form className="kart-form" onSubmit={kaydet}>
-      <h3>{ilk ? 'Grubu düzenle' : 'Yeni grup'}</h3>
+      <h3>{ilk ? (kisitli ? `${ilk.ad} · üyeler ve saatler` : 'Grubu düzenle') : 'Yeni grup'}</h3>
       <div className="form-izgara">
-        <label className="alan">
-          <span>Grup adı</span>
-          <input value={f.ad} onChange={(e) => setF({ ...f, ad: e.target.value })} placeholder="Örn. Salı-Perşembe 16:00" />
-        </label>
-        <label className="alan">
-          <span>Şube</span>
-          <select value={f.subeId} onChange={(e) => setF({ ...f, subeId: e.target.value })}>
-            {subeler.map((s) => <option key={s.id} value={s.id}>{s.ad}</option>)}
-          </select>
-        </label>
+        {!kisitli && (
+          <>
+            <label className="alan">
+              <span>Grup adı</span>
+              <input value={f.ad} onChange={(e) => setF({ ...f, ad: e.target.value })} placeholder="Örn. Salı-Perşembe 16:00" />
+            </label>
+            <label className="alan">
+              <span>Şube</span>
+              <select value={f.subeId} onChange={(e) => setF({ ...f, subeId: e.target.value })}>
+                {subeler.map((s) => <option key={s.id} value={s.id}>{s.ad}</option>)}
+              </select>
+            </label>
+          </>
+        )}
         <label className="alan">
           <span>Seans süresi (dk)</span>
           <input type="number" min="10" max="240" value={f.sure} onChange={(e) => setF({ ...f, sure: e.target.value })} />
         </label>
       </div>
 
+      {!kisitli && (<>
       <label className="alan">
         <span>Ders türü</span>
         <select value={f.dersTuru} onChange={(e) => setF({ ...f, dersTuru: e.target.value })}>
@@ -123,6 +138,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
       <small className="ipucu">Dönemler bu tarihten itibaren 4'er hafta ilerler. Grup paketlerini "Paketler ve ödemeler → Paket tanımları"ndan eklersin.</small>
       </>
       )}
+      </>)}
 
       <div className="alan">
         <span>Ders günleri ve saatleri</span>
@@ -158,7 +174,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
         </div>
       </div>
 
-      <div className="alan">
+      {!kisitli && <div className="alan">
         <span>Koç(lar)</span>
         <div className="cip-grubu">
           {koclar.map((k) => {
@@ -177,7 +193,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec 
           })}
         </div>
         <small className="ipucu">Grubun koçları üyelerin kartlarını görür ve yoklama girebilir.</small>
-      </div>
+      </div>}
 
       <div className="alan">
         <span>Üyeler ({f.uyeIds.length})</span>
@@ -229,6 +245,7 @@ export default function Gruplar({ onGeri }) {
   const ben = durum.kullanici;
   const yonetici = ben.rol === 'yonetici';
   const programYetkisi = yonetici || (ben.ekYetkiler || []).includes('programDuzenle');
+  const grupYonetebilir = (x) => yonetici || (yetkili(ben, 'grupYonet') && (x?.kocIds || []).includes(ben.id));
   const [gruplar, setGruplar] = useState(null);
   const [subeler, setSubeler] = useState([]);
   const [koclar, setKoclar] = useState([]);
@@ -271,6 +288,7 @@ export default function Gruplar({ onGeri }) {
       <div>
         <button className="metin geri" onClick={() => setMod(null)}>← Gruplar</button>
         <GrupForm
+          kisitli={!yonetici}
           ilk={mod === 'duzenle' ? g : null}
           subeler={subeler}
           koclar={koclar}
@@ -278,6 +296,21 @@ export default function Gruplar({ onGeri }) {
           tanimlar={tanimlar}
           onVazgec={() => setMod(null)}
           onKaydet={async (veri) => {
+            if (!yonetici) {
+              // Ek yetkili koç: sunucu üyeleri/saatleri kaydeder ve erişimleri eşitler
+              const { yeniler } = await grupDuzenleKoc({ grupId: g.id, ...veri });
+              const tanim = tanimlar.find((t) => t.id === g.paketTanimId);
+              const donem = tanim && g.donemBaslangic && donemBul(g.donemBaslangic, bugun());
+              if (donem && yeniler?.length && yetkili(ben, 'grupOdeme')) {
+                const grup = { ...g, ...veri, uyeKatilim: { ...(g.uyeKatilim || {}), ...Object.fromEntries(yeniler.map((id) => [id, g.uyeKatilim?.[id] || bugun()])) } };
+                const mevcut = await grupDonemKayitlari({ ...grup, uyeIds: yeniler }, donem);
+                for (const kid of yeniler) if (!mevcut[kid]) await grupKaydiOlustur(grup, donem, tanim, kid, ben.id).catch(() => {});
+              }
+              setMod(null);
+              await yukle();
+              setSecili(g.id);
+              return;
+            }
             const eski = mod === 'duzenle' ? g : null;
             const id = await grupKaydet(eski, veri, ben.id);
             // Dönem ortasında eklenen üyeler için bu dönemin kaydını hemen aç (orantılı ücret)
@@ -359,10 +392,16 @@ export default function Gruplar({ onGeri }) {
             kisiler={kisiler}
             tanim={tanimlar.find((t) => t.id === g.paketTanimId)}
             yonetici={yonetici}
+            yetki={{ donem: yetkili(ben, 'grupOdeme'), fiyat: yetkili(ben, 'ozelFiyat') }}
             benim={ben.id}
             koclar={koclar}
             onGrupDegisti={yukle}
           />
+        )}
+        {!yonetici && grupYonetebilir(g) && (
+          <div className="dugme-satiri" style={{ marginTop: 16 }}>
+            <button className="ikincil kucuk" onClick={() => setMod('duzenle')}>Üyeleri ve saatleri düzenle</button>
+          </div>
         )}
         {yonetici && (
           <div className="dugme-satiri" style={{ marginTop: 16 }}>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
+import { yetkili } from '../auth/hesap';
 import { kisiSilSunucu, hataMesaji, telefonuDuzenle, telefonuGoster } from '../auth/hesap';
 import {
   BRANSLAR,
@@ -355,7 +356,7 @@ function kisiSekmeleri(kisi) {
   return l;
 }
 
-function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, onGeri, onDegisti, onSilindi }) {
+function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, programYetkisi, fiyatYetki, onGeri, onDegisti, onSilindi }) {
   const [sekme, setSekme] = useState('ozet');
   const [duzenle, setDuzenle] = useState(false);
   useEffect(() => {
@@ -447,7 +448,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
       {sekme === 'portal' && yonetici && <Portal ben={{ id: benim, rol: 'yonetici' }} onizlemeKisiId={kisi.id} />}
       {sekme === 'ev' && <EvProgramiSekmesi kisiId={kisi.id} duzenleyebilir yapan={benim} />}
       {sekme === 'saglik' && <SaglikSekmesi kisi={kisi} yapan={benim} onKisiDegisti={onDegisti} />}
-      {sekme === 'paket' && <PaketSekmesi kisi={kisi} yonetici={yonetici} benim={benim} koclar={koclar} />}
+      {sekme === 'paket' && <PaketSekmesi kisi={kisi} yonetici={yonetici} fiyatYetki={fiyatYetki} benim={benim} koclar={koclar} />}
       {sekme === 'postur' && <PosturSekmesi kisi={kisi} yapan={benim} programYetkisi={programYetkisi} />}
       {!['ozet', 'beceri', 'program', 'testler', 'kayitlar', 'rapor', 'postur', 'paket', 'ev', 'portal', 'saglik'].includes(sekme) && (
         <div className="bos-durum">
@@ -582,6 +583,7 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
   const { durum } = useOturum();
   const ben = durum.kullanici;
   const yonetici = ben.rol === 'yonetici';
+  const kisiEkleyebilir = yetkili(ben, 'kisiEkle');
   const [kisiler, setKisiler] = useState(null);
   const [subeler, setSubeler] = useState([]);
   const [kullanicilar, setKullanicilar] = useState([]);
@@ -640,6 +642,7 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
           yonetici={yonetici}
           benim={ben.id}
           programYetkisi={yonetici || (ben.ekYetkiler || []).includes('programDuzenle')}
+          fiyatYetki={yetkili(ben, 'ozelFiyat')}
           onGeri={() => setSecili(null)}
           onDegisti={yukle}
           onSilindi={() => {
@@ -656,7 +659,7 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
       {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <div className="baslik-satiri">
         <h2>{yonetici ? 'Kişiler' : 'Kişilerim'}</h2>
-        {yonetici && !yeni && (
+        {kisiEkleyebilir && !yeni && (
           <button className="birincil kucuk" onClick={() => setYeni(true)} disabled={subeler.length === 0}>
             + Yeni kişi
           </button>
@@ -675,7 +678,8 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
           yonetici={yonetici}
           onVazgec={() => setYeni(false)}
           onKaydet={async (veri) => {
-            const id = await kisiEkle(veri, ben.id);
+            // Ek yetkili koçun açtığı kişi yalnızca ona atanır
+            const id = await kisiEkle(yonetici ? veri : { ...veri, kocIds: [ben.id] }, ben.id);
             setYeni(false);
             await yukle();
             setSecili(id);

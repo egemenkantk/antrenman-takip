@@ -123,7 +123,7 @@ function useGizliKoclar() {
 
 // Yapılan özel dersler (bireysel / düet / trio): dersi veren koç, ders sayısı ve paket fiyatına göre ders başı değer.
 // Ders, yoklamada seçilen "dersi veren koç"a (yoksa kaydı girene) yazılır; başka koça yazılmaz.
-function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli }) {
+function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli, sadece = null }) {
   const [kayitlar, setKayitlar] = useState(null);
   const [acik, setAcik] = useState(null);
   const kisiIds = useMemo(() => [...new Set(paketler.filter((p) => dersSayili(p.tur) && p.durum !== 'iptal').map((p) => p.kisiId))], [paketler]);
@@ -158,7 +158,7 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli }) {
   }, [kayitlar, paketler, ay]);
 
   if (!satirlar || !gizli) return null;
-  const gorunen = satirlar.filter((r) => !gizli.includes(r.id));
+  const gorunen = sadece ? satirlar.filter((r) => r.id === sadece) : satirlar.filter((r) => !gizli.includes(r.id));
   if (!gorunen.length && !satirlar.length) return null;
   const ad = (id) => (id === '?' ? 'Koç belirtilmemiş' : kocAdi(id, benim, koclar));
   const yuvarla = (v) => Math.round(v);
@@ -208,7 +208,7 @@ function OzelDersler({ ay, paketler, kisiMap, koclar, benim, gizli }) {
   );
 }
 
-function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, gizli, gizliAyarla }) {
+function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, gizli, gizliAyarla, sadece = null }) {
   const [acik, setAcik] = useState(null);
 
   const satirlar = useMemo(() => {
@@ -232,7 +232,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
   }, [odemeler, grupMap, kisiMap]);
 
   if (!gizli || !satirlar.length) return null;
-  const gorunen = satirlar.filter((r) => !gizli.includes(r.id));
+  const gorunen = sadece ? satirlar.filter((r) => r.id === sadece) : satirlar.filter((r) => !gizli.includes(r.id));
   const ad = (id) => (id === '?' ? 'Koç atanmamış' : kocAdi(id, benim, koclar));
 
   function indir() {
@@ -281,7 +281,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
                             </li>
                           ))}
                       </ul>
-                      {r.id !== '?' && (
+                      {r.id !== '?' && !sadece && (
                         <button type="button" className="metin" onClick={() => gizliAyarla([...gizli, r.id])}>
                           Bu koçu maaş tablosunda gösterme
                         </button>
@@ -294,7 +294,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
           </tbody>
         </table>
       </div>
-      {gizli.length > 0 && (
+      {gizli.length > 0 && !sadece && (
         <p className="aciklama kucuk-yazi">
           Gösterilmeyen: {gizli.map((id) => (
             <button key={id} type="button" className="metin" onClick={() => gizliAyarla(gizli.filter((x) => x !== id))}>
@@ -307,7 +307,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
   );
 }
 
-export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [], koclar, benim, yonetici }) {
+export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [], koclar, benim, yonetici, kendiOzeti = false }) {
   const [ay, setAy] = useState(buAy());
   const [koc, setKoc] = useState('');
   const [yontem, setYontem] = useState('');
@@ -496,6 +496,12 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
         <KocaGore odemeler={ayinkiler} ay={ay} grupMap={grupMap} kisiMap={kisiMap} koclar={koclar} benim={benim} indirAdi={`koclara-gore-${ay}.csv`} gizli={gizli} gizliAyarla={gizliAyarla} />
       )}
       {yonetici && <OzelDersler ay={ay} paketler={veri.paketler} kisiMap={kisiMap} koclar={koclar} benim={benim} gizli={gizli} />}
+      {!yonetici && kendiOzeti && (
+        <>
+          <KocaGore odemeler={ayinkiler} ay={ay} grupMap={grupMap} kisiMap={kisiMap} koclar={koclar} benim={benim} indirAdi={`tahsilatim-${ay}.csv`} gizli={[]} gizliAyarla={() => {}} sadece={benim} />
+          <OzelDersler ay={ay} paketler={veri.paketler} kisiMap={kisiMap} koclar={koclar} benim={benim} gizli={[]} sadece={benim} />
+        </>
+      )}
 
       {yonetici && kocSatirlari.length > 0 && (
         <section>

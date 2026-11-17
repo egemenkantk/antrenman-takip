@@ -315,3 +315,50 @@ exports.kisiSil = onCall(async (request) => {
   await islemKaydet(telefon, 'kisi-silindi', { kisiId, ad: kisi.data().ad || '' });
   return { tamam: true, gruplar: gruplar.size, hesaplar: hesaplar.size };
 });
+
+// ---------- Koçun kendi grubunu düzenlemesi (ek yetki: grupYonet) ----------
+// Üyeler, ders saatleri ve süre sunucuda değiştirilir; koç yalnızca zaten erişebildiği kişileri ekleyebilir.
+// Ardından etkilenen kişilerin grupKocIds alanı yeniden hesaplanır.
+exports.grupDuzenleKoc = onCall(async (request) => {
+  const { kayit, telefon } = await cagiranKayit(request);
+  const grupId = String(request.data?.grupId || '');
+  if (!grupId) throw new HttpsError('invalid-argument', 'Grup eksik.');
+  const ref = db.collection('gruplar').doc(grupId);
+  const gs = await ref.get();
+  if (!gs.exists) throw new HttpsError('not-found', 'Grup bulunamadı.');
+  const g = gs.data();
+  if (!(kayit.rol === 'koc' && (kayit.ekYetkiler || []).includes('grupYonet') && (g.kocIds || []).includes(telefon))) {
+    throw new HttpsError('permission-denied', 'Bu grubu düzenleme yetkin yok.');
+  }
+  const uyeIds = [...new Set((Array.isArray(request.data?.uyeIds) ? request.data.uyeIds : []).map(String))].slice(0, 200);
+  const saatler = {};
+  for (const [gun, saat] of Object.entries(request.data?.saatler || {})) {
+    if (/^[0-6]$/.test(gun) && /^([01]\d|2[0-3]):[0-5]\d$|^$/.test(String(saat))) saatler[gun] = String(saat);
+  }
+  if (!Object.keys(saatler).length) throw new HttpsError('invalid-argument', 'En az bir ders günü gerekli.');
+  const sure = Math.min(240, Math.max(10, Number(request.data?.sure) || g.sure || 60));
+  const eski = g.uyeIds || [];
+  const yeniler = uyeIds.filter((id) => !eski.includes(id));
+  for (const id of yeniler) {
+    const k = await db.collection('kisiler').doc(id).get();
+    const d = k.exists ? k.data() : {};
+    if (!(d.kocIds || []).includes(telefon) && !(d.grupKocIds || []).includes(telefon)) {
+      throw new HttpsError('permission-denied', 'Yalnızca kendi öğrencilerini gruba ekleyebilirsin.');
+    }
+  }
+  const bugun = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' });
+  const uyeKatilim = { ...(g.uyeKatilim || {}) };
+  for (const id of yeniler) if (!uyeKatilim[id]) uyeKatilim[id] = bugun;
+  await ref.update({ uyeIds, saatler, sure, uyeKatilim, guncelleyen: telefon, guncelleme: admin.firestore.FieldValue.serverTimestamp() });
+
+  const tum = (await db.collection('gruplar').get()).docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => x.aktif !== false);
+  const b = db.batch();
+  for (const id of new Set([...eski, ...uyeIds])) {
+    const kr = db.collection('kisiler').doc(id);
+    if (!(await kr.get()).exists) continue;
+    b.update(kr, { grupKocIds: [...new Set(tum.filter((x) => (x.uyeIds || []).includes(id)).flatMap((x) => x.kocIds || []))] });
+  }
+  await b.commit();
+  await db.collection('islemGecmisi').add({ yapan: telefon, islem: 'grup-koc-duzenle', detay: { grupId, eklenen: yeniler, cikarilan: eski.filter((id) => !uyeIds.includes(id)) }, kurumId: KURUM_ID, tarih: admin.firestore.FieldValue.serverTimestamp() });
+  return { yeniler };
+});

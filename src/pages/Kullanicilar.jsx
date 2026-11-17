@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
+import { EK_YETKILER } from '../auth/hesap';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -216,23 +217,26 @@ export default function Kullanicilar({ onGeri }) {
               {k.rol !== 'yonetici' && (
                 <div className="dugme-satiri">
                   {k.rol === 'koc' && (
-                    <label className="onay-kutusu kucuk-yazi">
-                      <input
-                        type="checkbox"
-                        checked={(k.ekYetkiler || []).includes('programDuzenle')}
-                        onChange={async (e) => {
-                          try {
-                            await updateDoc(doc(db, 'kullanicilar', k.id), {
-                              ekYetkiler: e.target.checked ? arrayUnion('programDuzenle') : arrayRemove('programDuzenle'),
-                            });
-                            await yukle();
-                          } catch (err) {
-                            window.alert(hataMesaji(err));
-                          }
-                        }}
-                      />
-                      <span>Program düzenleyebilir</span>
-                    </label>
+                    <details className="yetki-detay">
+                      <summary>Ek yetkiler ({(k.ekYetkiler || []).length})</summary>
+                      {EK_YETKILER.map(([y, ad, acik]) => (
+                        <label key={y} className="onay-kutusu kucuk-yazi">
+                          <input
+                            type="checkbox"
+                            checked={(k.ekYetkiler || []).includes(y)}
+                            onChange={async (e) => {
+                              try {
+                                await updateDoc(doc(db, 'kullanicilar', k.id), { ekYetkiler: e.target.checked ? arrayUnion(y) : arrayRemove(y) });
+                                await yukle();
+                              } catch (err) {
+                                window.alert(hataMesaji(err));
+                              }
+                            }}
+                          />
+                          <span>{ad} <small className="aciklama">· {acik}</small></span>
+                        </label>
+                      ))}
+                    </details>
                   )}
                   {k.aktif !== false && (
                     <button className="ikincil kucuk" onClick={() => sifreVer(k)}>

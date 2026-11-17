@@ -71,5 +71,24 @@ await env.withSecurityRulesDisabled(async (c) => {
 });
 await t('Gelişim kapalıyken öğrenci test sonuçlarını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'testSonuclari', 't1'))));
 await t('Gelişim kapalıyken koç test sonuçlarını okur', assertSucceeds(getDoc(doc(koc, 'kisiler', 'k1', 'testSonuclari', 't1'))));
+// ---------- Ek yetkiler ----------
+const koc2 = env.authenticatedContext('u6', { telefon: '+906' }).firestore();
+await env.withSecurityRulesDisabled(async (c) => {
+  const d = c.firestore();
+  await setDoc(doc(d, 'kullanicilar', '+906'), { rol: 'koc', ekYetkiler: ['kisiEkle', 'grupOdeme', 'ozelFiyat', 'grupYonet'] });
+  await setDoc(doc(d, 'gruplar', 'gY'), { ad: 'G', kocIds: ['+906'], uyeIds: ['k6'] });
+  await setDoc(doc(d, 'kisiler', 'k6'), { ad: 'F', kocIds: [], grupKocIds: ['+906'] });
+  await setDoc(doc(d, 'satilanPaketler', 'g_gY_2026-11-03_k6'), { kisiId: 'k6', tur: 'grup', grupId: 'gY', listeFiyati: 100, uygulananFiyat: 100, durum: 'aktif' });
+});
+await t('yetkisiz koç kişi ekleyemez', assertFails(addDoc(collection(koc, 'kisiler'), { ad: 'Y', kocIds: ['+902'], aktif: true })));
+await t('kişi ekleme yetkili koç kendine atanmış kişi ekler', assertSucceeds(addDoc(collection(koc2, 'kisiler'), { ad: 'Y', kocIds: ['+906'], aktif: true })));
+await t('yetkili koç başkasına atanmış kişi ekleyemez', assertFails(addDoc(collection(koc2, 'kisiler'), { ad: 'Y', kocIds: ['+902'], aktif: true })));
+await t('grupOdeme yetkili koç kendi grubunda dönem kaydı açar', assertSucceeds(setDoc(doc(koc2, 'satilanPaketler', 'g_gY_2026-12-01_k6'), { kisiId: 'k6', tur: 'grup', grupId: 'gY', listeFiyati: 100, uygulananFiyat: 60 })));
+await t('yetkisiz koç grup kaydı açamaz', assertFails(setDoc(doc(koc, 'satilanPaketler', 'g_gY_2026-12-01_k1'), { kisiId: 'k1', tur: 'grup', grupId: 'gY', listeFiyati: 100, uygulananFiyat: 100 })));
+await t('grupOdeme yetkili koç dönemi "dahil değil" yapar', assertSucceeds(updateDoc(doc(koc2, 'satilanPaketler', 'g_gY_2026-11-03_k6'), { durum: 'iptal', fiyatNotu: 'Bu döneme dahil değil' })));
+await t('grupOdeme yetkili koç katılım tarihi yazar', assertSucceeds(updateDoc(doc(koc2, 'gruplar', 'gY'), { 'uyeKatilim.k6': '2026-11-10' })));
+await t('yetkili koç grubun üyelerini doğrudan değiştiremez (sunucudan)', assertFails(updateDoc(doc(koc2, 'gruplar', 'gY'), { uyeIds: ['k6', 'k2'] })));
+await t('özel fiyat yetkili koç indirimli paket atar', assertSucceeds(addDoc(collection(koc2, 'satilanPaketler'), { kisiId: 'k6', tur: 'bireysel', listeFiyati: 100, uygulananFiyat: 80 })));
+await t('özel fiyat yetkili koç gruba kişiye özel ücret yazar', assertSucceeds(updateDoc(doc(koc2, 'gruplar', 'gY'), { 'ozelFiyatlar.k6': { fiyat: 80, not: '' } })));
 await env.cleanup();
 if (hata) process.exit(1);

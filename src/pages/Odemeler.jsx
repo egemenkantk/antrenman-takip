@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
+import { yetkili } from '../auth/hesap';
 import { hataMesaji, donemKontrolCalistir } from '../auth/hesap';
 import { subeleriGetir, kullanicilariGetir, kisileriGetir } from '../veri';
 import { bugun, kisaTarih } from '../program/model';
@@ -332,7 +333,7 @@ export default function Odemeler({ onGeri }) {
       {sekme !== 'tanim' && !veri && <p className="aciklama">Yükleniyor…</p>}
       {sekme === 'alacak' && veri && <Alacaklar veri={veri} kisiler={kisiler} />}
       {sekme === 'azalan' && veri && <AzalanPaketler veri={veri} kisiler={kisiler} />}
-      {sekme === 'tahsilat' && veri && <Tahsilatlar veri={veri} kisiler={kisiler} gruplar={gruplar} subeler={subeler} koclar={koclar} benim={ben.id} yonetici={yonetici} />}
+      {sekme === 'tahsilat' && veri && <Tahsilatlar veri={veri} kisiler={kisiler} gruplar={gruplar} subeler={subeler} koclar={koclar} benim={ben.id} yonetici={yonetici} kendiOzeti={yetkili(ben, 'tahsilatOzeti')} />}
     </div>
   );
 }

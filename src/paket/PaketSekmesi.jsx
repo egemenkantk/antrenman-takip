@@ -19,7 +19,8 @@ import {
 } from './veri';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 
-function PaketAtaFormu({ kisi, tanimlar, yonetici, onKaydet, onVazgec }) {
+function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazgec }) {
+  const yonetici = fiyatYetki;
   const uygun = tanimlar.filter(
     (t) => t.aktif !== false && (dersSayili(t.tur) || t.tur === 'abonelik') && (!t.kitle || t.kitle === kisi.tip)
   );
@@ -140,7 +141,7 @@ export function EkUcretFormu({ ilk, onKaydet, onVazgec }) {
   );
 }
 
-function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, benim, koclar, onDegisti, setHata }) {
+function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, fiyatYetki, benim, koclar, onDegisti, setHata }) {
   const [acik, setAcik] = useState(false);
   const [mod, setMod] = useState(null); // 'odeme' | 'ucret' | 'ek'
   const [ucret, setUcret] = useState(a.aylikUcret);
@@ -231,7 +232,7 @@ function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, benim, kocla
         <div className="dugme-satiri">
           {buDonem && od?.kalan > 0 && !bitti && <button className="birincil kucuk" onClick={() => setMod('odeme')}>Ödeme al</button>}
           <button className="ikincil kucuk" onClick={() => setAcik(!acik)}>{acik ? 'Ayları gizle' : 'Aylar ve ödemeler'}</button>
-          {yonetici && !bitti && <button className="metin" onClick={() => setMod('ucret')}>Aylık ücreti düzenle</button>}
+          {(yonetici || fiyatYetki) && !bitti && <button className="metin" onClick={() => setMod('ucret')}>Aylık ücreti düzenle</button>}
           {yonetici && !bitti && buDonem && (
             <button className="metin" onClick={() => { setEkDers(buDonem.ekDers || ''); setMod('ek'); }}>Ek ders hakkı</button>
           )}
@@ -253,7 +254,7 @@ function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, benim, kocla
       {acik && (
         <div className="paket-ayrinti">
           {[...donemler].sort((x, y) => y.donemBas.localeCompare(x.donemBas)).map((d) => (
-            <PaketKarti key={d.id} p={d} dagitim={null} odemeler={odemeler} yonetici={yonetici} benim={benim} koclar={koclar} onDegisti={onDegisti} setHata={setHata} />
+            <PaketKarti key={d.id} p={d} dagitim={null} odemeler={odemeler} yonetici={yonetici} fiyatYetki={fiyatYetki} benim={benim} koclar={koclar} onDegisti={onDegisti} setHata={setHata} />
           ))}
           {ders && ders.dersler.length > 0 && (
             <p className="kucuk-yazi">
@@ -330,7 +331,7 @@ function EskiBorcUyarisi({ borclar, odemeIcin, setOdemeIcin, benim, onDegisti, s
   );
 }
 
-function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, setHata, eskiBorclar = [], eskiOdemeAc }) {
+function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar, onDegisti, setHata, eskiBorclar = [], eskiOdemeAc }) {
   const [acik, setAcik] = useState(false);
   const [mod, setMod] = useState(null); // 'odeme' | 'fiyat'
   const od = odemeDurumu(p, odemeler);
@@ -377,7 +378,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, 
         <span>Ödenen <strong>{tl(od.odenen)}</strong></span>
         <span>Kalan <strong className={od.kalan > 0 ? 'uyari-yazi' : ''}>{tl(od.kalan)}</strong></span>
       </div>
-      {yonetici && (Number(p.listeFiyati) !== Number(p.uygulananFiyat) || p.fiyatNotu) && (
+      {(yonetici || fiyatYetki) && (Number(p.listeFiyati) !== Number(p.uygulananFiyat) || p.fiyatNotu) && (
         <p className="aciklama kucuk-yazi">
           {p.tur === 'grup' && p.tamUcret ? `Dönem ücreti ${tl(p.tamUcret)}` : `Liste fiyatı ${tl(p.listeFiyati)}`}
           {p.fiyatNotu ? ` · ${p.fiyatNotu}` : ''}
@@ -409,7 +410,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, 
         <div className="dugme-satiri">
           {p.durum !== 'iptal' && <button className="birincil kucuk" onClick={() => setMod('odeme')}>Ödeme al</button>}
           <button className="ikincil kucuk" onClick={() => setAcik(!acik)}>{acik ? 'Ayrıntıyı gizle' : 'Ayrıntı'}</button>
-          {yonetici && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('fiyat')}>Fiyatı düzenle</button>}
+          {(yonetici || fiyatYetki) && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('fiyat')}>Fiyatı düzenle</button>}
           {yonetici && (
             <button
               className="metin"
@@ -448,7 +449,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, benim, koclar, onDegisti, 
   );
 }
 
-export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
+export default function PaketSekmesi({ kisi, yonetici, fiyatYetki = false, benim, koclar }) {
   const [veri, setVeri] = useState(null);
   const [ata, setAta] = useState(false);
   const [ek, setEk] = useState(null); // {tarih, aciklama, ilgiliKayitId}
@@ -523,7 +524,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
     .slice(0, 10);
 
   const kart = (p) => (
-    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} yonetici={yonetici} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} eskiBorclar={eskiBorclar} eskiOdemeAc={eskiOdemeAc} />
+    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} yonetici={yonetici} fiyatYetki={fiyatYetki} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} eskiBorclar={eskiBorclar} eskiOdemeAc={eskiOdemeAc} />
   );
 
   return (
@@ -541,7 +542,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
         <PaketAtaFormu
           kisi={kisi}
           tanimlar={veri.tanimlar}
-          yonetici={yonetici}
+          yonetici={yonetici || fiyatYetki}
           onVazgec={() => setAta(false)}
           onKaydet={async (v) => {
             if (v.tanim.tur === 'abonelik') await abonelikAta({ ...v, aylikUcret: v.uygulananFiyat }, benim);
@@ -606,6 +607,7 @@ export default function PaketSekmesi({ kisi, yonetici, benim, koclar }) {
               odemeler={veri.odemeler}
               kayitlar={veri.kayitlar}
               yonetici={yonetici}
+              fiyatYetki={fiyatYetki}
               benim={benim}
               koclar={koclar}
               onDegisti={yukle}

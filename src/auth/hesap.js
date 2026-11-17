@@ -16,6 +16,18 @@ import { auth, db, fonksiyonlar } from '../firebase';
 const cagir = (ad) => async (veri) => (await httpsCallable(fonksiyonlar, ad)(veri)).data;
 export const donemKontrolCalistir = cagir('donemKontrolCalistir');
 export const kisiSilSunucu = cagir('kisiSil');
+export const grupDuzenleKoc = (veri) => cagir('grupDuzenleKoc')(veri);
+
+// Koçlara verilebilen ek yetkiler (yönetici hepsine sahiptir)
+export const EK_YETKILER = [
+  ['programDuzenle', 'Program düzenleyebilir', 'Grup/kişi programı ve kütüphane'],
+  ['kisiEkle', 'Kişi ekleyebilir', 'Yeni öğrenci kaydı; kişi kendisine atanır'],
+  ['grupYonet', 'Kendi gruplarını düzenleyebilir', 'Üye ekleme/çıkarma, ders saatleri'],
+  ['grupOdeme', 'Kendi gruplarında dönem/katılım ayarlayabilir', 'Dönem kayıtları, katılım tarihi, döneme dahil değil'],
+  ['ozelFiyat', 'Liste dışı fiyat verebilir', 'İndirimli/özel fiyat; işlem geçmişine yazılır'],
+  ['tahsilatOzeti', 'Kendi tahsilat özetini görebilir', 'Aylık tahsilat ve özel ders dökümü (yalnızca kendi satırı)'],
+];
+export const yetkili = (ben, y) => ben?.rol === 'yonetici' || (ben?.rol === 'koc' && (ben.ekYetkiler || []).includes(y));
 // Yoklama sonrası: pakette tek ders kaldıysa öğrenci/veliye bildirim (arka planda, hata yutulur)
 export const sonDersKontrol = (kisiId) => cagir('sonDersKontrol')({ kisiId }).catch(() => {});
 

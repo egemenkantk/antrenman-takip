@@ -294,3 +294,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Sadece ödeme için tutulan gruplar (ders saati yok) Bugün/Takvim/portal ders listesinde görünmez; dönem kayıtları ve hatırlatmalar sürer — ek ayar gerekmez.
 - Yapılan özel dersler (Tahsilatlar): bireysel/düet/trio kayıtları dersleriDagit ile paketlere dağıtılır; ders `dersiVeren` (yoksa `kaydeden`) koça yazılır, değer = paket uygulananFiyat ÷ dersSayisi. Bugün ekranında yönetici bireysel "Antrenmanı tamamla" ve düet/trio yoklamasında "Dersi veren koç" seçer (koçlar kendi adına kaydeder). Gizli koçların dersleri başka koça yazılmaz.
 - "Tahsil eden" yalnızca bilgi: koç tablosu ve maaş dökümü tahsil edene göre değişmez.
+
+## Koç ek yetkileri (kullanicilar.ekYetkiler)
+- programDuzenle, kisiEkle (kişi yalnızca koça atanır), grupYonet (kendi grubunda üye/saat/süre — sunucu `grupDuzenleKoc` yazar, yalnızca koçun zaten erişebildiği kişiler eklenir, grupKocIds sunucuda eşitlenir), grupOdeme (kendi grubunda dönem kaydı, katılım, döneme dahil değil), ozelFiyat (liste dışı fiyat; işlem geçmişine "liste-disi-fiyat"/"fiyat-degisti"), tahsilatOzeti (Tahsilatlar'da yalnızca kendi satırı).
+- İstemci: `yetkili(ben, y)` (src/auth/hesap.js). Kurallar: `yetkisiVar`, `grupKocu`.
