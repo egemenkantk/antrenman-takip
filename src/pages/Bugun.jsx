@@ -222,8 +222,8 @@ function DersiVerenSecici({ koclar, deger, onChange }) {
   );
 }
 
-function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec, koclar, benId }) {
-  const [dersiVeren, setDersiVeren] = useState(ilk?.dersiVeren || ilk?.kaydeden || benId);
+function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec, koclar, benId, gununKocu }) {
+  const [dersiVeren, setDersiVeren] = useState(ilk?.dersiVeren || (koclar?.length ? gununKocu : null) || ilk?.kaydeden || benId);
   const [katilim, setKatilim] = useState(ilk?.katilim || 'geldi');
   const [agri, setAgri] = useState(ilk?.agri ?? null);
   const [rpe, setRpe] = useState(ilk?.rpe ?? null);
@@ -271,9 +271,9 @@ function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec, koclar, benId }) {
   );
 }
 
-function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId }) {
+function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId, gununKocu }) {
   const ilkVeren = Object.values(kayitlar).find((x) => x?.dersiVeren || x?.kaydeden);
-  const [dersiVeren, setDersiVeren] = useState(ilkVeren?.dersiVeren || ilkVeren?.kaydeden || benId);
+  const [dersiVeren, setDersiVeren] = useState(ilkVeren?.dersiVeren || (koclar?.length ? gununKocu : null) || ilkVeren?.kaydeden || benId);
   const [satir, setSatir] = useState(() =>
     Object.fromEntries(uyeler.map((k) => [k.id, { katilim: kayitlar[k.id]?.katilim || 'geldi', rpe: kayitlar[k.id]?.rpe ?? null, agri: kayitlar[k.id]?.agri ?? null }]))
   );
@@ -565,6 +565,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                     <TamamlaFormu
                       koclar={ekipKoclari}
                       benId={ben.id}
+                      gununKocu={c.k.gunKoclari?.[coz(tarih).getDay()]}
                       ilk={gunluk['b:' + c.id]}
                       agriSor={sakatMi(c.k)}
                       onVazgec={() => setAcik(null)}
@@ -627,6 +628,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                     <GrupYoklama
                       koclar={c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio' ? ekipKoclari : null}
                       benId={ben.id}
+                      gununKocu={c.g?.gunKoclari?.[coz(tarih).getDay()]}
                       uyeler={c.uyeler}
                       kayitlar={Object.fromEntries(c.uyeler.map((k) => [k.id, gunluk['g:' + c.id + ':' + k.id]]))}
                       onVazgec={() => setAcik(null)}

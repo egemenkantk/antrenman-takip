@@ -164,7 +164,13 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
       not: f.not.trim(),
       foto: f.foto || '',
     };
-    if (yonetici) veri.kocIds = f.kocIds;
+    if (yonetici) {
+      veri.kocIds = f.kocIds;
+      // Gün bazlı koç: yalnızca açık günler ve hâlâ atanmış koçlar
+      veri.gunKoclari = Object.fromEntries(
+        Object.entries(f.gunKoclari || {}).filter(([g, id]) => id && (f.haftalikSaatler || {})[g] != null && f.kocIds.includes(id))
+      );
+    }
     setBekliyor(true);
     try {
       await onKaydet(veri);
@@ -297,11 +303,24 @@ function KisiForm({ ilk, subeler, koclar, yonetici, onKaydet, onVazgec }) {
                     aria-label={`${ad} saati`}
                   />
                 )}
+                {acik && yonetici && (f.kocIds || []).length > 1 && (
+                  <select
+                    value={f.gunKoclari?.[g] || ''}
+                    onChange={(e) => setF({ ...f, gunKoclari: { ...(f.gunKoclari || {}), [g]: e.target.value } })}
+                    aria-label={`${ad} dersinin koçu`}
+                  >
+                    <option value="">Koç seç</option>
+                    {f.kocIds.map((id) => <option key={id} value={id}>{koclar.find((k) => k.id === id)?.ad || id}</option>)}
+                  </select>
+                )}
               </div>
             );
           })}
         </div>
-        <small className="ipucu">Bugün ekranında saat sırasına göre görünür. Grup derslerinin saati grup ayarlarından gelir.</small>
+        <small className="ipucu">
+          Bugün ekranında saat sırasına göre görünür. Grup derslerinin saati grup ayarlarından gelir.
+          {yonetici && (f.kocIds || []).length > 1 ? ' Birden fazla koç varsa her güne dersi veren koçu seç; "Antrenmanı tamamla"da o koç hazır gelir.' : ''}
+        </small>
       </div>
 
       {yonetici && (

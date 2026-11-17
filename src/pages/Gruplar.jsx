@@ -31,6 +31,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
     cimnastik: !!ilk?.cimnastik,
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
+    gunKoclari: ilk?.gunKoclari || {},
   });
   const [ara, setAra] = useState('');
   const [hata, setHata] = useState('');
@@ -72,7 +73,8 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
       // Sonradan eklenen üyelerin katılım tarihi: dönem ortası ücreti bundan hesaplanır
       const uyeKatilim = { ...(ilk?.uyeKatilim || {}) };
       if (ilk) for (const id of f.uyeIds) if (!(ilk.uyeIds || []).includes(id) && !uyeKatilim[id]) uyeKatilim[id] = bugun();
-      await onKaydet({ ...f, ad: f.ad.trim(), sure: Number(f.sure) || 60, uyeKatilim });
+      const gunKoclari = Object.fromEntries(Object.entries(f.gunKoclari || {}).filter(([g, id]) => id && f.saatler[g] != null && f.kocIds.includes(id)));
+      await onKaydet({ ...f, ad: f.ad.trim(), sure: Number(f.sure) || 60, uyeKatilim, gunKoclari });
     } catch (err) {
       setHata(hataMesaji(err));
       setBekliyor(false);
@@ -169,6 +171,12 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
                     onChange={(e) => setF({ ...f, saatler: { ...f.saatler, [g]: e.target.value } })}
                     aria-label={`${ad} saati`}
                   />
+                )}
+                {acik && !kisitli && f.kocIds.length > 1 && (
+                  <select value={f.gunKoclari?.[g] || ''} onChange={(e) => setF({ ...f, gunKoclari: { ...f.gunKoclari, [g]: e.target.value } })} aria-label={`${ad} dersinin koçu`}>
+                    <option value="">Koç seç</option>
+                    {f.kocIds.map((id) => <option key={id} value={id}>{koclar.find((k) => k.id === id)?.ad || id}</option>)}
+                  </select>
                 )}
               </div>
             );

@@ -309,3 +309,5 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Paket tanımında `eksikUcretleri` ({1: tek gelirse ders başı, 2: trio'da iki kişi}) — tanım kaydedilince ücreti olmayan açık satılmış paketlere de kopyalanır; yeni atamada pakete yazılır.
 - `tutarli(p)` paketlerde dersleriDagit tutar bazlı: tam katılım = uygulananFiyat/dersSayisi, eksik katılım = eksikUcretleri[gelenSayisi]. Sonuç: kalanTl, kalan (= kalanTl / tam ders ücreti, aşağı), eksikDers; her ders `maliyet` taşır. Sunucu kalanDersler aynı hesap.
 - Bu paketlerde fark ücreti sorulmaz (Bugün FarkKutusu, Paket sekmesi eksikler listesi). Tahsilatlar özel ders değeri ders maliyetiyle.
+- Gün bazlı koç: `kisiler.gunKoclari` / `gruplar.gunKoclari` = {haftaGünü: kocId} (yönetici, birden fazla koç varsa saat satırında seçilir). Bugün'de yönetici kaydederken "Dersi veren koç" o günün koçuyla gelir; koç kaydederse kendisi.
+- Paket atama formu çift tıklamada iki kez kaydetmez. Bakım: `.github/workflows/odeme-sil.yml` tek ödemeyi silindi işaretler; `tani-odeme.yml` kişi/ay bazlı tanı (GitHub günlüğü "{" karakterini *** olarak maskeler — grep'te dikkat).
