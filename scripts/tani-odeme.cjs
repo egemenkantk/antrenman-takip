@@ -18,6 +18,20 @@ async function main() {
     }
     console.log('eşleşen kişi kaydı: ' + liste.length);
   }
+  // "ay:YYYY-MM": o aydaki tüm ödemeler (kişi kimliğiyle, ad yok)
+  const aylar = liste.filter((x) => x.startsWith('ay:')).map((x) => x.slice(3));
+  liste = liste.filter((x) => !x.startsWith('ay:'));
+  for (const ay of aylar) {
+    const os = await db.collection('odemeler').where('tarih', '>=', ay + '-01').where('tarih', '<=', ay + '-31').get();
+    console.log(`\n== ${ay} ödemeleri: ${os.size}`);
+    for (const d of os.docs) {
+      const o = d.data();
+      const p = (await db.collection('satilanPaketler').doc(o.satilanPaketId || 'x').get()).data() || {};
+      const k = (await db.collection('kisiler').doc(o.kisiId || 'x').get());
+      const crypto = require('crypto');
+      console.log('odeme', JSON.stringify({ id: d.id, kisi: o.kisiId, kisiVar: k.exists, adOzet: k.exists ? crypto.createHash('sha256').update(String(k.data().ad || '')).digest('hex').slice(0, 8) : null, paket: o.satilanPaketId, paketKisi: p.kisiId, tur: p.tur, tutar: o.tutar, tarih: o.tarih, silindi: !!o.silindi, kayit: o.kayit?.toDate?.().toISOString(), not: o.not || '' }));
+    }
+  }
   for (const id of liste) {
     const [ps, os, ks] = await Promise.all([
       db.collection('satilanPaketler').where('kisiId', '==', id).get(),
