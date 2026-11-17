@@ -127,7 +127,11 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
         <section className="portal-kart">
           <h3>Paket</h3>
           {bireysel.map((p) => (
-            <p key={p.id}><strong>{p.tur === 'abonelik' ? p.abonelik.kalan : p.kalanDers}</strong> ders kaldı · {p.ad}{p.tur === 'abonelik' ? ' (bu ay)' : ''}</p>
+            p.tur === 'abonelik' ? (
+              <p key={p.id}>{p.ad} · bu dönem {kisaTarih(p.donemBas)} – {kisaTarih(p.donemBit)} · {ABONELIK_ODEME[p.abonelik.odeme] || ''}</p>
+            ) : (
+              <p key={p.id}><strong>{p.kalanDers}</strong> ders kaldı · {p.ad}</p>
+            )
           ))}
           {borc > 0 && <p>Kalan ödeme <strong>{tl(borc)}</strong></p>}
           <button className="metin" onClick={() => git('paket')}>Ayrıntı →</button>
@@ -258,6 +262,8 @@ function Programim({ kisiId, ben, salt }) {
   );
 }
 
+const ABONELIK_ODEME = { odendi: 'Ödendi', kismi: 'Kısmen ödendi', bekliyor: 'Ödeme bekleniyor', 'kayit-yok': 'Henüz açılmadı' };
+
 function Paketim({ v }) {
   const aktif = v.paketler.filter((p) => p.tur === 'abonelik' || p.kalan > 0 || p.kalanDers > 0 || ((p.tur === 'grup' || p.tur === 'abonelikDonem') && p.donemBit >= bugun()));
   const eski = v.paketler.filter((p) => !aktif.includes(p));
@@ -273,15 +279,16 @@ function Paketim({ v }) {
         </div>
       </div>
       {p.donemBas && (
-        <div className="ders-sayac">
-          <div className="ilerleme-cubuk" aria-hidden="true">
-            <span style={{ width: `${Math.min(100, ((p.abonelik.geldi + p.abonelik.yanan) / (p.abonelik.hak || 1)) * 100)}%` }} />
-          </div>
+        <div className="paket-tutar">
+          <span>Bu dönem <strong>{kisaTarih(p.donemBas)} – {kisaTarih(p.donemBit)}</strong></span>
           <span>
-            Bu ay ({kisaTarih(p.donemBas)} – {kisaTarih(p.donemBit)}): {p.abonelik.hak} dersten {p.abonelik.geldi} yapıldı
-            {p.abonelik.ertelenen ? ` · ${p.abonelik.ertelenen} ertelendi` : ''}
-            {p.abonelik.yanan ? ` · ${p.abonelik.yanan} habersiz` : ''} · <strong>{p.abonelik.kalan} kaldı</strong>
+            Ödeme{' '}
+            <strong className={p.abonelik.odeme === 'odendi' ? '' : 'uyari-yazi'}>
+              {ABONELIK_ODEME[p.abonelik.odeme] || '—'}
+              {p.abonelik.odeme !== 'odendi' && p.abonelik.ayKalan > 0 ? ` (${tl(p.abonelik.ayKalan)})` : ''}
+            </strong>
           </span>
+          <span>Sonraki dönem <strong>{kisaTarih(gunEkle(p.donemBit, 1))}</strong></span>
         </div>
       )}
     </li>

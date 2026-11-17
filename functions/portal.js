@@ -43,14 +43,10 @@ async function portalVerisi(db, kisiId) {
       if (p.tur === 'abonelik') {
         // Aylık abonelik: bu ayın ders hakkı ve taahhüt bilgisi (ödeme ay kayıtlarında)
         const d = abonelikDonemBul(p.baslangic, bugun);
+        // Ders sayıları (hak/yapılan/kalan) yalnızca ekip görür; portala dönem ve ödeme durumu gider
         const ay = d ? paketler.find((x) => x.id === `a_${p.id}_${d.bas}`) : null;
-        const l = d
-          ? kayitListesi.filter((k) => k.tarih >= d.bas && k.tarih <= d.bit && !String(k.id).startsWith('sk_') && k.dersTuru !== 'duet' && k.dersTuru !== 'trio')
-          : [];
-        const geldi = l.filter((k) => k.katilim === 'geldi').length;
-        const yanan = l.filter((k) => k.katilim === 'gelmedi' && k.derstenDussun !== false).length;
-        const ertelenen = l.filter((k) => k.katilim === 'izinli').length;
-        const hak = (Number(ay?.dersHakki) || Number(p.aylikDers) || 12) + (Number(ay?.ekDers) || 0);
+        const ayFiyat = Number(ay?.uygulananFiyat) || 0;
+        const ayOdenen = ay ? odemeler.filter((o) => o.satilanPaketId === ay.id).reduce((t, o) => t + (Number(o.tutar) || 0), 0) : 0;
         return {
           id: p.id,
           tur: 'abonelik',
@@ -61,7 +57,13 @@ async function portalVerisi(db, kisiId) {
           fiyat: 0,
           odenen: 0,
           kalan: 0,
-          abonelik: { hak, geldi, yanan, ertelenen, kalan: Math.max(0, hak - geldi - yanan), taahhutAy: Number(p.taahhutAy) || 0, ay: d ? d.no + 1 : 0, taahhutBitis: p.taahhutAy ? ayEkle(p.baslangic, Number(p.taahhutAy)) : null },
+          abonelik: {
+            taahhutAy: Number(p.taahhutAy) || 0,
+            ay: d ? d.no + 1 : 0,
+            taahhutBitis: p.taahhutAy ? ayEkle(p.baslangic, Number(p.taahhutAy)) : null,
+            odeme: !ay ? 'kayit-yok' : ayFiyat > 0 && ayOdenen >= ayFiyat ? 'odendi' : ayOdenen > 0 ? 'kismi' : 'bekliyor',
+            ayKalan: Math.max(0, ayFiyat - ayOdenen),
+          },
         };
       }
       const odenen = odemeler.filter((o) => o.satilanPaketId === p.id).reduce((t, o) => t + (Number(o.tutar) || 0), 0);
