@@ -15,21 +15,34 @@ const GUN_ADI = Object.fromEntries(HAFTA_GUNLERI);
 // Haftalık ders listesi: bireysel saatler + üyesi olduğu gruplar
 function dersPlani(v) {
   const l = [];
-  for (const [g, saat] of Object.entries(v.kisi.haftalikSaatler || {})) l.push({ gun: Number(g), saat: saat || '', ad: 'Bireysel antrenman' });
-  for (const gr of v.gruplar) for (const [g, saat] of Object.entries(gr.saatler || {})) l.push({ gun: Number(g), saat: saat || '', ad: gr.ad, sube: gr.sube });
+  for (const [g, saat] of Object.entries(v.kisi.haftalikSaatler || {})) l.push({ gun: Number(g), saat: saat || '', ad: 'Bireysel antrenman', sahipId: v.kisi.id });
+  for (const gr of v.gruplar) for (const [g, saat] of Object.entries(gr.saatler || {})) l.push({ gun: Number(g), saat: saat || '', ad: gr.ad, sube: gr.sube, sahipId: gr.id });
   return l;
 }
-function siradakiDersler(plan, adet = 3) {
+const degisiklikMetni = (d) =>
+  d.islem === 'iptal' ? 'iptal / ertelendi'
+  : d.islem === 'tasi' ? `${kisaTarih(d.yeniTarih)}${d.yeniSaat ? ` ${d.yeniSaat}` : ''} tarihine taşındı`
+  : `saat ${d.yeniSaat} oldu`;
+function siradakiDersler(plan, adet = 3, degisiklikler = []) {
   const simdi = new Date();
   const saatSimdi = `${String(simdi.getHours()).padStart(2, '0')}:${String(simdi.getMinutes()).padStart(2, '0')}`;
   const sonuc = [];
   for (let i = 0; i < 14 && sonuc.length < adet; i++) {
     const t = gunEkle(bugun(), i);
     const gun = coz(t).getDay();
-    plan
-      .filter((d) => d.gun === gun && !(i === 0 && d.saat && d.saat < saatSimdi))
-      .sort((a, b) => a.saat.localeCompare(b.saat))
-      .forEach((d) => sonuc.push({ ...d, tarih: t }));
+    const gunun = [];
+    plan.filter((d) => d.gun === gun).forEach((d) => {
+      const deg = degisiklikler.find((x) => x.sahipId === d.sahipId && x.tarih === t);
+      if (deg && deg.islem !== 'saat') return; // taşındı ya da iptal
+      gunun.push({ ...d, saat: deg ? deg.yeniSaat : d.saat, tarih: t, degisti: !!deg });
+    });
+    degisiklikler
+      .filter((x) => x.islem === 'tasi' && x.yeniTarih === t)
+      .forEach((x) => gunun.push({ gun, saat: x.yeniSaat, ad: x.ad, sahipId: x.sahipId, tarih: t, degisti: true }));
+    gunun
+      .filter((d) => !(i === 0 && d.saat && d.saat < saatSimdi))
+      .sort((a, b) => (a.saat || '').localeCompare(b.saat || ''))
+      .forEach((d) => sonuc.push(d));
   }
   return sonuc.slice(0, adet);
 }
@@ -88,7 +101,7 @@ function BugunFormu({ kisi, ben, veli, dersGunu, salt }) {
 
 function AnaSayfa({ v, ben, veli, git, salt }) {
   const plan = dersPlani(v);
-  const siradaki = siradakiDersler(plan);
+  const siradaki = siradakiDersler(plan, 3, v.degisiklikler || []);
   const bugunDers = siradaki.some((d) => d.tarih === bugun());
   const bireysel = v.paketler.filter((p) => p.kalanDers > 0 || (p.tur === 'abonelik' && p.donemBas));
   const borc = v.paketler.reduce((t, p) => t + p.kalan, 0);
@@ -103,7 +116,7 @@ function AnaSayfa({ v, ben, veli, git, salt }) {
             {siradaki.map((d, i) => (
               <li key={i}>
                 <strong>{d.tarih === bugun() ? 'Bugün' : d.tarih === gunEkle(bugun(), 1) ? 'Yarın' : uzunTarih(d.tarih)}</strong>
-                {d.saat ? ` ${d.saat}` : ''} · {d.ad}
+                {d.saat ? ` ${d.saat}` : ''} · {d.ad}{d.degisti ? ' (değişti)' : ''}
               </li>
             ))}
           </ul>
@@ -154,6 +167,18 @@ function Takvimim({ v }) {
             </li>
           ))}
         </ul>
+      )}
+      {(v.degisiklikler || []).length > 0 && (
+        <>
+          <h3>Ders değişiklikleri</h3>
+          <ul className="sade-liste">
+            {v.degisiklikler.map((d, i) => (
+              <li key={i}>
+                <strong>{uzunTarih(d.tarih)}{d.eskiSaat ? ` ${d.eskiSaat}` : ''}</strong> · {d.ad}: {degisiklikMetni(d)}{d.not ? ` · ${d.not}` : ''}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       <p className="aciklama kucuk-yazi">Erteleme ve iptal için antrenörüne WhatsApp'tan yaz.</p>
       <h3>Maç, turnuva ve test günleri</h3>

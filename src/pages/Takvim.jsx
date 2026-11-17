@@ -4,6 +4,7 @@ import { hataMesaji } from '../auth/hesap';
 import { kisileriGetir, subeleriGetir } from '../veri';
 import { gruplariGetir } from '../gruplar/veri';
 import { tumProgramlar, gunOzelleriAralik } from '../bugun/veri';
+import { degisiklikleriGetir } from '../takvim/degisiklik';
 import { bugun, gunEkle, coz, ymd, HARF } from '../program/model';
 import { gununKartlari } from '../takvim/gunHesap';
 import { etkinlikleriGetir, etkinlikKaydet, etkinlikSil, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
@@ -131,10 +132,18 @@ function EtkinlikFormu({ ilk, kisiler, gruplar, onKaydet, onSil, onVazgec }) {
 function SeansSatiri({ c, onAc }) {
   const s = c.s;
   let alt = '';
-  if (s?.dinlenme) alt = s.macGunu ? 'Maç günü' : 'Dinlenme';
+  if (c.durum === 'iptal') alt = 'İptal / ertelendi';
+  else if (c.durum === 'gitti') alt = `→ ${c.degisiklik.yeniTarih.slice(8, 10)}.${c.degisiklik.yeniTarih.slice(5, 7)} tarihine taşındı`;
+  else if (c.durum === 'gelen') alt = `↪ ${c.degisiklik.tarih.slice(8, 10)}.${c.degisiklik.tarih.slice(5, 7)} dersinden taşındı`;
+  else if (c.durum === 'saat') alt = `Saat değişti (${c.eskiSaat || '—'} → ${c.saat})`;
+  else if (s?.dinlenme) alt = s.macGunu ? 'Maç günü' : 'Dinlenme';
   else if (s?.gun) alt = [s.md?.etiket, s.gun.baslik || (s.gunIdx != null ? `${HARF[s.gunIdx]} günü` : '')].filter(Boolean).join(' · ');
   return (
-    <button className={'takvim-seans' + (s?.dinlenme ? ' dinlenme' : '') + (c.tip === 'grup' ? ' grup' : '')} onClick={onAc} title="Bugün ekranında aç">
+    <button
+      className={'takvim-seans' + (s?.dinlenme ? ' dinlenme' : '') + (c.tip === 'grup' ? ' grup' : '') + (c.durum === 'iptal' || c.durum === 'gitti' ? ' iptal' : '') + (c.degisiklik ? ' degisen' : '')}
+      onClick={onAc}
+      title="Bugün ekranında aç"
+    >
       <span className="ts-saat">{c.saat || '—'}</span>
       <span className="ts-ad">
         {c.tip === 'grup' ? '👥 ' : ''}
@@ -154,6 +163,7 @@ export default function Takvim({ onGeri, onGunAc }) {
   const [odak, setOdak] = useState(bugun());
   const [temel, setTemel] = useState(null);
   const [ozeller, setOzeller] = useState([]);
+  const [degisiklikler, setDegisiklikler] = useState([]);
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [sube, setSube] = useState('');
   const [sadeceBenim, setSadeceBenim] = useState(!yonetici);
@@ -178,8 +188,9 @@ export default function Takvim({ onGeri, onGunAc }) {
 
   async function araligiYukle() {
     try {
-      const [o, e] = await Promise.all([gunOzelleriAralik(bas, bit), etkinlikleriGetir(gunEkle(bas, -7), gunEkle(bit, 7))]);
+      const [o, e, d] = await Promise.all([gunOzelleriAralik(bas, bit), etkinlikleriGetir(gunEkle(bas, -7), gunEkle(bit, 7)), degisiklikleriGetir(bas, bit).catch(() => [])]);
       setOzeller(o);
+      setDegisiklikler(d);
       setEtkinlikler(e);
     } catch (err) {
       setHata(hataMesaji(err));
@@ -192,9 +203,9 @@ export default function Takvim({ onGeri, onGunAc }) {
   const gunKartlari = useMemo(() => {
     if (!temel) return {};
     const r = {};
-    for (const t of gunler) r[t] = gununKartlari({ ...temel, ozeller, etkinlikler, tarih: t, sube, benimId: sadeceBenim ? ben.id : null });
+    for (const t of gunler) r[t] = gununKartlari({ ...temel, ozeller, etkinlikler, degisiklikler, tarih: t, sube, benimId: sadeceBenim ? ben.id : null });
     return r;
-  }, [temel, ozeller, etkinlikler, gunler, sube, sadeceBenim]);
+  }, [temel, ozeller, etkinlikler, degisiklikler, gunler, sube, sadeceBenim]);
   const gunEtkinlikleri = (t) => etkinlikler.filter((e) => e.tarih === t);
 
   function kaydir(yon) {
@@ -281,7 +292,7 @@ export default function Takvim({ onGeri, onGunAc }) {
                   {ETKINLIK_SIMGE[e.tur]} {e.saat ? e.saat + ' ' : ''}{e.ad || ETKINLIK_TURU[e.tur]}
                 </button>
               ))}
-              {(gunKartlari[t] || []).map((c) => <SeansSatiri key={c.tip + c.id} c={c} onAc={() => onGunAc(t)} />)}
+              {(gunKartlari[t] || []).map((c) => <SeansSatiri key={c.tip + c.id + (c.durum === 'gelen' ? 'g' : '')} c={c} onAc={() => onGunAc(t)} />)}
               {!(gunKartlari[t] || []).length && !gunEtkinlikleri(t).length && <span className="aciklama kucuk-yazi">—</span>}
             </section>
           ))}
@@ -292,7 +303,7 @@ export default function Takvim({ onGeri, onGunAc }) {
         <div className="ay-izgara">
           {GUNLER.map((g) => <div key={g} className="ay-bas">{g}</div>)}
           {gunler.map((t) => {
-            const k = (gunKartlari[t] || []).filter((c) => !c.s?.dinlenme || c.saat);
+            const k = (gunKartlari[t] || []).filter((c) => (!c.s?.dinlenme || c.saat) && c.durum !== 'iptal' && c.durum !== 'gitti');
             const ayDisi = t.slice(0, 7) !== odak.slice(0, 7);
             return (
               <button

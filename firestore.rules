@@ -147,6 +147,11 @@ service cloud.firestore {
       allow read, write: if ekip();
     }
 
+    // ---------- Ders saati/gün değişiklikleri (taşıma, iptal) ----------
+    match /dersDegisiklik/{id} {
+      allow read, write: if ekip();
+    }
+
     // ---------- Güne özel değişiklikler (tek günlük seans düzenlemesi) ----------
     match /gunOzel/{id} {
       allow read, write: if ekip();

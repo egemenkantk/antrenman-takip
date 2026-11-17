@@ -254,3 +254,10 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Görmez: kütüphane, şablonlar, sakatlık rehberleri, faz/otomatik program mantığı, ödemeler, koç notları, diğer sporcular. Veri sunucuda süzülerek verilir (portalVerisi gibi).
 - Kulübün öğrencileri sistemde normal sporcu olarak durur, "Tenis Kulübü" gibi bir kurum/kulüp etiketiyle ayrılır.
 - Anlaşmada karar verilecekler: egzersiz videoları görünsün mü, sakatlık kısıtları görünsün mü, kulüp hocası kort programını yazabilsin mi, kulüp dışına veri açılması için veli onayı nasıl alınacak.
+
+## Ders saat / gün değişiklikleri
+- Sabit haftalık saatler (kişi haftalikSaatler, grup saatler) aynen kalır; tek bir güne özel değişiklik `dersDegisiklik` koleksiyonuna yazılır.
+- Belge id: `<sahipId>__<asılTarih>`. islem: `saat` (aynı gün başka saat), `tasi` (başka gün/saat → yeniTarih, yeniSaat), `iptal`.
+- Bugün ekranında her kartta "🕒 Saat / gün" düğmesi; "Değişikliği geri al" belgeyi siler.
+- Taşınan ders eski günde soluk "taşındı" olarak, yeni günde "taşındı (asıl tarih)" etiketiyle ve asıl günün planıyla görünür. Takvim de aynı hesaplamayı (gunHesap.gununKartlari) kullanır.
+- Portal (öğrenci/veli) değişiklikleri portalVerisi üzerinden görür; koleksiyonu doğrudan okuyamaz. Değişiklik için otomatik bildirim henüz yok.

@@ -59,5 +59,8 @@ await t('koç liste ücretiyle aylık abonelik atar', assertSucceeds(setDoc(doc(
 await t('koç indirimli abonelik atayamaz', assertFails(setDoc(doc(koc, 'satilanPaketler', 'ab2'), { kisiId: 'k1', tur: 'abonelik', listeFiyati: 0, uygulananFiyat: 0, aylikListe: 3000, aylikUcret: 2500 })));
 await t('koç abonelik ayını açar', assertSucceeds(setDoc(doc(koc, 'satilanPaketler', 'a_ab1_2026-11-06'), { kisiId: 'k1', tur: 'abonelikDonem', listeFiyati: 3000, uygulananFiyat: 3000 })));
 await t('koç aylık ücreti değiştiremez', assertFails(updateDoc(doc(koc, 'satilanPaketler', 'ab1'), { aylikUcret: 1 })));
+await t('koç ders değişikliği kaydeder', assertSucceeds(setDoc(doc(koc, 'dersDegisiklik', 'k1__2026-11-17'), { sahipTip: 'kisi', sahipId: 'k1', tarih: '2026-11-17', islem: 'tasi', yeniTarih: '2026-11-18', yeniSaat: '18:00' })));
+await t('öğrenci ders değişikliklerini doğrudan okuyamaz', assertFails(getDoc(doc(ogr, 'dersDegisiklik', 'k1__2026-11-17'))));
+await t('öğrenci ders değişikliği yazamaz', assertFails(setDoc(doc(ogr, 'dersDegisiklik', 'k1__2026-11-20'), { sahipId: 'k1', islem: 'iptal' })));
 await env.cleanup();
 if (hata) process.exit(1);

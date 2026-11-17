@@ -33,6 +33,8 @@ import {
 import { WellnessFormu, WellnessRozeti, RpeSecici, KatilimSecici, KATILIM } from '../bugun/Formlar';
 import GunOzelDuzenleyici from '../bugun/GunOzelDuzenleyici';
 import { gununKartlari } from '../takvim/gunHesap';
+import { degisiklikleriGetir } from '../takvim/degisiklik';
+import DersDegistir, { DegisiklikEtiketi } from '../bugun/DersDegistir';
 import { useKutuphane, EgzersizSatiri } from '../kutuphane/bilesenler';
 import { etkinlikleriGetir, kapsiyor, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
 import { ekUcretEkle, farkKarari } from '../paket/veri';
@@ -307,6 +309,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
   const [tarih, setTarih] = useState(baslangicTarihi || bugun());
   const [temel, setTemel] = useState(null); // { kisiler, gruplar, programlar, subeler }
   const [ozeller, setOzeller] = useState([]);
+  const [degisiklikler, setDegisiklikler] = useState([]);
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [gunluk, setGunluk] = useState({}); // anahtar → belge
   const [sube, setSube] = useState('');
@@ -329,8 +332,8 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
 
   const kartlar = useMemo(() => {
     if (!temel) return [];
-    return gununKartlari({ ...temel, ozeller, etkinlikler, tarih, sube, benimId: sadeceBenim ? ben.id : null });
-  }, [temel, ozeller, etkinlikler, tarih, sube, sadeceBenim]);
+    return gununKartlari({ ...temel, ozeller, etkinlikler, degisiklikler, tarih, sube, benimId: sadeceBenim ? ben.id : null });
+  }, [temel, ozeller, etkinlikler, degisiklikler, tarih, sube, sadeceBenim]);
 
   // Tarih değişince güne özel değişiklikleri ve günlük kayıtları yükle
   async function gunuYukle() {
@@ -339,6 +342,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
     } catch {
       setOzeller([]);
     }
+    degisiklikleriGetir(tarih, tarih).then(setDegisiklikler).catch(() => setDegisiklikler([]));
     // Maç gününe göre planlama için ±7 gün etkinlikler
     etkinlikleriGetir(gunEkle(tarih, -7), gunEkle(tarih, 7)).then(setEtkinlikler).catch(() => setEtkinlikler([]));
   }
@@ -438,10 +442,11 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
 
       <div className="seans-izgara">
         {kartlar.map((c) => {
-          const anahtar = c.tip + ':' + c.id;
+          const anahtar = c.tip + ':' + c.id + (c.durum === 'gelen' ? ':gelen' : '');
           const islem = gunOzelIslemleri(c);
+          const yok = c.durum === 'iptal' || c.durum === 'gitti';
           return (
-            <article key={anahtar} className="seans-karti">
+            <article key={anahtar} className={'seans-karti' + (yok ? ' iptal-kart' : '') + (c.degisiklik ? ' degisen-kart' : '')}>
               <header className="seans-bas">
                 <div className={'saat-kutu' + (c.saat ? '' : ' bos')}>
                   {c.saat || '—'}
@@ -451,6 +456,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                 <div className="esnek">
                   <h3>{c.ad}</h3>
                   {c.tip === 'grup' && <small className="aciklama">{c.uyeler.length} üye</small>}
+                  <DegisiklikEtiketi kart={c} />
                   {c.tip === 'kisi' && (c.k?.aktifSakatliklar || []).map((a) => (
                     <small key={a.id} className="sakatlik-uyari kucuk">⚠ {sakatlikEtiketi(a)}</small>
                   ))}
@@ -458,10 +464,21 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                     <small className="sakatlik-uyari kucuk">⚠ Sakatlığı olan: {c.uyeler.filter(sakatMi).map((k) => k.ad.split(' ')[0]).join(', ')}</small>
                   )}
                 </div>
-                <button className="metin" onClick={() => setAcik(acik === 'ozel:' + anahtar ? null : 'ozel:' + anahtar)}>✎ Bugüne özel</button>
+                <span className="seans-dugmeler">
+                  <button className="metin" onClick={() => setAcik(acik === 'deg:' + anahtar ? null : 'deg:' + anahtar)}>🕒 Saat / gün</button>
+                  {!yok && <button className="metin" onClick={() => setAcik(acik === 'ozel:' + anahtar ? null : 'ozel:' + anahtar)}>✎ Bugüne özel</button>}
+                </span>
               </header>
 
-              {acik === 'ozel:' + anahtar ? (
+              {acik === 'deg:' + anahtar ? (
+                <DersDegistir
+                  kart={c.durum === 'gelen' ? { ...c, eskiSaat: c.degisiklik.eskiSaat } : c}
+                  tarih={c.durum === 'gelen' ? c.degisiklik.tarih : tarih}
+                  yapan={ben.id}
+                  onVazgec={() => setAcik(null)}
+                  onBitti={() => { setAcik(null); degisiklikleriGetir(tarih, tarih).then(setDegisiklikler).catch(() => {}); }}
+                />
+              ) : yok ? null : acik === 'ozel:' + anahtar ? (
                 <GunOzelDuzenleyici
                   seans={c.s}
                   tarih={tarih}
@@ -478,7 +495,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                 <Plan s={c.s} />
               )}
 
-              {c.tip === 'kisi' && (
+              {!yok && c.tip === 'kisi' && (
                 <div className="seans-alt">
                   <div className="satir-arasi">
                     {gunluk['w:' + c.id] ? <WellnessRozeti w={gunluk['w:' + c.id]} /> : <span className="aciklama kucuk-yazi">Wellness girilmedi</span>}
@@ -526,7 +543,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                 </div>
               )}
 
-              {c.tip === 'grup' && (
+              {!yok && c.tip === 'grup' && (
                 <div className="seans-alt">
                   <ul className="uye-satirlari">
                     {c.uyeler.map((k) => (

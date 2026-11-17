@@ -93,7 +93,18 @@ async function portalVerisi(db, kisiId) {
     .map((e) => ({ tarih: e.tarih, saat: e.saat || '', tur: e.tur || 'diger', ad: e.ad || '', yer: e.yer || '' }))
     .sort((a, b) => (a.tarih + a.saat).localeCompare(b.tarih + b.saat));
 
+  // Ders saati/gün değişiklikleri (bu kişi ve grupları; dünden itibaren)
+  const sahipler = [kisiId, ...grupIds].slice(0, 30);
+  const ds = await db.collection('dersDegisiklik').where('sahipId', 'in', sahipler).get();
+  const dun = gunEkle(bugun, -1);
+  const degisiklikler = ds.docs
+    .map((d) => d.data())
+    .filter((d) => d.tarih >= dun || (d.yeniTarih && d.yeniTarih >= dun))
+    .map((d) => ({ sahipTip: d.sahipTip, sahipId: d.sahipId, ad: d.sahipTip === 'grup' ? gruplar.find((g) => g.id === d.sahipId)?.ad || '' : 'Bireysel antrenman', tarih: d.tarih, eskiSaat: d.eskiSaat || '', islem: d.islem, yeniTarih: d.yeniTarih || null, yeniSaat: d.yeniSaat || '', not: d.not || '' }))
+    .sort((a, b) => a.tarih.localeCompare(b.tarih));
+
   return {
+    degisiklikler,
     kisi: { id: kisiId, ad: k.ad || '', tip: k.tip || '', brans: k.brans || '', foto: k.foto || '', haftalikSaatler: k.haftalikSaatler || {} },
     gruplar,
     paketler: paketOzet,

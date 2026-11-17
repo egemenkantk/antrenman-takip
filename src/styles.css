@@ -743,3 +743,13 @@ tr.kat-satir th { background: var(--zemin); font: 700 1.05rem 'Barlow Condensed'
 @media (max-width: 560px) { .cubuk-satir { grid-template-columns: 1fr; gap: 2px; } .cubuk-deger { text-align: left; grid-auto-flow: column; justify-content: start; gap: 8px; } .cubuk-baslik { display: none; } }
 .kitle-secici { margin: 4px 0 12px; display: inline-flex; }
 .kitle-secici .secim { font-weight: 600; }
+/* Ders değişiklikleri */
+.seans-dugmeler { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.degisiklik-etiket { display: inline-block; margin-top: 4px; font-size: 0.78rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #fff4e0; color: #8a5a10; }
+.degisiklik-etiket.iptal, .degisiklik-etiket.gitti { background: #fdecea; color: #a12a1b; }
+.degisiklik-etiket.gelen { background: #e3f1e8; color: #2e7d4f; }
+.iptal-kart { opacity: 0.7; }
+.iptal-kart .saat-kutu { text-decoration: line-through; background: var(--soluk); }
+.ders-degistir .secim-cubugu { flex-wrap: wrap; margin: 6px 0; }
+.takvim-seans.iptal { opacity: 0.6; text-decoration: line-through; }
+.takvim-seans.degisen .ts-alt { color: #8a5a10; font-weight: 600; }
