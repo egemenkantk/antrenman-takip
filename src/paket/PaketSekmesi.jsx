@@ -17,7 +17,107 @@ import {
   ekUcretEkle,
   farkKarari,
 } from './veri';
-import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
+import { DurumRozeti, OdemeFormu, OdemeListesi, kocAdi } from './bilesenler';
+import { antrenmanKaydet } from '../bugun/veri';
+
+// Geçmiş tarihli bireysel ders (siteye geçiş döneminde teyit ederek elle girilir)
+function GecmisDersFormu({ p, kayitlar, yonetici, benim, koclar, onBitti, onVazgec }) {
+  const [tarih, setTarih] = useState('');
+  const [katilim, setKatilim] = useState('geldi');
+  const [dersiVeren, setDersiVeren] = useState(benim);
+  const [hata, setHata] = useState('');
+  const [bekliyor, setBekliyor] = useState(false);
+  const var_ = tarih && kayitlar.some((k) => k.id === tarih);
+  async function kaydet(e) {
+    e.preventDefault();
+    if (!tarih) return setHata('Tarih seçin.');
+    if (tarih > bugun()) return setHata('İleri tarih girilemez.');
+    if (var_ && !window.confirm('Bu tarihte bireysel ders kaydı zaten var. Üzerine yazılsın mı?')) return;
+    setHata('');
+    setBekliyor(true);
+    try {
+      await antrenmanKaydet(p.kisiId, tarih, {
+        tarih,
+        katilim,
+        ...(katilim === 'gelmedi' ? { derstenDussun: true } : {}),
+        seansTipi: 'bireysel',
+        tur: 'Bireysel seans',
+        dersiVeren,
+        not: 'Elle girildi (geçmiş ders)',
+      }, benim);
+      onBitti();
+    } catch (err) {
+      setHata(hataMesaji(err));
+      setBekliyor(false);
+    }
+  }
+  return (
+    <form className="kart-form ic-form" onSubmit={kaydet}>
+      <strong>Geçmiş ders gir</strong>
+      <div className="form-izgara">
+        <label className="alan">
+          <span>Ders tarihi</span>
+          <input type="date" max={bugun()} value={tarih} onChange={(e) => setTarih(e.target.value)} />
+          {var_ && <small className="uyari-yazi">Bu tarihte kayıt var.</small>}
+        </label>
+        <label className="alan">
+          <span>Katılım</span>
+          <select value={katilim} onChange={(e) => setKatilim(e.target.value)}>
+            <option value="geldi">Geldi</option>
+            <option value="gelmedi">Gelmedi (paketten düşsün)</option>
+          </select>
+        </label>
+        {yonetici && koclar?.length > 0 && (
+          <label className="alan">
+            <span>Dersi veren koç</span>
+            <select value={dersiVeren} onChange={(e) => setDersiVeren(e.target.value)}>
+              {koclar.map((k) => <option key={k.id} value={k.id}>{kocAdi(k.id, benim, koclar)}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+      <p className="aciklama kucuk-yazi">
+        Ders bu paketten düşer ve dersi veren koçun o ayki özel ders listesine yazılır. Bu dersi "siteden önce yapılan ders" sayısına da yazdıysanız oradan bir azaltın.
+      </p>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button className="birincil kucuk" disabled={bekliyor}>{bekliyor ? 'Kaydediliyor…' : 'Kaydet'}</button>
+        <button type="button" className="metin" onClick={onVazgec}>Vazgeç</button>
+      </div>
+    </form>
+  );
+}
+
+// Siteden önce yapılan ders sayısını düzeltme (aktarım sonrası çift sayımı önlemek için)
+function OncekiDersDuzelt({ p, benim, onBitti, onVazgec }) {
+  const [n, setN] = useState(Number(p.oncekiDers) || 0);
+  const [hata, setHata] = useState('');
+  return (
+    <div className="kart-form ic-form">
+      <label className="alan">
+        <span>Siteden önce yapılan ders</span>
+        <input type="number" min="0" max={(Number(p.dersSayisi) || 1) - 1} value={n} onChange={(e) => setN(e.target.value)} />
+      </label>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button
+          className="birincil kucuk"
+          onClick={async () => {
+            try {
+              await paketGuncelle(p, { oncekiDers: Math.max(0, Number(n) || 0) }, benim);
+              onBitti();
+            } catch (e) {
+              setHata(hataMesaji(e));
+            }
+          }}
+        >
+          Kaydet
+        </button>
+        <button className="metin" onClick={onVazgec}>Vazgeç</button>
+      </div>
+    </div>
+  );
+}
 
 function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazgec, devam = false }) {
   const yonetici = fiyatYetki;
@@ -376,7 +476,7 @@ function EskiBorcUyarisi({ borclar, odemeIcin, setOdemeIcin, benim, onDegisti, s
   );
 }
 
-function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar, onDegisti, setHata, eskiBorclar = [], eskiOdemeAc }) {
+function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar, onDegisti, setHata, eskiBorclar = [], eskiOdemeAc, kayitlar = [] }) {
   const [acik, setAcik] = useState(false);
   const [mod, setMod] = useState(null); // 'odeme' | 'fiyat'
   const od = odemeDurumu(p, odemeler);
@@ -414,7 +514,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
             <span style={{ width: `${Math.min(100, (d.kullanilan / (p.dersSayisi || 1)) * 100)}%` }} />
           </div>
           <span className={d.kalan <= 2 && p.durum !== 'iptal' ? 'uyari-yazi' : ''}>
-            {p.dersSayisi} dersten {d.kullanilan} yapıldı · <strong>{d.kalan} kalan</strong>
+            {p.dersSayisi} dersten {d.kullanilan} yapıldı{Number(p.oncekiDers) ? ` (${p.oncekiDers}'i siteden önce)` : ''} · <strong>{d.kalan} kalan</strong>
             {Number(p.uygulananFiyat) > 0 && (
               <>
                 {' '}· ders başı {tl(Math.round(dersBasiUcret(p)))}
@@ -435,6 +535,10 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           {p.fiyatNotu ? ` · ${p.fiyatNotu}` : ''}
         </p>
       )}
+      {mod === 'gecmisDers' && (
+        <GecmisDersFormu p={p} kayitlar={kayitlar} yonetici={yonetici} benim={benim} koclar={koclar} onVazgec={() => setMod(null)} onBitti={async () => { setMod(null); await onDegisti(); }} />
+      )}
+      {mod === 'onceki' && <OncekiDersDuzelt p={p} benim={benim} onVazgec={() => setMod(null)} onBitti={async () => { setMod(null); await onDegisti(); }} />}
       {mod === 'odeme' && (
         <OdemeFormu
           onrTutar={od.kalan || ''}
@@ -460,6 +564,10 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
       {!mod && (
         <div className="dugme-satiri">
           {p.durum !== 'iptal' && <button className="birincil kucuk" onClick={() => setMod('odeme')}>Ödeme al</button>}
+          {p.tur === 'bireysel' && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('gecmisDers')}>+ Geçmiş ders gir</button>}
+          {yonetici && dersSayili(p.tur) && (Number(p.oncekiDers) > 0 || p.aktarim) && (
+            <button className="metin" onClick={() => setMod('onceki')}>Siteden önceki dersleri düzelt</button>
+          )}
           <button className="ikincil kucuk" onClick={() => setAcik(!acik)}>{acik ? 'Ayrıntıyı gizle' : 'Ayrıntı'}</button>
           {(yonetici || fiyatYetki) && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('fiyat')}>Fiyatı düzenle</button>}
           {yonetici && (
@@ -577,7 +685,7 @@ export default function PaketSekmesi({ kisi, yonetici, fiyatYetki = false, benim
     .slice(0, 10);
 
   const kart = (p) => (
-    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} yonetici={yonetici} fiyatYetki={fiyatYetki} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} eskiBorclar={eskiBorclar} eskiOdemeAc={eskiOdemeAc} />
+    <PaketKarti key={p.id} p={p} dagitim={dagitim} odemeler={veri.odemeler} kayitlar={veri.kayitlar} yonetici={yonetici} fiyatYetki={fiyatYetki} benim={benim} koclar={koclar} onDegisti={yukle} setHata={setHata} eskiBorclar={eskiBorclar} eskiOdemeAc={eskiOdemeAc} />
   );
 
   return (
