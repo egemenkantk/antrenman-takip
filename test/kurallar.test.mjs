@@ -64,5 +64,12 @@ await t('öğrenci ders değişikliklerini doğrudan okuyamaz', assertFails(getD
 await t('öğrenci ders değişikliği yazamaz', assertFails(setDoc(doc(ogr, 'dersDegisiklik', 'k1__2026-11-20'), { sahipId: 'k1', islem: 'iptal' })));
 await t('koç cimnastik beceri durumunu yazar', assertSucceeds(setDoc(doc(koc, 'kisiler', 'k1', 'ozel', 'beceriler'), { durum: { one_takla: { d: 'yapabiliyor', t: '2026-11-17' } } }, { merge: true })));
 await t('öğrenci beceri takibini okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'ozel', 'beceriler'))));
+await t('öğrenci test sonuçlarını okur (Gelişim açık)', assertSucceeds(getDoc(doc(ogr, 'kisiler', 'k1', 'testSonuclari', 't1'))));
+await t('koç portal ayarını değiştiremez', assertFails(setDoc(doc(koc, 'kurumlar', 'fitkon'), { portal: { gelisim: false } }, { merge: true })));
+await env.withSecurityRulesDisabled(async (c) => {
+  await setDoc(doc(c.firestore(), 'kurumlar', 'fitkon'), { portal: { gelisim: false } });
+});
+await t('Gelişim kapalıyken öğrenci test sonuçlarını okuyamaz', assertFails(getDoc(doc(ogr, 'kisiler', 'k1', 'testSonuclari', 't1'))));
+await t('Gelişim kapalıyken koç test sonuçlarını okur', assertSucceeds(getDoc(doc(koc, 'kisiler', 'k1', 'testSonuclari', 't1'))));
 await env.cleanup();
 if (hata) process.exit(1);

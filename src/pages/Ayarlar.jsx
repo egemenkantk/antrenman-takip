@@ -2,6 +2,47 @@ import { useEffect, useState } from 'react';
 import { subeleriGetir, subeEkle, subeGuncelle, kullanicilariGetir } from '../veri';
 import Aktarim, { ProgramAktarimi, PosturAktarimi, EtkinlikAktarimi } from './Aktarim';
 import { hataMesaji } from '../auth/hesap';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { KURUM_ID } from '../config/marka';
+
+// Öğrenci/veli portalında hangi sayfaların açık olduğu (kurumlar/{id}.portal)
+function PortalAyarlari() {
+  const [portal, setPortal] = useState(null);
+  const [hata, setHata] = useState('');
+  useEffect(() => {
+    getDoc(doc(db, 'kurumlar', KURUM_ID))
+      .then((s) => setPortal(s.data()?.portal || {}))
+      .catch(() => setPortal({}));
+  }, []);
+  if (!portal) return null;
+  const acik = portal.gelisim !== false;
+  async function degistir() {
+    setHata('');
+    const yeni = { ...portal, gelisim: !acik };
+    try {
+      await setDoc(doc(db, 'kurumlar', KURUM_ID), { portal: yeni }, { merge: true });
+      setPortal(yeni);
+    } catch (e) {
+      setHata(hataMesaji(e));
+    }
+  }
+  return (
+    <section className="kart-form">
+      <h3>Öğrenci ve veli portalı</h3>
+      <label className="onay-kutusu">
+        <input type="checkbox" checked={acik} onChange={degistir} />
+        <span>Gelişim sayfası (test sonuçları) açık</span>
+      </label>
+      <p className="aciklama kucuk-yazi">
+        {acik
+          ? 'Öğrenci ve veliler kendi test sonuçlarını Gelişim sayfasında görüyor.'
+          : 'Gelişim sayfası kapalı: öğrenci ve veliler test sonuçlarını göremez. Sonuçlar silinmez; açtığında yeniden görünür.'}
+      </p>
+      {hata && <p className="hata">{hata}</p>}
+    </section>
+  );
+}
 
 const ONERILEN = [
   { ad: 'Sporcu Performans ve Cimnastik Merkezi', adres: '' },
@@ -81,6 +122,7 @@ export default function Ayarlar({ onGeri }) {
     <div>
       {onGeri && <button className="metin geri" onClick={onGeri}>← Ana sayfa</button>}
       <h2>Ayarlar</h2>
+      <PortalAyarlari />
       <h3>Şubeler</h3>
       <p className="aciklama">Paketler, gruplar ve dersler bir şubeye bağlanır. Koçlar tüm şubelerde çalışabilir.</p>
       {hata && <p className="hata">{hata}</p>}

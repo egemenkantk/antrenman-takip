@@ -367,7 +367,9 @@ export default function Portal({ ben, onizlemeKisiId }) {
   }, [secili]);
 
   // Cimnastik: ev programı, gelişim (test) ve wellness yok
-  const sayfalar = v?.kisi.tip === 'cimnastik' ? SAYFALAR.filter(([id]) => id !== 'program' && id !== 'gelisim') : SAYFALAR;
+  const sayfalar = SAYFALAR.filter(
+    ([id]) => !(v?.kisi.tip === 'cimnastik' && (id === 'program' || id === 'gelisim')) && !(id === 'gelisim' && v?.ayarlar?.gelisim === false)
+  );
   useEffect(() => {
     if (!sayfalar.some(([id]) => id === sayfa)) setSayfa('ana');
   }, [v?.kisi.tip, sayfa]);
@@ -404,7 +406,7 @@ export default function Portal({ ben, onizlemeKisiId }) {
       {v && sayfa === 'ana' && <AnaSayfa v={v} ben={ben} veli={veli} git={setSayfa} salt={!!onizlemeKisiId} />}
       {v && sayfa === 'takvim' && <Takvimim v={v} />}
       {v && sayfa === 'program' && <Programim kisiId={v.kisi.id} ben={ben} salt={!!onizlemeKisiId} />}
-      {v && sayfa === 'gelisim' && <TestlerSekmesi kisiId={v.kisi.id} duzenleyebilir={false} yapan={ben.id} />}
+      {v && sayfa === 'gelisim' && sayfalar.some(([id]) => id === 'gelisim') && <TestlerSekmesi kisiId={v.kisi.id} duzenleyebilir={false} yapan={ben.id} />}
       {v && sayfa === 'paket' && <Paketim v={v} />}
     </div>
   );

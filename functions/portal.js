@@ -12,7 +12,7 @@ const gunEkle = (s, n) => {
 
 async function portalVerisi(db, kisiId) {
   const bugun = bugunIst();
-  const [ks, gs, ps, os, es, ss, kayitlar] = await Promise.all([
+  const [ks, gs, ps, os, es, ss, kayitlar, kurum] = await Promise.all([
     db.collection('kisiler').doc(kisiId).get(),
     db.collection('gruplar').where('uyeIds', 'array-contains', kisiId).get(),
     db.collection('satilanPaketler').where('kisiId', '==', kisiId).get(),
@@ -20,6 +20,7 @@ async function portalVerisi(db, kisiId) {
     db.collection('etkinlikler').where('tarih', '>=', bugun).where('tarih', '<=', gunEkle(bugun, 60)).get(),
     db.collection('subeler').get(),
     db.collection('kisiler').doc(kisiId).collection('antrenmanKayitlari').get(),
+    db.collection('kurumlar').doc('fitkon').get(),
   ]);
   if (!ks.exists) return null;
   const k = ks.data();
@@ -104,6 +105,7 @@ async function portalVerisi(db, kisiId) {
     .sort((a, b) => a.tarih.localeCompare(b.tarih));
 
   return {
+    ayarlar: { gelisim: kurum.data()?.portal?.gelisim !== false },
     degisiklikler,
     kisi: { id: kisiId, ad: k.ad || '', tip: k.tip || '', brans: k.brans || '', foto: k.foto || '', haftalikSaatler: k.haftalikSaatler || {} },
     gruplar,

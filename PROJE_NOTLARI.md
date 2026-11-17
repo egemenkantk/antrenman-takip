@@ -267,3 +267,6 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Grup alanı `cimnastik: true` ("Cimnastik grubu" onayı). Grup programı `CimnastikDuzenleyici` ile: blok alanları `cimnastik: true, faz: 'cimnastik', tema, not (dönemin hedefi)`, bölümler sabit `c_isinma, c_beceri, c_ana, c_oyun, c_soguma`, her günde `sure: {bölüm: dk}`; haftalık dozaj (ilerleme) yok.
 - Hazır dönem temaları `src/cimnastik/model.js` TEMALAR (yuvarlanma, denge, destek, sıçrama, esneklik, koordinasyon, parkur) — öneri içeriktir.
 - Beceri takibi: `kisiler/{id}/ozel/beceriler` { durum: {anahtar: {d: calisiyor|yapabiliyor, t, y}}, ekler: [] }. Yalnızca ekip (ozel kuralı); veliler görmez. Grup sayfasında "Beceriler" sekmesi üye × beceri tablosu.
+
+## Portal ayarları
+- Ayarlar > "Öğrenci ve veli portalı": `kurumlar/fitkon.portal.gelisim` (varsayılan açık). Kapalıyken portalda Gelişim sayfası gizlenir ve kural (`portalGelisimAcik`) öğrenci/velinin testSonuclari okumasını engeller. portalVerisi `ayarlar.gelisim` döner.

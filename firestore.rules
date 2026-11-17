@@ -40,6 +40,11 @@ service cloud.firestore {
     function kisiyeBagli(id) {
       return (rol('ogrenci') || rol('veli')) && id in ben().get('bagliKisiler', []);
     }
+    // Portal ayarı: yönetici "Gelişim" sayfasını kapatırsa öğrenci/veli test sonuçlarını okuyamaz
+    function portalGelisimAcik() {
+      return !exists(/databases/$(database)/documents/kurumlar/fitkon)
+        || get(/databases/$(database)/documents/kurumlar/fitkon).data.get('portal', {}).get('gelisim', true) != false;
+    }
     function kisiyiYonetebilir(id) { return yonetici() || kisininKocu(id); }
 
     function degisenler() { return request.resource.data.diff(resource.data).affectedKeys(); }
@@ -83,7 +88,7 @@ service cloud.firestore {
 
       // Öğrenci/velinin de görebildiği kayıtlar
       match /testSonuclari/{belge} {
-        allow read: if kisiyiYonetebilir(kisiId) || kisiyeBagli(kisiId);
+        allow read: if kisiyiYonetebilir(kisiId) || (kisiyeBagli(kisiId) && portalGelisimAcik());
         allow write: if kisiyiYonetebilir(kisiId);
       }
       match /raporlar/{belge} {
