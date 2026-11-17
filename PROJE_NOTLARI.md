@@ -270,3 +270,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ## Portal ayarları
 - Ayarlar > "Öğrenci ve veli portalı": `kurumlar/fitkon.portal.gelisim` (varsayılan açık). Kapalıyken portalda Gelişim sayfası gizlenir ve kural (`portalGelisimAcik`) öğrenci/velinin testSonuclari okumasını engeller. portalVerisi `ayarlar.gelisim` döner.
+
+## Tahsilatlar (aylık)
+- `src/paket/Tahsilatlar.jsx`. Ay = ödemenin alındığı ay (maaş hesabı ay içinde alınan paradan yapılıyor).
+- Türler (sınıf): grup, bireysel/PT (bireysel), düet/trio, aylık abonelik (abonelik + abonelikDonem), ek ücret. Ödemenin türü bağlı olduğu satilanPaket'ten gelir.
+- Ayrıca: grup grup kırılım (cimnastik grupları ayrı toplam, bu ay başlayan dönemde bekleyen sayısı), tahsil edene göre koç tablosu, son 12 ay yığılmış grafik, süzgeçler (koç, yöntem, şube, kişi tipi), CSV (Excel, ; ayraçlı) indirme.

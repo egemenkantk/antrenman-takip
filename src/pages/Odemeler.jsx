@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji, donemKontrolCalistir } from '../auth/hesap';
-import { subeleriGetir, kullanicilariGetir, kisileriGetir, tarihGoster } from '../veri';
+import { subeleriGetir, kullanicilariGetir, kisileriGetir } from '../veri';
 import { bugun, kisaTarih } from '../program/model';
-import { odemeDurumu, dersleriDagit, tl, TUR_ADI, TUR_KISA, KITLE_ADI, YONTEM_ADI, YONTEMLER, dersSayili } from '../paket/model.js';
+import { odemeDurumu, dersleriDagit, tl, TUR_ADI, TUR_KISA, KITLE_ADI, dersSayili } from '../paket/model.js';
 import { paketTanimlariGetir, paketTanimKaydet, tumPaketVerisi, cokluKisiVerisi, bireyselKayitlar } from '../paket/veri';
-import { DurumRozeti, kocAdi } from '../paket/bilesenler';
+import { DurumRozeti } from '../paket/bilesenler';
+import Tahsilatlar from '../paket/Tahsilatlar';
+import { gruplariGetir } from '../gruplar/veri';
 
 // ---------- Paket tanımları (yalnızca yönetici) ----------
 function TanimFormu({ ilk, subeler, onKaydet, onVazgec }) {
@@ -269,72 +271,6 @@ function AzalanPaketler({ veri, kisiler }) {
   );
 }
 
-// ---------- Tahsilatlar ----------
-function ayBasi() {
-  const t = bugun();
-  return t.slice(0, 8) + '01';
-}
-function Tahsilatlar({ veri, kisiler, koclar, benim, yonetici }) {
-  const [bas, setBas] = useState(ayBasi());
-  const [bit, setBit] = useState(bugun());
-  const [koc, setKoc] = useState('');
-  const [yontem, setYontem] = useState('');
-  const liste = veri.odemeler
-    .filter((o) => !o.silindi && o.tarih >= bas && o.tarih <= bit && (!koc || o.tahsilEdenKocId === koc) && (!yontem || o.yontem === yontem))
-    .sort((a, b) => b.tarih.localeCompare(a.tarih));
-  const toplam = liste.reduce((t, o) => t + (Number(o.tutar) || 0), 0);
-  const kocToplam = {};
-  liste.forEach((o) => { kocToplam[o.tahsilEdenKocId] = (kocToplam[o.tahsilEdenKocId] || 0) + (Number(o.tutar) || 0); });
-  const paket = (id) => veri.paketler.find((p) => p.id === id);
-  const tahsilEdenler = [...new Set(veri.odemeler.map((o) => o.tahsilEdenKocId))];
-  return (
-    <div>
-      <div className="filtreler">
-        <label className="alan satir-ici"><span>Başlangıç</span><input type="date" value={bas} onChange={(e) => setBas(e.target.value)} /></label>
-        <label className="alan satir-ici"><span>Bitiş</span><input type="date" value={bit} onChange={(e) => setBit(e.target.value)} /></label>
-        {yonetici && (
-          <select value={koc} onChange={(e) => setKoc(e.target.value)} aria-label="Tahsil eden">
-            <option value="">Tüm koçlar</option>
-            {tahsilEdenler.map((id) => <option key={id} value={id}>{kocAdi(id, benim, koclar)}</option>)}
-          </select>
-        )}
-        <select value={yontem} onChange={(e) => setYontem(e.target.value)} aria-label="Yöntem">
-          <option value="">Tüm yöntemler</option>
-          {YONTEMLER.map(([k, ad]) => <option key={k} value={k}>{ad}</option>)}
-        </select>
-      </div>
-      <p>
-        Toplam <strong>{tl(toplam)}</strong> · {liste.length} ödeme
-        {yonetici && Object.keys(kocToplam).length > 1 && (
-          <span className="aciklama"> · {Object.entries(kocToplam).map(([id, t]) => `${kocAdi(id, benim, koclar)}: ${tl(t)}`).join(' · ')}</span>
-        )}
-      </p>
-      {liste.length > 0 && (
-        <div className="tablo-kap">
-          <table className="tablo">
-            <thead><tr><th>Tarih</th><th>Kişi</th><th>Paket</th><th>Tutar</th><th>Yöntem</th><th>Alan</th></tr></thead>
-            <tbody>
-              {liste.map((o) => {
-                const p = paket(o.satilanPaketId);
-                return (
-                  <tr key={o.id}>
-                    <td>{tarihGoster(o.tarih)}</td>
-                    <th>{kisiler.find((k) => k.id === o.kisiId)?.ad || 'Kişi'}</th>
-                    <td>{p ? (p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}` : p.paketAdi) : ''}</td>
-                    <td>{tl(o.tutar)}</td>
-                    <td>{YONTEM_ADI[o.yontem] || o.yontem}</td>
-                    <td>{kocAdi(o.tahsilEdenKocId, benim, koclar)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function Odemeler({ onGeri }) {
   const { durum } = useOturum();
   const ben = durum.kullanici;
@@ -344,6 +280,7 @@ export default function Odemeler({ onGeri }) {
   const [kisiler, setKisiler] = useState([]);
   const [subeler, setSubeler] = useState([]);
   const [koclar, setKoclar] = useState([]);
+  const [gruplar, setGruplar] = useState([]);
   const [hata, setHata] = useState('');
 
   useEffect(() => {
@@ -356,6 +293,7 @@ export default function Odemeler({ onGeri }) {
         ]);
         setKisiler(k);
         setSubeler(s);
+        gruplariGetir(ben).then(setGruplar).catch(() => {});
         setKoclar(u.filter((x) => x.rol === 'koc' || x.rol === 'yonetici'));
         setVeri(yonetici ? await tumPaketVerisi() : await cokluKisiVerisi(k.map((x) => x.id)));
       } catch (e) {
@@ -394,7 +332,7 @@ export default function Odemeler({ onGeri }) {
       {sekme !== 'tanim' && !veri && <p className="aciklama">Yükleniyor…</p>}
       {sekme === 'alacak' && veri && <Alacaklar veri={veri} kisiler={kisiler} />}
       {sekme === 'azalan' && veri && <AzalanPaketler veri={veri} kisiler={kisiler} />}
-      {sekme === 'tahsilat' && veri && <Tahsilatlar veri={veri} kisiler={kisiler} koclar={koclar} benim={ben.id} yonetici={yonetici} />}
+      {sekme === 'tahsilat' && veri && <Tahsilatlar veri={veri} kisiler={kisiler} gruplar={gruplar} subeler={subeler} koclar={koclar} benim={ben.id} yonetici={yonetici} />}
     </div>
   );
 }
