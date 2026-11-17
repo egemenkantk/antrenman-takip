@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOturum } from '../auth/OturumContext';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -61,6 +62,8 @@ function SifreKutusu({ kisi, onKapat }) {
 }
 
 export default function Kullanicilar({ onGeri }) {
+  const { durum } = useOturum();
+  const benimId = durum.kullanici?.id;
   const [liste, setListe] = useState(null);
   const [form, setForm] = useState({ ad: '', telefon: '', rol: 'koc', eposta: '' });
   const [hata, setHata] = useState('');
@@ -203,6 +206,13 @@ export default function Kullanicilar({ onGeri }) {
                   {k.aktif === false ? ' · pasif' : ''}
                 </span>
               </div>
+              {k.rol === 'yonetici' && k.id !== benimId && k.aktif !== false && (
+                <div className="dugme-satiri">
+                  <button className="ikincil kucuk" onClick={() => sifreVer(k)}>
+                    Geçici şifre ver
+                  </button>
+                </div>
+              )}
               {k.rol !== 'yonetici' && (
                 <div className="dugme-satiri">
                   {k.rol === 'koc' && (
