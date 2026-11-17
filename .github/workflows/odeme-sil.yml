@@ -1,0 +1,35 @@
+# Bakım: yanlışlıkla iki kez girilen bir ödemeyi "silindi" işaretler (kayıt silinmez, iz kalır).
+name: Ödeme sil (bakım)
+
+on:
+  workflow_dispatch:
+    inputs:
+      odeme:
+        description: 'Ödeme belge kimliği'
+        required: true
+      neden:
+        description: 'Neden'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  sil:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm ci --prefix functions
+      - name: Sil
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          ODEME_ID: ${{ inputs.odeme }}
+          NEDEN: ${{ inputs.neden }}
+        run: |
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          node scripts/odeme-sil.cjs
+          rm -f "$RUNNER_TEMP/sa.json"

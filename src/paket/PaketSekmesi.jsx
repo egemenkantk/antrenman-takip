@@ -23,6 +23,7 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
   const yonetici = fiyatYetki;
   // Devam eden paket aktarımı: siteye geçmeden önce yapılan dersler ve alınan ödeme
   const [onceki, setOnceki] = useState('');
+  const [bekliyor, setBekliyor] = useState(false); // çift tıklamayla iki paket açılmasın
   const [odenen, setOdenen] = useState('');
   const [odemeTarihi, setOdemeTarihi] = useState(bugun());
   const [yontem, setYontem] = useState('nakit');
@@ -52,16 +53,19 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
       onSubmit={async (e) => {
         e.preventDefault();
         if (!tanim) return setHata('Paket seç.');
+        if (bekliyor) return;
         setHata('');
+        setBekliyor(true);
         try {
           const n = Number(onceki) || 0;
-          if (devam && (n < 0 || n >= (Number(tanim.dersSayisi) || 0))) return setHata(`Yapılan ders 0 ile ${(Number(tanim.dersSayisi) || 1) - 1} arasında olmalı.`);
+          if (devam && (n < 0 || n >= (Number(tanim.dersSayisi) || 0))) return setBekliyor(false), setHata(`Yapılan ders 0 ile ${(Number(tanim.dersSayisi) || 1) - 1} arasında olmalı.`);
           await onKaydet({
             kisi, tanim, baslangic, uygulananFiyat: yonetici ? Number(fiyat) : tanim.fiyat, fiyatNotu: yonetici ? not : '',
             ...(devam ? { devam: { oncekiDers: n, odenen: Number(odenen) || 0, odemeTarihi, yontem } } : {}),
           });
         } catch (err) {
           setHata(hataMesaji(err));
+          setBekliyor(false);
         }
       }}
     >
@@ -134,7 +138,7 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
       </p>
       {hata && <p className="hata">{hata}</p>}
       <div className="dugme-satiri">
-        <button className="birincil kucuk">{devam ? 'Kaydet' : 'Ata'}</button>
+        <button className="birincil kucuk" disabled={bekliyor}>{bekliyor ? 'Kaydediliyor…' : devam ? 'Kaydet' : 'Ata'}</button>
         <button type="button" className="metin" onClick={onVazgec}>Vazgeç</button>
       </div>
     </form>
