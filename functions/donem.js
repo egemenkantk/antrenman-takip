@@ -310,7 +310,7 @@ function kalanDersler(paketler, kayitlar) {
     ((p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0)) ||
     (ozelUcret(p) > 0 && Math.abs(ozelUcret(p) - birim(p)) > 0.5);
   const maliyet = (p, d) => {
-    if (ozelUcret(p) > 0 && (d.dersTuru === 'duet' || d.dersTuru === 'trio')) return ozelUcret(p);
+    if (ozelUcret(p) > 0 && (d.dersTuru === 'duet' || d.dersTuru === 'trio')) return Number(d.gelenSayisi) === 1 ? birim(p) : ozelUcret(p);
     const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
     if (!tutarli(p) || !(n > 0) || !(boy > 0) || n >= boy) return birim(p);
     return Number(p.eksikUcretleri[n]) || birim(p);

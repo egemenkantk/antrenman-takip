@@ -338,7 +338,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - "Derse giren koça göre" (maaş) tablosu ortaklı gruplarda bize kalanı yazar; dökümde kasaya giren ayrıca görünür. Oran grup üzerinden okunur (değişirse geçmiş aylar da yeni oranla görünür).
 
 ## Bireysel paketten düet/trio dersi (Kasım 2026)
-- Bireysel pakette `ozelDersKapsar: true` + `ozelDersUcreti` (ders başı; kişi kartı > Paket > "Düet/trio dersleri de bu paketten düşsün", yönetici). Ücret bireysel ders ücretinden farklıysa paket tutarla düşer (`tutarli`): düet/trio dersi, kendi türünde uygun paket yoksa bu bireysel paketten bireysel ders ücretiyle düşer. Önce kendi türündeki paket aranır. İstemci `paketKapsar` / sunucu `kalanDersler` aynı.
+- Bireysel pakette `ozelDersKapsar: true` + `ozelDersUcreti` (ders başı; kişi kartı > Paket > "Düet/trio dersleri de bu paketten düşsün", yönetici). Ücret bireysel ders ücretinden farklıysa paket tutarla düşer (`tutarli`). Düet/trio dersine tek kişi geldiyse (gelenSayisi 1) bireysel ders ücreti düşer: düet/trio dersi, kendi türünde uygun paket yoksa bu bireysel paketten bireysel ders ücretiyle düşer. Önce kendi türündeki paket aranır. İstemci `paketKapsar` / sunucu `kalanDersler` aynı.
 - Örnek: düet başlayıp ortağı ara verdiği için bireysel paket ödeyen öğrenci, ortağı dönünce kalan dersleri aynı paketten devam eder.
 
 ## Geçmiş günde kayıtlı grup dersi (Kasım 2026)

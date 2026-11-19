@@ -142,7 +142,8 @@ export const tutarli = (p) =>
   (ozelDersUcreti(p) > 0 && Math.abs(ozelDersUcreti(p) - dersBasiUcret(p)) > 0.5);
 export function dersMaliyeti(p, d) {
   const birim = dersBasiUcret(p);
-  if (ozelDersUcreti(p) > 0 && (d?.dersTuru === 'duet' || d?.dersTuru === 'trio')) return ozelDersUcreti(p);
+  // Bireysel paketten düşen düet/trio dersi: tek kişi geldiyse bireysel ders ücreti, en az iki kişiyse düet/trio ücreti
+  if (ozelDersUcreti(p) > 0 && (d?.dersTuru === 'duet' || d?.dersTuru === 'trio')) return Number(d.gelenSayisi) === 1 ? birim : ozelDersUcreti(p);
   if (!tutarli(p) || !d) return birim;
   const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
   if (!(n > 0) || !(boy > 0) || n >= boy) return birim;
