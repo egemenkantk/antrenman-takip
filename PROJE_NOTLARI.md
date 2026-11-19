@@ -331,3 +331,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## Dönem tarihini kaydırma (Kasım 2026)
 - `gruplar.donemAralari` artık `[{ no, gun }]`: no. dönem (0'dan) gun gün ertelenir. Eski `{ tarih, hafta }` kayıtları okunur; araç kaydederken `araNormal` ile hepsini no'ya çevirir (önceki bir döneme kaydırma eklenince sonrakiler kaybolmasın). Sunucu `functions/donem.js` aynı hesabı yapar.
 - Grup Ödemeler > "⏸ Dönem tarihini kaydır": geçmiş/şu anki/ileri dönem, 1–28 gün. Önizleme: yeni takvim + taşınacak kayıt/ödeme sayısı. Onayda kaymış dönem kayıtları (`satilanPaketler`, kimlik `g_{grup}_{donemBas}_{kisi}`) yeni tarihli kimliğe kopyalanır (`tasimaGecmisi`), ödemelerin `satilanPaketId`'si güncellenir, eski kayıt silinir; ileri kaymada en geç dönemden başlanır. Hedefte başka kayıt varsa hiçbir şey yapılmaz. Kaydırmayı "kaldır" aynı taşımayı tersine yapar.
+
+## Ortaklı gruplar (Kasım 2026)
+- `gruplar.ortakPayi` (yüzde, 1–99; yoksa ortaksız). Grup formunda "Ortaklı grup" + "Ortağa giden pay (%)", varsayılan 50.
+- Ödemeler tam tutarla kaydedilir. `bizeKalanTutar(tutar, grup)` (paket/model.js) gösterimde kullanılır: grup ödeme özeti, Tahsilatlar ay toplamı altında "Bize kalan", grup kutusu, grup tablosunda "Bize kalan" sütunu.
+- "Derse giren koça göre" (maaş) tablosu ortaklı gruplarda bize kalanı yazar; dökümde kasaya giren ayrıca görünür. Oran grup üzerinden okunur (değişirse geçmiş aylar da yeni oranla görünür).

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { hataMesaji } from '../auth/hesap';
 import { bugun, kisaTarih } from '../program/model';
-import { donemBul, donemNo, odemeDurumu, tl, dersleriDagit, TUR_KISA } from './model.js';
+import { donemBul, donemNo, odemeDurumu, tl, dersleriDagit, TUR_KISA, ortakPayi, bizeKalanTutar } from './model.js';
 import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bireyselKayitlar, odemeEkle, grupOzelFiyat, paketGuncelle, katilimGuncelle, donemDahilAyarla, DONEM_HARIC, KATILIM_ONCESI } from './veri';
 import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
@@ -322,6 +322,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
       {ozet && (
         <p className="aciklama">
           {ozet.odeyen}/{ozet.kayit} kişi ödedi · Tahsil edilen {tl(ozet.tahsil)} / {tl(ozet.toplam)}
+          {ortakPayi(grup) > 0 && <> · <strong>bize kalan {tl(bizeKalanTutar(ozet.tahsil, grup))}</strong> (%{ortakPayi(grup)} ortağa)</>}
         </p>
       )}
       {sonraKatilan.length > 0 && (

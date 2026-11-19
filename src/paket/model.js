@@ -94,6 +94,9 @@ export function araNormal(donemBaslangic, aralar = []) {
   }
   return sonuc.filter(Boolean).sort((a, b) => a.no - b.no);
 }
+// Ortaklı grup: tahsilatın ortağa giden payı düşülünce bize kalan (grup.ortakPayi: yüzde)
+export const ortakPayi = (g) => Math.min(100, Math.max(0, Number(g?.ortakPayi) || 0));
+export const bizeKalanTutar = (tutar, g) => Math.round((Number(tutar) || 0) * (100 - ortakPayi(g))) / 100;
 export const araYazi = (gun) => (gun % 7 === 0 ? `${gun / 7} hafta` : `${gun} gün`);
 export const grupKayitKimligi = (grupId, donemBas, kisiId) => `g_${grupId}_${donemBas}_${kisiId}`;
 

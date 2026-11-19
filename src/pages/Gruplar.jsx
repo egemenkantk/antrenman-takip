@@ -30,6 +30,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
     dersTuru: ilk?.dersTuru || 'grup',
     cimnastik: !!ilk?.cimnastik,
     sadeceOdeme: !!ilk?.sadeceOdeme,
+    ortakPayi: ilk?.ortakPayi ?? null,
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
     gunKoclari: ilk?.gunKoclari || {},
@@ -67,7 +68,13 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
         f.donemBaslangic = '';
         f.cimnastik = false;
         f.sadeceOdeme = false;
+        f.ortakPayi = null;
       }
+      if (f.ortakPayi != null && !(Number(f.ortakPayi) > 0 && Number(f.ortakPayi) < 100)) {
+        setBekliyor(false);
+        return setHata('Ortağa giden pay 1 ile 99 arasında bir yüzde olmalı.');
+      }
+      f.ortakPayi = f.ortakPayi == null ? null : Number(f.ortakPayi);
       if (f.sadeceOdeme) {
         // Sadece ödeme takibi: ders/yoklama yok
         f.saatler = {};
@@ -154,6 +161,16 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
         </label>
       </div>
       {f.donemBaslangic && <DonemTakvimi bas={f.donemBaslangic} aralar={ilk?.donemAralari || []} />}
+      <label className="onay-kutusu">
+        <input type="checkbox" checked={f.ortakPayi != null} onChange={(e) => setF({ ...f, ortakPayi: e.target.checked ? 50 : null })} />
+        <span>Ortaklı grup (tahsilatın bir kısmı ortağa gider)</span>
+      </label>
+      {f.ortakPayi != null && (
+        <label className="alan">
+          <span>Ortağa giden pay (%)</span>
+          <input type="number" min="1" max="99" value={f.ortakPayi} onChange={(e) => setF({ ...f, ortakPayi: e.target.value })} />
+        </label>
+      )}
       <small className="ipucu">Dönemler bu tarihten itibaren 4'er hafta ilerler. Grup paketlerini "Paketler ve ödemeler → Paket tanımları"ndan eklersin.</small>
       </>
       )}
@@ -363,7 +380,7 @@ export default function Gruplar({ onGeri }) {
         <button className="metin geri" onClick={() => setSecili(null)}>← Gruplar</button>
         <h2>{g.ad}{g.aktif === false ? ' (pasif)' : ''}</h2>
         <p className="aciklama">
-          {g.sadeceOdeme ? 'Sadece ödeme takibi' : <>{g.cimnastik ? 'Cimnastik · ' : ''}{g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk</>}
+          {g.ortakPayi ? `Ortaklı (%${g.ortakPayi} ortağa) · ` : ''}{g.sadeceOdeme ? 'Sadece ödeme takibi' : <>{g.cimnastik ? 'Cimnastik · ' : ''}{g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk</>}
           {g.kocIds?.length ? ` · ${g.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
           {subeler.length > 1 ? ` · ${subeler.find((s) => s.id === g.subeId)?.ad || ''}` : ''}
         </p>

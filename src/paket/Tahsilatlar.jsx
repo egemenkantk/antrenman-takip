@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { KURUM_ID } from '../config/marka';
 import { tarihGoster, TIP_ADI } from '../veri';
 import { kisaTarih } from '../program/model';
-import { tl, YONTEM_ADI, YONTEMLER, dersleriDagit, TUR_KISA, dersBasiUcret, kayitTuru, sayilanDers, abonelikKapsar } from './model.js';
+import { tl, YONTEM_ADI, YONTEMLER, dersleriDagit, TUR_KISA, dersBasiUcret, kayitTuru, sayilanDers, abonelikKapsar, bizeKalanTutar, ortakPayi } from './model.js';
 import { bireyselKayitlar } from './veri';
 import { kocAdi } from './bilesenler';
 
@@ -40,6 +40,8 @@ const buAy = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 const topla = (l) => l.reduce((t, o) => t + (Number(o.tutar) || 0), 0);
+// Bize kalan: ortaklı gruplarda ortağın payı düşülmüş tutar
+const toplaNet = (l) => l.reduce((t, o) => t + (o.net ?? (Number(o.tutar) || 0)), 0);
 
 function csvIndir(ad, satirlar) {
   const kac = (v) => {
@@ -250,7 +252,9 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
     const m = {};
     for (const o of odemeler) {
       const ids = o.dersKocIds || (o.sinif === 'grup' ? grupMap[o.p?.grupId]?.kocIds : kisiMap[o.kisiId]?.kocIds) || [];
-      const tutar = Number(o.tutar) || 0;
+      // Maaş tablosu bize kalan tutarla (ortaklı grupta ortağın payı düşülür)
+      const tutar = o.net ?? (Number(o.tutar) || 0);
+      const brut = Number(o.tutar) || 0;
       for (const id of ids.length ? ids : ['?']) {
         const r = (m[id] ||= { id, toplam: 0, sinif: {}, kalemler: {} });
         r.toplam += tutar;
@@ -258,8 +262,9 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
         // Döküm: grup dersleri grup grup, diğerleri kişi kişi
         const anahtar = o.sinif === 'grup' ? 'g:' + (o.p?.grupId || '?') : o.sinif + ':' + o.kisiId;
         const ad = o.sinif === 'grup' ? grupMap[o.p?.grupId]?.ad || o.p?.grupAdi || 'Grup' : `${o.k?.ad || 'Kişi'} · ${o.p?.paketAdi || SINIF_ADI[o.sinif]}`;
-        const k = (r.kalemler[anahtar] ||= { ad, sinif: o.sinif, tutar: 0, kisiler: new Set() });
+        const k = (r.kalemler[anahtar] ||= { ad, sinif: o.sinif, tutar: 0, brut: 0, kisiler: new Set() });
         k.tutar += tutar;
+        k.brut += brut;
         k.kisiler.add(o.kisiId);
       }
     }
@@ -286,7 +291,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
         <button type="button" className="ikincil kucuk" onClick={indir}>Excel'e indir</button>
       </div>
       <p className="aciklama kucuk-yazi">
-        Grup ödemeleri grubun koçlarına, bireysel / düet / abonelik ödemeleri öğrencinin koçlarına yazılır. Birden fazla koç varsa her birine tutarın tamamı
+        Grup ödemeleri grubun koçlarına, bireysel / düet / abonelik ödemeleri öğrencinin koçlarına yazılır. Ortaklı gruplarda bize kalan tutar yazılır. Birden fazla koç varsa her birine tutarın tamamı
         yazılır (bu yüzden satırların toplamı ayın toplamından büyük olabilir). Satıra dokununca döküm açılır.
       </p>
       <div className="tablo-kap">
@@ -313,6 +318,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
                               <i className={'seri-renk s-' + k.sinif} />
                               {k.ad} · <strong>{tl(k.tutar)}</strong>
                               {k.sinif === 'grup' ? ` · ${k.kisiler.size} kişi ödedi` : ''}
+                              {Math.abs(k.brut - k.tutar) > 0.5 ? <small className="aciklama"> · kasaya giren {tl(k.brut)}, ortağın payı düşüldü</small> : null}
                             </li>
                           ))}
                       </ul>
@@ -362,7 +368,9 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
         .filter((o) => !o.silindi && o.tarih)
         .map((o) => {
           const p = paketMap[o.satilanPaketId];
-          return { ...o, p, sinif: sinifOf(p), k: kisiMap[o.kisiId] };
+          const sinif = sinifOf(p);
+          const g = sinif === 'grup' ? grupMap[p?.grupId] : null;
+          return { ...o, p, sinif, k: kisiMap[o.kisiId], net: ortakPayi(g) > 0 ? bizeKalanTutar(o.tutar, g) : Number(o.tutar) || 0 };
         })
         .filter(
           (o) =>
@@ -377,6 +385,8 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
   const ayinkiler = tumu.filter((o) => o.tarih.slice(0, 7) === ay);
   const oncekiAy = topla(tumu.filter((o) => o.tarih.slice(0, 7) === ayKaydir(ay, -1)));
   const toplam = topla(ayinkiler);
+  const netToplam = toplaNet(ayinkiler);
+  const netGrup = toplaNet(ayinkiler.filter((o) => o.sinif === 'grup'));
   const fark = oncekiAy > 0 ? Math.round(((toplam - oncekiAy) / oncekiAy) * 100) : null;
   const sinifToplam = Object.fromEntries(SINIFLAR.map(([k]) => [k, topla(ayinkiler.filter((o) => o.sinif === k))]));
 
@@ -390,8 +400,9 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
     const m = {};
     for (const o of ayinkiler.filter((x) => x.sinif === 'grup')) {
       const id = o.p?.grupId || '?';
-      m[id] = m[id] || { id, ad: grupMap[id]?.ad || o.p?.grupAdi || 'Grup', cim: !!grupMap[id]?.cimnastik, tutar: 0, kisiler: new Set() };
+      m[id] = m[id] || { id, ad: grupMap[id]?.ad || o.p?.grupAdi || 'Grup', cim: !!grupMap[id]?.cimnastik, ortak: ortakPayi(grupMap[id]), tutar: 0, net: 0, kisiler: new Set() };
       m[id].tutar += Number(o.tutar) || 0;
+      m[id].net += o.net;
       m[id].kisiler.add(o.kisiId);
     }
     // Bu ay başlayan dönemlerde hâlâ ödemesi eksik olanlar
@@ -403,12 +414,13 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
       if ((Number(p.uygulananFiyat) || 0) - (odenen[p.id] || 0) > 0) bekleyen[p.grupId] = (bekleyen[p.grupId] || 0) + 1;
     }
     for (const id of Object.keys(bekleyen)) {
-      m[id] = m[id] || { id, ad: grupMap[id]?.ad || 'Grup', cim: !!grupMap[id]?.cimnastik, tutar: 0, kisiler: new Set() };
+      m[id] = m[id] || { id, ad: grupMap[id]?.ad || 'Grup', cim: !!grupMap[id]?.cimnastik, ortak: ortakPayi(grupMap[id]), tutar: 0, net: 0, kisiler: new Set() };
       m[id].bekleyen = bekleyen[id];
     }
     return Object.values(m).sort((a, b) => b.tutar - a.tutar);
   }, [ayinkiler, veri, grupMap, ay]);
   const cimToplam = grupSatirlari.filter((g) => g.cim).reduce((t, g) => t + g.tutar, 0);
+  const ortakVar = grupSatirlari.some((g) => g.ortak > 0);
 
   // Koç kırılımı (tahsil edene göre, türlere ayrılmış)
   const kocSatirlari = useMemo(() => {
@@ -480,6 +492,9 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
             {fark !== null && ` · geçen aya göre ${fark > 0 ? '+' : ''}${fark}%`}
             {fark === null && oncekiAy === 0 && ' · geçen ay kayıt yok'}
           </span>
+          {Math.abs(netToplam - toplam) > 0.5 && (
+            <span className="kucuk-yazi">Bize kalan <b>{tl(netToplam)}</b> · ortaklı gruplarda ortağa {tl(toplam - netToplam)}</span>
+          )}
         </div>
         <div className="sinif-kutulari">
           {SINIFLAR.map(([k, ad]) => (
@@ -493,6 +508,7 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
               <span><i className={'seri-renk s-' + k} />{ad}</span>
               <strong>{tl(sinifToplam[k])}</strong>
               <small>{toplam > 0 ? `%${Math.round((sinifToplam[k] / toplam) * 100)}` : '—'}</small>
+              {k === 'grup' && Math.abs(netGrup - sinifToplam.grup) > 0.5 && <small>bize kalan {tl(netGrup)}</small>}
             </button>
           ))}
         </div>
@@ -505,12 +521,13 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
           <h3>Grup dersleri · {ayAdi(ay)}</h3>
           <div className="tablo-kap">
             <table className="tablo">
-              <thead><tr><th>Grup</th><th>Alınan</th><th>Ödeyen</th><th>Bu ay başlayan dönemde bekleyen</th></tr></thead>
+              <thead><tr><th>Grup</th><th>Alınan</th>{ortakVar && <th>Bize kalan</th>}<th>Ödeyen</th><th>Bu ay başlayan dönemde bekleyen</th></tr></thead>
               <tbody>
                 {grupSatirlari.map((g) => (
                   <tr key={g.id}>
                     <th>{g.ad}{g.cim ? <small className="aciklama"> · cimnastik</small> : null}</th>
                     <td>{tl(g.tutar)}</td>
+                    {ortakVar && <td>{g.ortak > 0 ? <>{tl(g.net)} <small className="aciklama">(%{g.ortak} ortağa)</small></> : tl(g.tutar)}</td>}
                     <td>{g.kisiler.size} kişi</td>
                     <td>{g.bekleyen ? `${g.bekleyen} kişi` : '—'}</td>
                   </tr>
@@ -518,8 +535,8 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
               </tbody>
               {cimToplam > 0 && cimToplam < sinifToplam.grup && (
                 <tfoot>
-                  <tr><th>Cimnastik grupları</th><td>{tl(cimToplam)}</td><td colSpan={2} /></tr>
-                  <tr><th>Diğer gruplar</th><td>{tl(sinifToplam.grup - cimToplam)}</td><td colSpan={2} /></tr>
+                  <tr><th>Cimnastik grupları</th><td>{tl(cimToplam)}</td><td colSpan={ortakVar ? 3 : 2} /></tr>
+                  <tr><th>Diğer gruplar</th><td>{tl(sinifToplam.grup - cimToplam)}</td><td colSpan={ortakVar ? 3 : 2} /></tr>
                 </tfoot>
               )}
             </table>
