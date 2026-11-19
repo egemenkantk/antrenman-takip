@@ -93,5 +93,21 @@ async function main() {
   const cift = Object.entries(kaynak).filter(([, l]) => l.length > 1);
   for (const [id, l] of cift) console.log(JSON.stringify({ id, kartlar: l }));
   if (!cift.length) console.log('yok');
+
+  // Düet/trio grupları: Bugün kartı ve "Antrenmanı tamamla" düğmesi neden çıkmayabilir
+  console.log('\n== Düet/trio grupları ==');
+  for (const g of gruplar.filter((x) => x.dersTuru === 'duet' || x.dersTuru === 'trio')) {
+    console.log(JSON.stringify({
+      grup: g.id, tur: g.dersTuru, aktif: g.aktif !== false, sadeceOdeme: !!g.sadeceOdeme,
+      gunler: Object.entries(g.saatler || {}).map(([gun, saat]) => `${gun}@${saat || '-'}`), bugunDersVar: g.saatler?.[hg] != null,
+      koc: (g.kocIds || []).length, subeVar: !!g.subeId,
+      uyeler: (g.uyeIds || []).map((id) => {
+        const k = kisiler.find((x) => x.id === id);
+        if (!k) return { id, yok: true };
+        return { id, aktif: k.aktif !== false, sadeceOdeme: !!k.sadeceOdeme, baslangic: k.baslangicTarihi || null, katilim: g.uyeKatilim?.[id] || null, gizli: (k.baslangicTarihi && bugun < k.baslangicTarihi) || (g.uyeKatilim?.[id] && bugun < g.uyeKatilim[id]) || false };
+      }),
+      bugunDegisiklik: ds.docs.filter((d) => d.data().sahipId === g.id && (d.data().tarih === bugun || d.data().yeniTarih === bugun)).map((d) => d.data().islem),
+    }));
+  }
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message); process.exit(1); });
