@@ -340,3 +340,6 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## Bireysel paketten düet/trio dersi (Kasım 2026)
 - Bireysel pakette `ozelDersKapsar: true` (kişi kartı > Paket > "Düet/trio dersleri de bu paketten düşsün", yönetici): düet/trio dersi, kendi türünde uygun paket yoksa bu bireysel paketten bireysel ders ücretiyle düşer. Önce kendi türündeki paket aranır. İstemci `paketKapsar` / sunucu `kalanDersler` aynı.
 - Örnek: düet başlayıp ortağı ara verdiği için bireysel paket ödeyen öğrenci, ortağı dönünce kalan dersleri aynı paketten devam eder.
+
+## Geçmiş günde kayıtlı grup dersi (Kasım 2026)
+- Bugün ekranı, ders günü o gün olmayan (aktif, sadece ödeme olmayan) gruplar için o tarihte üyelerden birinde `antrenmanKayitlari/{tarih}_{grupId}` varsa kartı yine gösterir (`gununKartlari({ kayitliGruplar })`). Ders günü sonradan değişen gruplarda eski dersler düzenlenebilir. Gün geçmişi tutulmaz.

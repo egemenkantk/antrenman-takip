@@ -3,7 +3,8 @@ import { coz, gununSeansi } from '../program/model';
 import { maclar } from './veri';
 
 // degisiklikler: ders saati değişikliği / taşıma / iptal (takvim/degisiklik.js)
-export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikler = [], degisiklikler = [], tarih, sube = '', benimId = null }) {
+// kayitliGruplar: bu tarihte dersi girilmiş grup kimlikleri — ders günü sonradan değişse de o günün kartı görünür
+export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikler = [], degisiklikler = [], tarih, sube = '', benimId = null, kayitliGruplar = [] }) {
   const degOf = (id) => degisiklikler.find((d) => d.sahipId === id && d.tarih === tarih) || null;
   // Başka günden bu güne taşınan dersler
   const gelenler = (id) => degisiklikler.filter((d) => d.sahipId === id && d.islem === 'tasi' && d.yeniTarih === tarih && d.tarih !== tarih);
@@ -38,9 +39,10 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
       sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: d.yeniSaat || '', sure: g.sure, s: s2, ozel: null, uyeler, g, degisiklik: d, durum: 'gelen' });
     }
     const deg = degOf(g.id);
-    if (saat == null && !ozel && !planli && !deg) continue;
+    const kayitli = kayitliGruplar.includes(g.id);
+    if (saat == null && !ozel && !planli && !deg && !kayitli) continue;
     // Bu güne taşınan ders varsa ve bugün sabit saat/planlı seans yoksa, güne özel düzenleme o derse aittir: ikinci kart açılmaz
-    if (saat == null && gelenler(g.id).length && !programli(g.id, maclar(etkinlikler, { tip: 'grup', id: g.id }))) continue;
+    if (saat == null && !kayitli && gelenler(g.id).length && !programli(g.id, maclar(etkinlikler, { tip: 'grup', id: g.id }))) continue;
     sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', sure: g.sure, s, ozel, uyeler, g, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
   }
   for (const k of kisiler) {

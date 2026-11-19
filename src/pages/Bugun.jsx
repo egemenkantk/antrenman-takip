@@ -374,10 +374,35 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
 
   const hg = coz(tarih).getDay();
 
+  // Ders günü o gün olmayan gruplarda, o tarihte girilmiş ders varsa kart yine görünsün (gün sonradan değişmiş olabilir)
+  const [kayitliGruplar, setKayitliGruplar] = useState([]);
+  useEffect(() => {
+    setKayitliGruplar([]);
+    if (!temel || tarih > bugun()) return;
+    const gun = coz(tarih).getDay();
+    const adaylar = temel.gruplar.filter((g) => g.aktif !== false && !g.sadeceOdeme && g.saatler?.[gun] == null && (g.uyeIds || []).length);
+    let iptal = false;
+    Promise.all(
+      adaylar.map(async (g) => {
+        for (const id of g.uyeIds) {
+          try {
+            if ((await getDoc(doc(db, 'kisiler', id, 'antrenmanKayitlari', grupKayitId(tarih, g.id)))).exists()) return g.id;
+          } catch {
+            /* okunamıyorsa geç */
+          }
+        }
+        return null;
+      })
+    ).then((l) => !iptal && setKayitliGruplar(l.filter(Boolean)));
+    return () => {
+      iptal = true;
+    };
+  }, [temel, tarih]);
+
   const kartlar = useMemo(() => {
     if (!temel) return [];
-    return gununKartlari({ ...temel, ozeller, etkinlikler, degisiklikler, tarih, sube, benimId: sadeceBenim ? ben.id : null });
-  }, [temel, ozeller, etkinlikler, degisiklikler, tarih, sube, sadeceBenim]);
+    return gununKartlari({ ...temel, ozeller, etkinlikler, degisiklikler, tarih, sube, benimId: sadeceBenim ? ben.id : null, kayitliGruplar });
+  }, [temel, ozeller, etkinlikler, degisiklikler, tarih, sube, sadeceBenim, kayitliGruplar]);
 
   // Tarih değişince güne özel değişiklikleri ve günlük kayıtları yükle
   async function gunuYukle() {
