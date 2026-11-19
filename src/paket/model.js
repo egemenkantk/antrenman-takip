@@ -149,6 +149,11 @@ export function dersMaliyeti(p, d) {
 const gunMetni = (t) => (t?.toDate ? t.toDate() : t instanceof Date ? t : null)?.toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) || null;
 export const aktarimKesimi = (p) => p.aktarimTarihi || (p.aktarim ? gunMetni(p.olusturma) : null);
 
+// Paket bu türdeki dersi karşılar mı? Bireysel pakete "düet/trio dersleri de düşsün" denmişse (ozelDersKapsar)
+// düet/trio dersi, kendi türünde uygun paket yoksa bireysel paketten bireysel ders ücretiyle düşer.
+export const paketKapsar = (x, tur) => x.tur === tur || (x.tur === 'bireysel' && !!x.ozelDersKapsar && (tur === 'duet' || tur === 'trio'));
+const uygunPaket = (liste, tur, kosul) => liste.find((x) => x.tur === tur && kosul(x)) || liste.find((x) => x.tur !== tur && paketKapsar(x, tur) && kosul(x));
+
 export function dersleriDagit(paketler, kayitlar) {
   // Aylık aboneliği olan günlerdeki bireysel dersler aboneliğe sayılır, bireysel paketten düşmez
   const abonelikler = paketler.filter((p) => p.tur === 'abonelik' && p.durum !== 'iptal');
@@ -172,14 +177,14 @@ export function dersleriDagit(paketler, kayitlar) {
   for (const d of dersler) {
     const tur = kayitTuru(d);
     // Bitmiş paket (bitisTarihi) yalnızca kendi tarih aralığındaki dersleri alır
-    const once = sayili.find(
-      (x) => x.tur === tur && aktarimKesimi(x) && (x.baslangic || '') <= d.tarih && d.tarih < aktarimKesimi(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi)
+    const once = uygunPaket(
+      sayili, tur, (x) => aktarimKesimi(x) && (x.baslangic || '') <= d.tarih && d.tarih < aktarimKesimi(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi)
     );
     if (once) {
       sonuc[once.id].dersler.push({ ...d, maliyet: dersMaliyeti(once, d), oncedenSayildi: true });
       continue;
     }
-    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !doluMu(x));
+    const p = uygunPaket(sayili, tur, (x) => (x.baslangic || '') <= d.tarih && !doluMu(x));
     if (!p) {
       disarida.push({ ...d, tur });
       continue;

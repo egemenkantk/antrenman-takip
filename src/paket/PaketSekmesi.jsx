@@ -524,7 +524,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
               ? `Ek ücret · ${tarihGoster(p.baslangic)}`
               : p.tur === 'abonelikDonem'
               ? `Abonelik ayı ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}${p.ekDers ? ` · +${p.ekDers} ek ders` : ''}`
-              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç${p.bitisTarihi ? ` · ${tarihGoster(p.bitisTarihi)} bitti` : ''}`}
+              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç${p.bitisTarihi ? ` · ${tarihGoster(p.bitisTarihi)} bitti` : ''}${p.ozelDersKapsar ? ' · düet/trio dersleri de düşer' : ''}`}
           </span>
         </div>
         <DurumRozeti durum={od.durum} />
@@ -586,6 +586,14 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
         <div className="dugme-satiri">
           {p.durum !== 'iptal' && <button className="birincil kucuk" onClick={() => setMod('odeme')}>Ödeme al</button>}
           {p.tur === 'bireysel' && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('gecmisDers')}>+ Geçmiş ders gir</button>}
+          {yonetici && p.tur === 'bireysel' && p.durum !== 'iptal' && (
+            <button
+              className="metin"
+              onClick={() => calistir(() => paketGuncelle(p, { ozelDersKapsar: !p.ozelDersKapsar }, benim))}
+            >
+              {p.ozelDersKapsar ? 'Düet/trio dersleri bu paketten düşmesin' : 'Düet/trio dersleri de bu paketten düşsün'}
+            </button>
+          )}
           {yonetici && dersSayili(p.tur) && (Number(p.oncekiDers) > 0 || p.aktarim) && (
             <button className="metin" onClick={() => setMod('onceki')}>Siteden önceki dersleri düzelt</button>
           )}

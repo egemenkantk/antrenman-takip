@@ -317,10 +317,13 @@ function kalanDersler(paketler, kayitlar) {
   const dolu = (x) => (tutarli(x) ? harcanan[x.id] >= (Number(x.uygulananFiyat) || 0) - 0.5 : kullanilan[x.id] >= (Number(x.dersSayisi) || 0));
   // Aktarılmış paket: aktarım gününden önceki dersler oncekiDers'e dahil, tekrar düşmez
   const kesim = (p) => p.aktarimTarihi || (p.aktarim && p.olusturma?.toDate ? p.olusturma.toDate().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' }) : null);
+  // Bireysel pakette ozelDersKapsar: düet/trio dersi kendi türünde paket yoksa buradan düşer
+  const kapsar = (x, tur) => x.tur === tur || (x.tur === 'bireysel' && !!x.ozelDersKapsar && (tur === 'duet' || tur === 'trio'));
+  const uygun = (tur, kosul) => sayili.find((x) => x.tur === tur && kosul(x)) || sayili.find((x) => x.tur !== tur && kapsar(x, tur) && kosul(x));
   for (const d of kayitlar.filter(sayilanDers).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const tur = kayitTuru(d);
-    if (sayili.some((x) => x.tur === tur && kesim(x) && (x.baslangic || '') <= d.tarih && d.tarih < kesim(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi))) continue;
-    const p = sayili.find((x) => x.tur === tur && (x.baslangic || '') <= d.tarih && !dolu(x));
+    if (sayili.some((x) => kapsar(x, tur) && kesim(x) && (x.baslangic || '') <= d.tarih && d.tarih < kesim(x) && (!x.bitisTarihi || d.tarih <= x.bitisTarihi))) continue;
+    const p = uygun(tur, (x) => (x.baslangic || '') <= d.tarih && !dolu(x));
     if (!p) continue;
     kullanilan[p.id]++;
     harcanan[p.id] += maliyet(p, d);
