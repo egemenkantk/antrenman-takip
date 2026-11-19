@@ -13,6 +13,7 @@ import {
   limit,
   arrayUnion,
   deleteField,
+  deleteDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -107,6 +108,17 @@ export async function paketGuncelle(p, veri, yapan) {
   if ('uygulananFiyat' in veri && Number(veri.uygulananFiyat) !== Number(p.uygulananFiyat)) {
     await gecmiseYaz(yapan, 'fiyat-degisti', { paketId: p.id, kisiId: p.kisiId, eski: p.uygulananFiyat, yeni: veri.uygulananFiyat });
   }
+}
+
+// İptal edilmiş (yanlış girilmiş) paketi kalıcı sil: ödemeleri "silindi" işaretlenir (iz kalır), paket kaldırılır (yalnızca yönetici)
+export async function paketSil(p, yapan) {
+  if (p.durum !== 'iptal' || !['bireysel', 'duet', 'trio', 'ek'].includes(p.tur)) throw new Error('Yalnızca iptal edilmiş paket silinebilir.');
+  const os = await getDocs(query(collection(db, 'odemeler'), where('satilanPaketId', '==', p.id)));
+  const aktif = os.docs.filter((d) => !d.data().silindi);
+  for (const o of aktif) await updateDoc(o.ref, { silindi: true, silen: yapan, silmeZamani: serverTimestamp(), silmeNedeni: 'Paket silindi (yanlış giriş)' });
+  await deleteDoc(doc(db, 'satilanPaketler', p.id));
+  await gecmiseYaz(yapan, 'paket-silindi', { paketId: p.id, kisiId: p.kisiId, tur: p.tur, paket: p.paketAdi || p.grupAdi || '', fiyat: Number(p.uygulananFiyat) || 0, silinenOdeme: aktif.length });
+  return aktif.length;
 }
 
 // ---------- Aylık abonelik ----------

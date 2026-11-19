@@ -12,6 +12,7 @@ import {
   paketTanimlariGetir,
   paketAta,
   paketGuncelle,
+  paketSil,
   odemeEkle,
   dersDusmeKarari,
   ekUcretEkle,
@@ -658,6 +659,19 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
               }}
             >
               {p.durum === 'iptal' ? 'İptali geri al' : 'İptal et'}
+            </button>
+          )}
+          {yonetici && p.durum === 'iptal' && (dersSayili(p.tur) || p.tur === 'ek') && (
+            <button
+              className="metin tehlike"
+              onClick={() => {
+                const n = odemeler.filter((o) => o.satilanPaketId === p.id && !o.silindi).length;
+                const tutar = odemeler.filter((o) => o.satilanPaketId === p.id && !o.silindi).reduce((t, o) => t + (Number(o.tutar) || 0), 0);
+                if (!window.confirm(`Bu paket kalıcı olarak silinsin mi?${n ? `\n\nBağlı ${n} ödeme (${tl(tutar)}) de silinir ve tahsilatlardan düşer.` : ''}\n\nYanlışlıkla girilen paketler içindir; geri alınamaz.`)) return;
+                calistir(() => paketSil(p, benim));
+              }}
+            >
+              Paketi sil
             </button>
           )}
         </div>
