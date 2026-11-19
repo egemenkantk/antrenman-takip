@@ -321,8 +321,10 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
       {!veri && <p className="aciklama">Yükleniyor…</p>}
       {ozet && (
         <p className="aciklama">
-          {ozet.odeyen}/{ozet.kayit} kişi ödedi · Tahsil edilen {tl(ozet.tahsil)} / {tl(ozet.toplam)}
-          {ortakPayi(grup) > 0 && <> · <strong>bize kalan {tl(bizeKalanTutar(ozet.tahsil, grup))}</strong> (%{ortakPayi(grup)} ortağa)</>}
+          {ozet.odeyen}/{ozet.kayit} kişi ödedi ·{' '}
+          {ortakPayi(grup) > 0
+            ? <>Bize kalan {tl(bizeKalanTutar(ozet.tahsil, grup))} / {tl(bizeKalanTutar(ozet.toplam, grup))} · %{ortakPayi(grup)} ortağa</>
+            : <>Tahsil edilen {tl(ozet.tahsil)} / {tl(ozet.toplam)}</>}
         </p>
       )}
       {sonraKatilan.length > 0 && (

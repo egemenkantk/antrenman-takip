@@ -334,5 +334,5 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ## Ortaklı gruplar (Kasım 2026)
 - `gruplar.ortakPayi` (yüzde, 1–99; yoksa ortaksız). Grup formunda "Ortaklı grup" + "Ortağa giden pay (%)", varsayılan 50.
-- Ödemeler tam tutarla kaydedilir. `bizeKalanTutar(tutar, grup)` (paket/model.js) gösterimde kullanılır: grup ödeme özeti, Tahsilatlar ay toplamı altında "Bize kalan", grup kutusu, grup tablosunda "Bize kalan" sütunu.
+- Ödemeler tam tutarla kaydedilir (kasaya giren). `bizeKalanTutar(tutar, grup)` (paket/model.js): Tahsilatlar'daki ay toplamı, tür kutuları, 12 aylık grafik, grup tablosu ve grup ödeme özeti yalnızca bize kalanı gösterir, yanında "%50 ortağa" notu. "Tahsil edene göre" ve ödeme listesi tam tutar (elden alınan para).
 - "Derse giren koça göre" (maaş) tablosu ortaklı gruplarda bize kalanı yazar; dökümde kasaya giren ayrıca görünür. Oran grup üzerinden okunur (değişirse geçmiş aylar da yeni oranla görünür).

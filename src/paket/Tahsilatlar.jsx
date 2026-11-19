@@ -291,7 +291,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
         <button type="button" className="ikincil kucuk" onClick={indir}>Excel'e indir</button>
       </div>
       <p className="aciklama kucuk-yazi">
-        Grup ödemeleri grubun koçlarına, bireysel / düet / abonelik ödemeleri öğrencinin koçlarına yazılır. Ortaklı gruplarda bize kalan tutar yazılır. Birden fazla koç varsa her birine tutarın tamamı
+        Grup ödemeleri grubun koçlarına, bireysel / düet / abonelik ödemeleri öğrencinin koçlarına yazılır. Ortaklı gruplarda bize kalan yazılır. Birden fazla koç varsa her birine tutarın tamamı
         yazılır (bu yüzden satırların toplamı ayın toplamından büyük olabilir). Satıra dokununca döküm açılır.
       </p>
       <div className="tablo-kap">
@@ -318,7 +318,7 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
                               <i className={'seri-renk s-' + k.sinif} />
                               {k.ad} · <strong>{tl(k.tutar)}</strong>
                               {k.sinif === 'grup' ? ` · ${k.kisiler.size} kişi ödedi` : ''}
-                              {Math.abs(k.brut - k.tutar) > 0.5 ? <small className="aciklama"> · kasaya giren {tl(k.brut)}, ortağın payı düşüldü</small> : null}
+                              {Math.abs(k.brut - k.tutar) > 0.5 ? <small className="aciklama"> · %{Math.round((1 - k.tutar / k.brut) * 100)} ortağa</small> : null}
                             </li>
                           ))}
                       </ul>
@@ -383,16 +383,16 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
   );
 
   const ayinkiler = tumu.filter((o) => o.tarih.slice(0, 7) === ay);
-  const oncekiAy = topla(tumu.filter((o) => o.tarih.slice(0, 7) === ayKaydir(ay, -1)));
-  const toplam = topla(ayinkiler);
-  const netToplam = toplaNet(ayinkiler);
-  const netGrup = toplaNet(ayinkiler.filter((o) => o.sinif === 'grup'));
+  // Ortaklı gruplarda bütün toplamlar bize kalan tutarla; ortağa giden ayrıca küçük not olarak
+  const oncekiAy = toplaNet(tumu.filter((o) => o.tarih.slice(0, 7) === ayKaydir(ay, -1)));
+  const toplam = toplaNet(ayinkiler);
+  const ortaga = topla(ayinkiler) - toplam;
   const fark = oncekiAy > 0 ? Math.round(((toplam - oncekiAy) / oncekiAy) * 100) : null;
-  const sinifToplam = Object.fromEntries(SINIFLAR.map(([k]) => [k, topla(ayinkiler.filter((o) => o.sinif === k))]));
+  const sinifToplam = Object.fromEntries(SINIFLAR.map(([k]) => [k, toplaNet(ayinkiler.filter((o) => o.sinif === k))]));
 
   const aylar = Array.from({ length: 12 }, (_, i) => ayKaydir(buAy(), i - 11)).map((a) => {
     const l = tumu.filter((o) => o.tarih.slice(0, 7) === a);
-    return { ay: a, toplam: topla(l), sinif: Object.fromEntries(SINIFLAR.map(([k]) => [k, topla(l.filter((o) => o.sinif === k))])) };
+    return { ay: a, toplam: toplaNet(l), sinif: Object.fromEntries(SINIFLAR.map(([k]) => [k, toplaNet(l.filter((o) => o.sinif === k))])) };
   });
 
   // Grup kırılımı: o ay alınan grup ödemeleri, grup grup
@@ -419,7 +419,7 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
     }
     return Object.values(m).sort((a, b) => b.tutar - a.tutar);
   }, [ayinkiler, veri, grupMap, ay]);
-  const cimToplam = grupSatirlari.filter((g) => g.cim).reduce((t, g) => t + g.tutar, 0);
+  const cimToplam = grupSatirlari.filter((g) => g.cim).reduce((t, g) => t + g.net, 0);
   const ortakVar = grupSatirlari.some((g) => g.ortak > 0);
 
   // Koç kırılımı (tahsil edene göre, türlere ayrılmış)
@@ -492,9 +492,7 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
             {fark !== null && ` · geçen aya göre ${fark > 0 ? '+' : ''}${fark}%`}
             {fark === null && oncekiAy === 0 && ' · geçen ay kayıt yok'}
           </span>
-          {Math.abs(netToplam - toplam) > 0.5 && (
-            <span className="kucuk-yazi">Bize kalan <b>{tl(netToplam)}</b> · ortaklı gruplarda ortağa {tl(toplam - netToplam)}</span>
-          )}
+          {ortaga > 0.5 && <span className="aciklama kucuk-yazi">Ortaklı gruplarda ortağın payı ({tl(ortaga)}) düşülmüş tutar</span>}
         </div>
         <div className="sinif-kutulari">
           {SINIFLAR.map(([k, ad]) => (
@@ -508,7 +506,6 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
               <span><i className={'seri-renk s-' + k} />{ad}</span>
               <strong>{tl(sinifToplam[k])}</strong>
               <small>{toplam > 0 ? `%${Math.round((sinifToplam[k] / toplam) * 100)}` : '—'}</small>
-              {k === 'grup' && Math.abs(netGrup - sinifToplam.grup) > 0.5 && <small>bize kalan {tl(netGrup)}</small>}
             </button>
           ))}
         </div>
@@ -521,13 +518,12 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
           <h3>Grup dersleri · {ayAdi(ay)}</h3>
           <div className="tablo-kap">
             <table className="tablo">
-              <thead><tr><th>Grup</th><th>Alınan</th>{ortakVar && <th>Bize kalan</th>}<th>Ödeyen</th><th>Bu ay başlayan dönemde bekleyen</th></tr></thead>
+              <thead><tr><th>Grup</th><th>{ortakVar ? 'Bize kalan' : 'Alınan'}</th><th>Ödeyen</th><th>Bu ay başlayan dönemde bekleyen</th></tr></thead>
               <tbody>
                 {grupSatirlari.map((g) => (
                   <tr key={g.id}>
                     <th>{g.ad}{g.cim ? <small className="aciklama"> · cimnastik</small> : null}</th>
-                    <td>{tl(g.tutar)}</td>
-                    {ortakVar && <td>{g.ortak > 0 ? <>{tl(g.net)} <small className="aciklama">(%{g.ortak} ortağa)</small></> : tl(g.tutar)}</td>}
+                    <td>{tl(g.net)}{g.ortak > 0 && <small className="aciklama"> · %{g.ortak} ortağa</small>}</td>
                     <td>{g.kisiler.size} kişi</td>
                     <td>{g.bekleyen ? `${g.bekleyen} kişi` : '—'}</td>
                   </tr>
@@ -535,8 +531,8 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
               </tbody>
               {cimToplam > 0 && cimToplam < sinifToplam.grup && (
                 <tfoot>
-                  <tr><th>Cimnastik grupları</th><td>{tl(cimToplam)}</td><td colSpan={ortakVar ? 3 : 2} /></tr>
-                  <tr><th>Diğer gruplar</th><td>{tl(sinifToplam.grup - cimToplam)}</td><td colSpan={ortakVar ? 3 : 2} /></tr>
+                  <tr><th>Cimnastik grupları</th><td>{tl(cimToplam)}</td><td colSpan={2} /></tr>
+                  <tr><th>Diğer gruplar</th><td>{tl(sinifToplam.grup - cimToplam)}</td><td colSpan={2} /></tr>
                 </tfoot>
               )}
             </table>
