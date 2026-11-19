@@ -135,7 +135,10 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
     (t) => t.aktif !== false && (devam ? dersSayili(t.tur) : dersSayili(t.tur) || t.tur === 'abonelik') && (!t.kitle || t.kitle === kisi.tip)
   );
   const digerleri = tanimlar.filter((t) => t.aktif !== false && (dersSayili(t.tur) || t.tur === 'abonelik') && t.kitle && t.kitle !== kisi.tip);
-  const [tanimId, setTanimId] = useState(uygun[0]?.id || '');
+  // Seçim, listede görünen seçeneklerden biri olmalı: kişinin türüne uygun paket yoksa (ya da tanımlar sonradan yüklendiyse)
+  // ekranda ilk seçenek görünüp seçim boş kalıyor ve "Paket seç." hatası veriyordu
+  const [secim, setTanimId] = useState(uygun[0]?.id || '');
+  const tanimId = [...uygun, ...digerleri].some((t) => t.id === secim) ? secim : uygun[0]?.id || digerleri[0]?.id || '';
   const tanim = tanimlar.find((t) => t.id === tanimId);
   const [baslangic, setBaslangic] = useState(bugun());
   const [fiyat, setFiyat] = useState(tanim?.fiyat ?? '');
@@ -156,7 +159,7 @@ function PaketAtaFormu({ kisi, tanimlar, yonetici: fiyatYetki, onKaydet, onVazge
       className="kart-form"
       onSubmit={async (e) => {
         e.preventDefault();
-        if (!tanim) return setHata('Paket seç.');
+        if (!tanim) return setHata(devam ? 'Ders sayılı (bireysel, düet, trio) bir paket tanımı gerekli.' : 'Paket seç.');
         if (bekliyor) return;
         setHata('');
         setBekliyor(true);
