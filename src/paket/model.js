@@ -135,9 +135,14 @@ export const kalanDeger = (p, kalanDers) => Math.round(dersBasiUcret(p) * Math.m
 
 // Düet/trio eksik katılım: paket "eksikUcretleri" ({1: tek kişi ders başı, 2: iki kişi …}) taşıyorsa paket TUTARLA düşer:
 // tam katılımlı ders düet/trio ders başı ücretiyle, eksik katılımlı ders o kişi sayısının ücretiyle.
-export const tutarli = (p) => (p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0);
+// Bireysel paketten düşen düet/trio dersinin ücreti (ozelDersUcreti); bireysel ders ücretinden farklıysa paket TUTARLA düşer
+export const ozelDersUcreti = (p) => (p.tur === 'bireysel' && p.ozelDersKapsar ? Number(p.ozelDersUcreti) || 0 : 0);
+export const tutarli = (p) =>
+  ((p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0)) ||
+  (ozelDersUcreti(p) > 0 && Math.abs(ozelDersUcreti(p) - dersBasiUcret(p)) > 0.5);
 export function dersMaliyeti(p, d) {
   const birim = dersBasiUcret(p);
+  if (ozelDersUcreti(p) > 0 && (d?.dersTuru === 'duet' || d?.dersTuru === 'trio')) return ozelDersUcreti(p);
   if (!tutarli(p) || !d) return birim;
   const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
   if (!(n > 0) || !(boy > 0) || n >= boy) return birim;
@@ -192,7 +197,7 @@ export function dersleriDagit(paketler, kayitlar) {
     const maliyet = dersMaliyeti(p, d);
     sonuc[p.id].kullanilan++;
     sonuc[p.id].harcanan += maliyet;
-    if (maliyet !== dersBasiUcret(p)) sonuc[p.id].eksikDers++;
+    if (maliyet !== dersBasiUcret(p) && p.tur === tur) sonuc[p.id].eksikDers++;
     sonuc[p.id].dersler.push({ ...d, maliyet });
   }
   for (const p of sayili) {

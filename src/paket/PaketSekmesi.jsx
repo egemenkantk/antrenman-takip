@@ -434,6 +434,30 @@ function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, fiyatYetki, 
   );
 }
 
+// Bireysel paketten düet/trio dersi düşsün mü, ders başı kaç TL
+function KapsarFormu({ paket, onKaydet, onVazgec }) {
+  const birim = Math.round(dersBasiUcret(paket));
+  const [ucret, setUcret] = useState(Number(paket.ozelDersUcreti) || birim);
+  return (
+    <div className="kart-form ic-form">
+      <label className="alan">
+        <span>Düet/trio dersi başına düşecek tutar (₺)</span>
+        <input type="number" min="0" value={ucret} onChange={(e) => setUcret(e.target.value)} />
+      </label>
+      <small className="ipucu">
+        Bu paketin bireysel ders ücreti {tl(birim)}. Düet/trio dersleri, kendi türünde paket yoksa bu paketten bu tutarla düşer; kalan tutar buna göre hesaplanır.
+      </small>
+      <div className="dugme-satiri">
+        <button className="birincil kucuk" disabled={!(Number(ucret) > 0)} onClick={() => onKaydet({ ozelDersKapsar: true, ozelDersUcreti: Number(ucret) })}>Kaydet</button>
+        {paket.ozelDersKapsar && (
+          <button className="metin" onClick={() => onKaydet({ ozelDersKapsar: false })}>Düet/trio dersleri bu paketten düşmesin</button>
+        )}
+        <button className="metin" onClick={onVazgec}>Vazgeç</button>
+      </div>
+    </div>
+  );
+}
+
 // Paket başlangıcı: bu tarihten önceki dersler pakete düşmez
 function BaslangicFormu({ paket, onKaydet, onVazgec }) {
   const [tarih, setTarih] = useState(paket.baslangic || bugun());
@@ -542,7 +566,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
               ? `Ek ücret · ${tarihGoster(p.baslangic)}`
               : p.tur === 'abonelikDonem'
               ? `Abonelik ayı ${kisaTarih(p.donemBas)} – ${kisaTarih(p.donemBit)}${p.ekDers ? ` · +${p.ekDers} ek ders` : ''}`
-              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç${p.bitisTarihi ? ` · ${tarihGoster(p.bitisTarihi)} bitti` : ''}${p.ozelDersKapsar ? ' · düet/trio dersleri de düşer' : ''}`}
+              : `${TUR_KISA[p.tur] || 'Bireysel'} · ${tarihGoster(p.baslangic)} başlangıç${p.bitisTarihi ? ` · ${tarihGoster(p.bitisTarihi)} bitti` : ''}${p.ozelDersKapsar ? ` · düet/trio dersleri de düşer${Number(p.ozelDersUcreti) > 0 ? ` (ders başı ${tl(p.ozelDersUcreti)})` : ''}` : ''}`}
           </span>
         </div>
         <DurumRozeti durum={od.durum} />
@@ -597,6 +621,9 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           })()}
         />
       )}
+      {mod === 'kapsar' && (
+        <KapsarFormu paket={p} onVazgec={() => setMod(null)} onKaydet={(v) => calistir(() => paketGuncelle(p, v, benim))} />
+      )}
       {mod === 'baslangic' && (
         <BaslangicFormu paket={p} onVazgec={() => setMod(null)} onKaydet={(v) => calistir(() => paketGuncelle(p, v, benim))} />
       )}
@@ -610,9 +637,9 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           {yonetici && p.tur === 'bireysel' && p.durum !== 'iptal' && (
             <button
               className="metin"
-              onClick={() => calistir(() => paketGuncelle(p, { ozelDersKapsar: !p.ozelDersKapsar }, benim))}
+              onClick={() => setMod('kapsar')}
             >
-              {p.ozelDersKapsar ? 'Düet/trio dersleri bu paketten düşmesin' : 'Düet/trio dersleri de bu paketten düşsün'}
+              {p.ozelDersKapsar ? 'Düet/trio ders ücreti' : 'Düet/trio dersleri de bu paketten düşsün'}
             </button>
           )}
           {yonetici && dersSayili(p.tur) && (Number(p.oncekiDers) > 0 || p.aktarim) && (

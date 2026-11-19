@@ -305,8 +305,12 @@ function kalanDersler(paketler, kayitlar) {
     .filter((p) => DERS_SAYILI.includes(p.tur) && p.durum !== 'iptal')
     .sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || '') || a.id.localeCompare(b.id));
   const birim = (p) => (Number(p.uygulananFiyat) || 0) / (Number(p.dersSayisi) || 1);
-  const tutarli = (p) => (p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0);
+  const ozelUcret = (p) => (p.tur === 'bireysel' && p.ozelDersKapsar ? Number(p.ozelDersUcreti) || 0 : 0);
+  const tutarli = (p) =>
+    ((p.tur === 'duet' || p.tur === 'trio') && Object.values(p.eksikUcretleri || {}).some((v) => Number(v) > 0)) ||
+    (ozelUcret(p) > 0 && Math.abs(ozelUcret(p) - birim(p)) > 0.5);
   const maliyet = (p, d) => {
+    if (ozelUcret(p) > 0 && (d.dersTuru === 'duet' || d.dersTuru === 'trio')) return ozelUcret(p);
     const n = Number(d.gelenSayisi), boy = Number(d.grupBoyu);
     if (!tutarli(p) || !(n > 0) || !(boy > 0) || n >= boy) return birim(p);
     return Number(p.eksikUcretleri[n]) || birim(p);
