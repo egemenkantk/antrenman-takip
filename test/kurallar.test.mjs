@@ -1,5 +1,5 @@
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, setDoc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, orderBy } from 'firebase/firestore';
+import { collectionGroup, doc, setDoc, getDoc, getDocs, addDoc, updateDoc, collection, query, where, orderBy } from 'firebase/firestore';
 import fs from 'fs';
 const env = await initializeTestEnvironment({ projectId: 'demo-test', firestore: { rules: fs.readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8'), host: '127.0.0.1', port: 8085 } });
 await env.withSecurityRulesDisabled(async (c) => {
@@ -90,5 +90,46 @@ await t('grupOdeme yetkili koç katılım tarihi yazar', assertSucceeds(updateDo
 await t('yetkili koç grubun üyelerini doğrudan değiştiremez (sunucudan)', assertFails(updateDoc(doc(koc2, 'gruplar', 'gY'), { uyeIds: ['k6', 'k2'] })));
 await t('özel fiyat yetkili koç indirimli paket atar', assertSucceeds(addDoc(collection(koc2, 'satilanPaketler'), { kisiId: 'k6', tur: 'bireysel', listeFiyati: 100, uygulananFiyat: 80 })));
 await t('özel fiyat yetkili koç gruba kişiye özel ücret yazar', assertSucceeds(updateDoc(doc(koc2, 'gruplar', 'gY'), { 'ozelFiyatlar.k6': { fiyat: 80, not: '' } })));
+// ---------- Veli/öğrenci başka çocuğu göremez (kapsamlı) ----------
+await env.withSecurityRulesDisabled(async (c) => {
+  const d = c.firestore();
+  for (const alt of ['testSonuclari', 'antrenmanKayitlari', 'wellness', 'evProgrami', 'evYapilan', 'raporlar', 'ozel', 'sakatliklar', 'posturDegerlendirmeleri']) {
+    await setDoc(doc(d, 'kisiler', 'k2', alt, 'x'), { tarih: '2026-11-10', dolduran: '+9xx' });
+  }
+  await setDoc(doc(d, 'odemeler', 'o2'), { kisiId: 'k2', tutar: 100 });
+  await setDoc(doc(d, 'gruplar', 'gV'), { ad: 'G', kocIds: [], uyeIds: ['k1', 'k2'] });
+  await setDoc(doc(d, 'programlar', 'pr2'), { sahipTip: 'kisi', sahipId: 'k2' });
+  await setDoc(doc(d, 'etkinlikler', 'e2'), { tarih: '2026-11-20', kisiIds: ['k2'] });
+  await setDoc(doc(d, 'dersDegisiklik', 'k2__2026-11-20'), { sahipId: 'k2' });
+  await setDoc(doc(d, 'gunOzel', 'z2'), { sahipId: 'k2' });
+  await setDoc(doc(d, 'seanslar', 's2'), { kocIds: [] });
+  await setDoc(doc(d, 'bildirimler', 'b2'), { aliciKullaniciId: '+999' });
+  await setDoc(doc(d, 'kullanicilar', '+999'), { rol: 'veli', bagliKisiler: ['k2'] });
+  await setDoc(doc(d, 'kurumlar', 'fitkon'), { portal: { gelisim: true }, tahsilat: { gizliKoclar: ['+902'] } });
+});
+for (const [kim, db_] of [['veli', veli], ['öğrenci', ogr]]) {
+  await t(`${kim} başka çocuğun kartını okuyamaz`, assertFails(getDoc(doc(db_, 'kisiler', 'k2'))));
+  await t(`${kim} kişi listesini sorgulayamaz`, assertFails(getDocs(collection(db_, 'kisiler'))));
+  for (const alt of ['testSonuclari', 'antrenmanKayitlari', 'wellness', 'evProgrami', 'evYapilan', 'raporlar', 'ozel', 'sakatliklar', 'posturDegerlendirmeleri']) {
+    await t(`${kim} başka çocuğun ${alt} kaydını okuyamaz`, assertFails(getDoc(doc(db_, 'kisiler', 'k2', alt, 'x'))));
+    await t(`${kim} başka çocuğun ${alt} listesini okuyamaz`, assertFails(getDocs(collection(db_, 'kisiler', 'k2', alt))));
+  }
+  await t(`${kim} tüm test sonuçlarını toplu sorgulayamaz`, assertFails(getDocs(collectionGroup(db_, 'testSonuclari'))));
+  await t(`${kim} tüm antrenman kayıtlarını toplu sorgulayamaz`, assertFails(getDocs(collectionGroup(db_, 'antrenmanKayitlari'))));
+  await t(`${kim} başka çocuğun ödemesini okuyamaz`, assertFails(getDoc(doc(db_, 'odemeler', 'o2'))));
+  await t(`${kim} ödeme listesini sorgulayamaz`, assertFails(getDocs(collection(db_, 'odemeler'))));
+  await t(`${kim} başka çocuğun paketini okuyamaz`, assertFails(getDoc(doc(db_, 'satilanPaketler', 'p2'))));
+  await t(`${kim} grup üye listesini okuyamaz`, assertFails(getDoc(doc(db_, 'gruplar', 'gV'))));
+  for (const [kol, id] of [['programlar', 'pr2'], ['etkinlikler', 'e2'], ['dersDegisiklik', 'k2__2026-11-20'], ['gunOzel', 'z2'], ['seanslar', 's2'], ['islemGecmisi', 'x'], ['grupDonemleri', 'x'], ['paketTanimlari', 'x']]) {
+    await t(`${kim} ${kol} okuyamaz`, assertFails(getDoc(doc(db_, kol, id))));
+  }
+  await t(`${kim} başka velinin hesabını okuyamaz`, assertFails(getDoc(doc(db_, 'kullanicilar', '+999'))));
+  await t(`${kim} başkasının bildirimini okuyamaz`, assertFails(getDoc(doc(db_, 'bildirimler', 'b2'))));
+  await t(`${kim} kurum ayarlarını okuyamaz`, assertFails(getDoc(doc(db_, 'kurumlar', 'fitkon'))));
+  await t(`${kim} kendine çocuk bağlayamaz`, assertFails(updateDoc(doc(db_, 'kullanicilar', kim === 'veli' ? '+903' : '+904'), { bagliKisiler: ['k1', 'k2'] })));
+  await t(`${kim} başka çocuğa ev programı işareti giremez`, assertFails(setDoc(doc(db_, 'kisiler', 'k2', 'evYapilan', '2026-11-19'), { dolduran: kim === 'veli' ? '+903' : '+904' })));
+}
+await t('veli kendi çocuğunun kartını okur', assertSucceeds(getDoc(doc(veli, 'kisiler', 'k1'))));
+await t('koç kurum ayarlarını okur', assertSucceeds(getDoc(doc(koc, 'kurumlar', 'fitkon'))));
 await env.cleanup();
 if (hata) process.exit(1);
