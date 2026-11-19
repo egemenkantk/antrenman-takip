@@ -108,6 +108,16 @@ async function main() {
       }),
       bugunDegisiklik: ds.docs.filter((d) => d.data().sahipId === g.id && (d.data().tarih === bugun || d.data().yeniTarih === bugun)).map((d) => d.data().islem),
     }));
+    for (const id of g.uyeIds || []) {
+      const pk = sp.docs.map((d) => ({ id: d.id, ...d.data() })).filter((p) => p.kisiId === id && p.tur !== 'grup');
+      const ak = await db.collection('kisiler').doc(id).collection('antrenmanKayitlari').get();
+      const dersler = ak.docs.map((d) => ({ id: d.id, ...d.data() })).filter((r) => r.grupId === g.id || r.dersTuru);
+      console.log('   ' + JSON.stringify({
+        uye: id,
+        paketler: pk.map((p) => ({ tur: p.tur, durum: p.durum, bas: p.baslangic, ders: p.dersSayisi, fiyat: p.uygulananFiyat, eksik: Object.keys(p.eksikUcretleri || {}), onceki: p.oncekiDers || 0, aktarim: !!(p.aktarim || p.aktarimTarihi) })),
+        dersKayitlari: dersler.map((r) => `${r.tarih}|${r.katilim}|${r.dersTuru || r.seansTipi}|${r.gelenSayisi ?? '-'}/${r.grupBoyu ?? '-'}`),
+      }));
+    }
   }
 }
 main().then(() => process.exit(0), (e) => { console.error(e.message); process.exit(1); });
