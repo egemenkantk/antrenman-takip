@@ -53,7 +53,13 @@ export function hesapBaginiKaldir(telefon, kisiId) {
 }
 
 // ---------- Kişiler ----------
-export async function kisileriGetir(kullanici) {
+// Sadece ödeme takibi yapılan grup üyeleri (sadeceOdeme: true) kişi listelerinde görünmez;
+// yalnızca grup ekranı ve Ödemeler { odemeUyeleri: true } ile ister.
+export async function kisileriGetir(kullanici, { odemeUyeleri = false } = {}) {
+  const l = await kisileriCek(kullanici);
+  return odemeUyeleri ? l : l.filter((k) => !k.sadeceOdeme);
+}
+async function kisileriCek(kullanici) {
   const ref = collection(db, 'kisiler');
   if (kullanici.rol === 'yonetici') return sirala(listele(await getDocs(ref)));
   // Koç: kendisine atanan kişiler + koçu olduğu grupların üyeleri

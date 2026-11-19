@@ -313,7 +313,7 @@ export default function Odemeler({ onGeri }) {
     (async () => {
       try {
         const [k, s, u] = await Promise.all([
-          kisileriGetir(ben),
+          kisileriGetir(ben, { odemeUyeleri: true }),
           subeleriGetir(),
           yonetici ? kullanicilariGetir() : Promise.resolve([]),
         ]);

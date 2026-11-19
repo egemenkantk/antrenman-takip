@@ -321,3 +321,9 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Veli/öğrenci yalnızca `bagliKisiler` listesindeki kişiyi okur (kurallar + `portalVerisi` sunucu kontrolü). Bağlamayı yalnızca yönetici yapar.
 - `kurumlar` okuması `aktif` → `ekip` yapıldı (portal bu belgeyi okumaz).
 - `test/kurallar.test.mjs` sonunda çapraz erişim testleri: başka çocuğun kartı, tüm alt koleksiyonları, toplu sorgular, ödeme/paket/grup/program, başka hesap, bildirim, kurum ayarı, kendine çocuk bağlama.
+
+## Sadece ödeme grupları (Kasım 2026)
+- Grup formunda "Sadece ödeme takibi" (`gruplar.sadeceOdeme`): ders günü/saat, yoklama, program, cimnastik yok; Bugün/Takvim'de kart açılmaz (gunHesap atlar). Koçun "üyeleri ve saatleri düzenle" düğmesi bu gruplarda gizli.
+- Üyeler Ödemeler sekmesinden isim + kısa not + (isteğe bağlı) katılım tarihiyle eklenir (yönetici): `kisiler` belgesi `sadeceOdeme: true` ile açılır, gruba eklenir, grupKocIds eşitlenir, şu anki dönem kaydı açılır.
+- `kisileriGetir(ben)` bu kişileri varsayılan gizler; Gruplar ve Ödemeler `{ odemeUyeleri: true }` ile ister. Grup üye aramasında da çıkmazlar.
+- Tahsilatlarda grup dersi, koç tablosunda grubun koçuna yazılır (normal grup gibi). Üyeler sekmesinde "Tam karta çevir" → `sadeceOdeme: false`.

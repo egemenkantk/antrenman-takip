@@ -20,7 +20,7 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
   const sonuc = [];
 
   for (const g of gruplar) {
-    if (g.aktif === false) continue;
+    if (g.aktif === false || g.sadeceOdeme) continue;
     if (sube && g.subeId !== sube) continue;
     if (benimId && !(g.kocIds || []).includes(benimId)) continue;
     const ozel = ozelOf(g.id);

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOturum } from '../auth/OturumContext';
 import { hataMesaji, yetkili, grupDuzenleKoc } from '../auth/hesap';
-import { subeleriGetir, kullanicilariGetir, kisileriGetir, TIP_ADI } from '../veri';
+import { subeleriGetir, kullanicilariGetir, kisileriGetir, kisiGuncelle, TIP_ADI } from '../veri';
 import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
@@ -29,6 +29,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
     uyeIds: ilk?.uyeIds || [],
     dersTuru: ilk?.dersTuru || 'grup',
     cimnastik: !!ilk?.cimnastik,
+    sadeceOdeme: !!ilk?.sadeceOdeme,
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
     gunKoclari: ilk?.gunKoclari || {},
@@ -40,7 +41,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
   const adaylar = useMemo(() => {
     const a = ara.trim().toLocaleLowerCase('tr');
     return kisiler.filter(
-      (k) => k.aktif !== false && !f.uyeIds.includes(k.id) && (!a || k.ad.toLocaleLowerCase('tr').includes(a))
+      (k) => k.aktif !== false && !k.sadeceOdeme && !f.uyeIds.includes(k.id) && (!a || k.ad.toLocaleLowerCase('tr').includes(a))
     );
   }, [kisiler, ara, f.uyeIds]);
 
@@ -48,7 +49,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
     e.preventDefault();
     setHata('');
     if (!f.ad.trim()) return setHata('Grup adı gerekli.');
-    if (!Object.keys(f.saatler).length) return setHata('En az bir ders günü seç.');
+    if (!f.sadeceOdeme && !Object.keys(f.saatler).length) return setHata('En az bir ders günü seç.');
     setBekliyor(true);
     if (kisitli) {
       // Koç (ek yetki): yalnızca üyeler, saatler ve süre — sunucu kaydeder
@@ -64,6 +65,13 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
       if (f.dersTuru !== 'grup') {
         f.paketTanimId = '';
         f.donemBaslangic = '';
+        f.cimnastik = false;
+        f.sadeceOdeme = false;
+      }
+      if (f.sadeceOdeme) {
+        // Sadece ödeme takibi: ders/yoklama yok
+        f.saatler = {};
+        f.gunKoclari = {};
         f.cimnastik = false;
       }
       if (f.paketTanimId && !f.donemBaslangic) {
@@ -119,10 +127,17 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
       ) : (
       <>
       <label className="onay-kutusu">
+        <input type="checkbox" checked={f.sadeceOdeme} onChange={(e) => setF({ ...f, sadeceOdeme: e.target.checked })} />
+        <span>Sadece ödeme takibi</span>
+      </label>
+      <small className="ipucu">Ders saati, yoklama ve program olmaz; üyeleri kişi kartı açmadan isimle eklersin (Ödemeler sekmesinden). Tahsilatlarda grup dersi olarak, koçun tablosunda grup gibi görünür.</small>
+      {!f.sadeceOdeme && (<>
+      <label className="onay-kutusu">
         <input type="checkbox" checked={f.cimnastik} onChange={(e) => setF({ ...f, cimnastik: e.target.checked })} />
         <span>Cimnastik grubu</span>
       </label>
       <small className="ipucu">Programı Isınma · Beceri · Ana bölüm · Oyun · Soğuma bölümleriyle ve dönem temasıyla hazırlanır; beceri takibi açılır.</small>
+      </>)}
       <div className="form-izgara">
         <label className="alan">
           <span>Dönem ücreti (4 hafta)</span>
@@ -144,7 +159,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
       )}
       </>)}
 
-      <div className="alan">
+      {!f.sadeceOdeme && <div className="alan">
         <span>Ders günleri ve saatleri</span>
         <div className="gun-saat-izgara">
           {HAFTA_GUNLERI.map(([g, ad]) => {
@@ -182,7 +197,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {!kisitli && <div className="alan">
         <span>Koç(lar)</span>
@@ -273,7 +288,7 @@ export default function Gruplar({ onGeri }) {
         gruplariGetir(ben),
         subeleriGetir(),
         yonetici ? kullanicilariGetir() : Promise.resolve([]),
-        kisileriGetir(ben),
+        kisileriGetir(ben, { odemeUyeleri: true }),
         paketTanimlariGetir().catch(() => []),
       ]);
       setTanimlar(t);
@@ -348,13 +363,13 @@ export default function Gruplar({ onGeri }) {
         <button className="metin geri" onClick={() => setSecili(null)}>← Gruplar</button>
         <h2>{g.ad}{g.aktif === false ? ' (pasif)' : ''}</h2>
         <p className="aciklama">
-          {g.cimnastik ? 'Cimnastik · ' : ''}{g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk
+          {g.sadeceOdeme ? 'Sadece ödeme takibi' : <>{g.cimnastik ? 'Cimnastik · ' : ''}{g.dersTuru && g.dersTuru !== 'grup' ? `${TUR_KISA[g.dersTuru]} · ` : ''}{saatOzeti(g.saatler)} · {g.sure} dk</>}
           {g.kocIds?.length ? ` · ${g.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
           {subeler.length > 1 ? ` · ${subeler.find((s) => s.id === g.subeId)?.ad || ''}` : ''}
         </p>
         {g.not && <p className="blok-not">{g.not}</p>}
         <nav className="sekmeler">
-          {[['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ...(g.cimnastik ? [['beceri', 'Beceriler']] : []), ['odeme', 'Ödemeler']].map(([id, ad]) => (
+          {(g.sadeceOdeme ? [['odeme', 'Ödemeler'], ['uyeler', `Üyeler (${uyeler.length})`]] : [['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ...(g.cimnastik ? [['beceri', 'Beceriler']] : []), ['odeme', 'Ödemeler']]).map(([id, ad]) => (
             <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>{ad}</button>
           ))}
         </nav>
@@ -369,18 +384,35 @@ export default function Gruplar({ onGeri }) {
                     {k.foto ? <img className="avatar kucuk-av" src={k.foto} alt="" /> : <div className="avatar kucuk-av" aria-hidden="true">{k.ad.charAt(0)}</div>}
                     <div className="esnek">
                       <strong>{k.ad}</strong>
-                      <span>{TIP_ADI[k.tip]}{k.brans ? ` · ${k.brans}` : ''}</span>
+                      <span>{k.sadeceOdeme ? `Sadece ödeme${k.not ? ` · ${k.not}` : ''}` : `${TIP_ADI[k.tip] || ''}${k.brans ? ` · ${k.brans}` : ''}`}</span>
                     </div>
+                    {yonetici && k.sadeceOdeme && (
+                      <button
+                        className="metin"
+                        onClick={async () => {
+                          if (!window.confirm(`${k.ad} tam kişi kartına çevrilsin mi? Kişiler listesinde görünür, ödeme geçmişi aynen kalır.`)) return;
+                          try {
+                            await kisiGuncelle(k.id, { sadeceOdeme: false });
+                            await yukle();
+                          } catch (e) {
+                            setHata(hataMesaji(e));
+                          }
+                        }}
+                      >
+                        Tam karta çevir
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
+            {hata && <p className="hata">{hata}</p>}
             <p className="aciklama kucuk-yazi">
               Grup programı ortaktır; her üyenin testleri, sağlık notları ve raporu kendi kartında kişisel kalır.
             </p>
           </>
         )}
-        {sekme === 'program' && (
+        {sekme === 'program' && !g.sadeceOdeme && (
           <ProgramSekmesi
             sahipTip="grup"
             sahipId={g.id}
@@ -408,7 +440,7 @@ export default function Gruplar({ onGeri }) {
             onGrupDegisti={yukle}
           />
         )}
-        {!yonetici && grupYonetebilir(g) && (
+        {!yonetici && grupYonetebilir(g) && !g.sadeceOdeme && (
           <div className="dugme-satiri" style={{ marginTop: 16 }}>
             <button className="ikincil kucuk" onClick={() => setMod('duzenle')}>Üyeleri ve saatleri düzenle</button>
           </div>
@@ -453,11 +485,11 @@ export default function Gruplar({ onGeri }) {
       <ul className="bolum-listesi">
         {gorunen.map((x) => (
           <li key={x.id}>
-            <button className="bolum-karti acik" onClick={() => { setSecili(x.id); setSekme('uyeler'); }}>
+            <button className="bolum-karti acik" onClick={() => { setSecili(x.id); setSekme(x.sadeceOdeme ? 'odeme' : 'uyeler'); }}>
               <div className="esnek">
                 <strong>{x.ad}</strong>
                 <span>
-                  {x.cimnastik ? 'Cimnastik · ' : ''}{x.dersTuru && x.dersTuru !== 'grup' ? `${TUR_KISA[x.dersTuru]} · ` : ''}{saatOzeti(x.saatler)} · {(x.uyeIds || []).length} üye
+                  {x.sadeceOdeme ? 'Sadece ödeme' : <>{x.cimnastik ? 'Cimnastik · ' : ''}{x.dersTuru && x.dersTuru !== 'grup' ? `${TUR_KISA[x.dersTuru]} · ` : ''}{saatOzeti(x.saatler)}</>} · {(x.uyeIds || []).length} üye
                   {x.kocIds?.length ? ` · ${x.kocIds.map(kocAdi).filter(Boolean).join(', ')}` : ''}
                 </span>
               </div>

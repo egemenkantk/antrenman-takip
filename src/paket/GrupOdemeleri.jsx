@@ -6,6 +6,89 @@ import { grupDonemKayitlari, grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, bir
 import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 import { AraHaftalar, GecmisAktarim, AktarimListesi } from './DonemAraclari';
+import { kisiEkle, kisiGuncelle } from '../veri';
+import { grupKaydet } from '../gruplar/veri';
+
+// Sadece ödeme grubu: kişi kartı açmadan isim (+ kısa not) ile üye ekleme
+function IsimleUyeEkle({ grup, tanim, benim, onEklendi }) {
+  const [f, setF] = useState({ ad: '', not: '', katilim: '' });
+  const [hata, setHata] = useState('');
+  const [bekliyor, setBekliyor] = useState(false);
+  async function ekle(e) {
+    e.preventDefault();
+    const ad = f.ad.trim();
+    if (!ad || bekliyor) return;
+    setHata('');
+    setBekliyor(true);
+    try {
+      const id = await kisiEkle({ ad, not: f.not.trim(), sadeceOdeme: true, tip: 'sporcu', subeIds: grup.subeId ? [grup.subeId] : [], kocIds: [] }, benim);
+      const uyeKatilim = f.katilim ? { ...(grup.uyeKatilim || {}), [id]: f.katilim } : grup.uyeKatilim || {};
+      const uyeIds = [...(grup.uyeIds || []), id];
+      await grupKaydet(grup, { uyeIds, uyeKatilim }, benim);
+      // Şu anki dönemin kaydını hemen aç (sonradan katılımda ücret kalan haftalara göre)
+      const simdiki = donemBul(grup.donemBaslangic, bugun(), grup.donemAralari);
+      if (simdiki && !(f.katilim && f.katilim > simdiki.bit)) await grupKaydiOlustur({ ...grup, uyeIds, uyeKatilim }, simdiki, tanim, id, benim);
+      setF({ ad: '', not: '', katilim: f.katilim });
+      await onEklendi?.(ad);
+    } catch (err) {
+      setHata(hataMesaji(err));
+    }
+    setBekliyor(false);
+  }
+  return (
+    <form className="kart-form ic-form" onSubmit={ekle}>
+      <strong>İsimle üye ekle</strong>
+      <div className="form-izgara">
+        <label className="alan">
+          <span>Ad soyad</span>
+          <input value={f.ad} onChange={(e) => setF({ ...f, ad: e.target.value })} placeholder="Örn. Ayşe Yılmaz" />
+        </label>
+        <label className="alan">
+          <span>Kısa not (isteğe bağlı)</span>
+          <input value={f.not} onChange={(e) => setF({ ...f, not: e.target.value })} placeholder="Örn. kardeşi de grupta" />
+        </label>
+        <label className="alan">
+          <span>Gruba katılım</span>
+          <input type="date" value={f.katilim} onChange={(e) => setF({ ...f, katilim: e.target.value })} />
+        </label>
+      </div>
+      <small className="ipucu">Katılım boşsa grubun başından beri üye sayılır. Kişi kartı açılmaz; Kişiler listesinde ve Bugün ekranında görünmez.</small>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button className="birincil kucuk" disabled={!f.ad.trim() || bekliyor}>{bekliyor ? 'Ekleniyor…' : 'Ekle'}</button>
+      </div>
+    </form>
+  );
+}
+
+function NotDuzenle({ k, onBitti }) {
+  const [not, setNot] = useState(k.not || '');
+  const [hata, setHata] = useState('');
+  return (
+    <form
+      className="ic-form"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          await kisiGuncelle(k.id, { not: not.trim() });
+          await onBitti(true);
+        } catch (err) {
+          setHata(hataMesaji(err));
+        }
+      }}
+    >
+      <label className="alan">
+        <span>Not</span>
+        <input value={not} onChange={(e) => setNot(e.target.value)} autoFocus />
+      </label>
+      {hata && <p className="hata">{hata}</p>}
+      <div className="dugme-satiri">
+        <button className="birincil kucuk">Kaydet</button>
+        <button type="button" className="metin" onClick={() => onBitti(false)}>Vazgeç</button>
+      </div>
+    </form>
+  );
+}
 
 function OzelUcretFormu({ grup, kisi, tanim, kayit, donem, benim, onBitti }) {
   const ozel = grup.ozelFiyatlar?.[kisi.id];
@@ -150,7 +233,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
   useEffect(() => {
     setVeri(null);
     yukle();
-  }, [grup.id, no]);
+  }, [grup.id, no, (grup.uyeIds || []).join(',')]);
 
   async function dahilAyarla(k, r, dahil) {
     setHata('');
@@ -231,6 +314,9 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
           }}
         />
       )}
+      {yonetici && grup.sadeceOdeme && (
+        <IsimleUyeEkle grup={grup} tanim={tanim} benim={benim} onEklendi={async (ad) => { setBilgi(`${ad} eklendi.`); await onGrupDegisti?.(); }} />
+      )}
       {hata && <p className="hata">{hata}</p>}
       {!veri && <p className="aciklama">Yükleniyor…</p>}
       {ozet && (
@@ -283,6 +369,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
                 <div className="paket-ust">
                   <div className="esnek">
                     <strong>{k.ad}</strong>
+                    {k.sadeceOdeme && k.not && <span className="aciklama kucuk-yazi">{k.not}</span>}
                     {grup.uyeKatilim?.[k.id] && (
                       <span className="aciklama kucuk-yazi">Katılım {kisaTarih(grup.uyeKatilim[k.id])}</span>
                     )}
@@ -335,7 +422,19 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
                         {grup.ozelFiyatlar?.[k.id] ? `Özel ücret: ${tl(grup.ozelFiyatlar[k.id].fiyat)}` : 'Özel ücret'}
                       </button>
                     )}
+                    {yonetici && k.sadeceOdeme && (
+                      <button className="metin" onClick={() => setAcik({ kisiId: k.id, mod: 'not' })}>{k.not ? 'Notu düzenle' : 'Not ekle'}</button>
+                    )}
                   </div>
+                )}
+                {ac === 'not' && (
+                  <NotDuzenle
+                    k={k}
+                    onBitti={async (degisti) => {
+                      setAcik(null);
+                      if (degisti) await onGrupDegisti?.();
+                    }}
+                  />
                 )}
                 {!r && donemYetki && !ac && (
                   <div className="dugme-satiri">
