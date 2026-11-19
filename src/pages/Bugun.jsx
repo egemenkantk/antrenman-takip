@@ -271,7 +271,7 @@ function TamamlaFormu({ ilk, agriSor, onKaydet, onVazgec, koclar, benId, gununKo
   );
 }
 
-function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId, gununKocu }) {
+function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId, gununKocu, ozelDers = false }) {
   const ilkVeren = Object.values(kayitlar).find((x) => x?.dersiVeren || x?.kaydeden);
   const [dersiVeren, setDersiVeren] = useState(ilkVeren?.dersiVeren || (koclar?.length ? gununKocu : null) || ilkVeren?.kaydeden || benId);
   const [satir, setSatir] = useState(() =>
@@ -320,7 +320,7 @@ function GrupYoklama({ uyeler, kayitlar, onKaydet, onVazgec, koclar, benId, gunu
             }
           }}
         >
-          {bekliyor ? 'Kaydediliyor…' : 'Yoklamayı kaydet'}
+          {bekliyor ? 'Kaydediliyor…' : ozelDers ? 'Antrenmanı tamamla' : 'Yoklamayı kaydet'}
         </button>
         <button type="button" className="metin" onClick={onVazgec}>Vazgeç</button>
       </div>
@@ -617,7 +617,9 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                   </ul>
                   {c.uyeler.length > 0 && acik !== 'y:' + c.id && (
                     <button className="birincil kucuk" onClick={() => setAcik('y:' + c.id)}>
-                      {c.uyeler.some((k) => gunluk['g:' + c.id + ':' + k.id]) ? 'Yoklamayı düzenle' : 'Yoklama ve RPE gir'}
+                      {c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio'
+                        ? c.uyeler.some((k) => gunluk['g:' + c.id + ':' + k.id]) ? 'Düzenle' : 'Antrenmanı tamamla'
+                        : c.uyeler.some((k) => gunluk['g:' + c.id + ':' + k.id]) ? 'Yoklamayı düzenle' : 'Yoklama ve RPE gir'}
                     </button>
                   )}
                   {(c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio') && acik !== 'y:' + c.id &&
@@ -626,6 +628,7 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                     ))}
                   {acik === 'y:' + c.id && (
                     <GrupYoklama
+                      ozelDers={c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio'}
                       koclar={c.g?.dersTuru === 'duet' || c.g?.dersTuru === 'trio' ? ekipKoclari : null}
                       benId={ben.id}
                       gununKocu={c.g?.gunKoclari?.[coz(tarih).getDay()]}
