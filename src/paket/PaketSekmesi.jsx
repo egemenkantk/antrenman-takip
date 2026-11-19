@@ -434,6 +434,24 @@ function AbonelikKarti({ a, donemler, odemeler, kayitlar, yonetici, fiyatYetki, 
   );
 }
 
+// Paket başlangıcı: bu tarihten önceki dersler pakete düşmez
+function BaslangicFormu({ paket, onKaydet, onVazgec }) {
+  const [tarih, setTarih] = useState(paket.baslangic || bugun());
+  return (
+    <div className="kart-form ic-form">
+      <label className="alan">
+        <span>Paket başlangıcı</span>
+        <input type="date" value={tarih} max={paket.bitisTarihi || undefined} onChange={(e) => setTarih(e.target.value)} />
+      </label>
+      <small className="ipucu">Bu tarihten itibaren yapılan dersler (bireysel{paket.tur !== 'bireysel' ? `, ${TUR_KISA[paket.tur].toLowerCase()}` : ''}) bu paketten düşer.</small>
+      <div className="dugme-satiri">
+        <button className="birincil kucuk" disabled={!tarih} onClick={() => onKaydet({ baslangic: tarih })}>Kaydet</button>
+        <button className="metin" onClick={onVazgec}>Vazgeç</button>
+      </div>
+    </div>
+  );
+}
+
 function FiyatFormu({ paket, onKaydet, onVazgec }) {
   const [fiyat, setFiyat] = useState(paket.uygulananFiyat);
   const [not, setNot] = useState(paket.fiyatNotu || '');
@@ -579,6 +597,9 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           })()}
         />
       )}
+      {mod === 'baslangic' && (
+        <BaslangicFormu paket={p} onVazgec={() => setMod(null)} onKaydet={(v) => calistir(() => paketGuncelle(p, v, benim))} />
+      )}
       {mod === 'fiyat' && (
         <FiyatFormu paket={p} onVazgec={() => setMod(null)} onKaydet={(v) => calistir(() => paketGuncelle(p, v, benim))} />
       )}
@@ -599,6 +620,7 @@ function PaketKarti({ p, dagitim, odemeler, yonetici, fiyatYetki, benim, koclar,
           )}
           <button className="ikincil kucuk" onClick={() => setAcik(!acik)}>{acik ? 'Ayrıntıyı gizle' : 'Ayrıntı'}</button>
           {(yonetici || fiyatYetki) && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('fiyat')}>Fiyatı düzenle</button>}
+          {yonetici && dersSayili(p.tur) && p.durum !== 'iptal' && <button className="metin" onClick={() => setMod('baslangic')}>Başlangıcı değiştir</button>}
           {yonetici && (
             <button
               className="metin"
