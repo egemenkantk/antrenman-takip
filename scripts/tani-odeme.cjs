@@ -41,7 +41,12 @@ async function main() {
     console.log(`\n== kişi ${id} · aktif: ${ks.exists ? ks.data().aktif !== false : 'yok'}`);
     for (const d of ps.docs) {
       const p = d.data();
-      console.log('paket', JSON.stringify({ id: d.id, tur: p.tur, paketAdi: p.paketAdi || p.grupAdi, baslangic: p.baslangic, donemBas: p.donemBas, fiyat: p.uygulananFiyat, durum: p.durum, olusturan: String(p.olusturan || '').slice(-2), olusturma: p.olusturma?.toDate?.().toISOString() }));
+      console.log('paket', JSON.stringify({ id: d.id, tur: p.tur, paketAdi: p.paketAdi || p.grupAdi, baslangic: p.baslangic, donemBas: p.donemBas, fiyat: p.uygulananFiyat, dersSayisi: p.dersSayisi, oncekiDers: p.oncekiDers || 0, aktarim: !!p.aktarim, aktarimTarihi: p.aktarimTarihi || null, bitisTarihi: p.bitisTarihi || null, ozelDersKapsar: !!p.ozelDersKapsar, ozelDersUcreti: p.ozelDersUcreti || null, eksik: p.eksikUcretleri || null, durum: p.durum, olusturan: String(p.olusturan || '').slice(-2), olusturma: p.olusturma?.toDate?.().toISOString() }));
+    }
+    const ak = await db.collection('kisiler').doc(id).collection('antrenmanKayitlari').get();
+    for (const d of ak.docs) {
+      const r = d.data();
+      console.log('ders', JSON.stringify({ id: d.id.replace(/_.*/, '_G'), tarih: r.tarih, katilim: r.katilim, dersTuru: r.dersTuru || null, seansTipi: r.seansTipi || null, gelen: r.gelenSayisi ?? null, boy: r.grupBoyu ?? null, dussun: r.derstenDussun ?? null }));
     }
     for (const d of os.docs) {
       const o = d.data();
