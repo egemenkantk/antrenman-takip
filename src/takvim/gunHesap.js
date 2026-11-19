@@ -27,10 +27,12 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     const s = gununSeansi(bloklari(g.id), tarih, ozel, maclar(etkinlikler, { tip: 'grup', id: g.id }));
     const saat = g.saatler?.[hg];
     const planli = s && !s.dinlenme && s.gun;
-    // Başlangıç tarihi (kişi) ya da gruba katılım tarihinden önceki günlerde üye görünmez
+    // Başlangıç tarihi (kişi) ya da gruba katılım tarihinden önceki günlerde üye görünmez.
+    // Düet/trio'da katılım tarihi (dönem ücreti için) kullanılmaz; yalnızca kişinin başlangıç tarihi geçerli.
+    const ozelDers = g.dersTuru === 'duet' || g.dersTuru === 'trio';
     const uyeler = (g.uyeIds || [])
       .map((id) => kisiler.find((k) => k.id === id))
-      .filter((k) => k && k.aktif !== false && !(k.baslangicTarihi && tarih < k.baslangicTarihi) && !(g.uyeKatilim?.[k.id] && tarih < g.uyeKatilim[k.id]));
+      .filter((k) => k && k.aktif !== false && !(k.baslangicTarihi && tarih < k.baslangicTarihi) && !(!ozelDers && g.uyeKatilim?.[k.id] && tarih < g.uyeKatilim[k.id]));
     for (const d of gelenler(g.id)) {
       const s2 = gununSeansi(bloklari(g.id), d.tarih, ozelOf(g.id), maclar(etkinlikler, { tip: 'grup', id: g.id }));
       sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: d.yeniSaat || '', sure: g.sure, s: s2, ozel: null, uyeler, g, degisiklik: d, durum: 'gelen' });
