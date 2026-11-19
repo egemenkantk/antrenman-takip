@@ -17,14 +17,14 @@ const istanbulBugun = () => new Date().toLocaleDateString('en-CA', { timeZone: '
 const kisa = (s) => coz(s).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 const tl = (n) => (Number(n) || 0).toLocaleString('tr-TR') + ' ₺';
 
-// aralar: grup.donemAralari = [{ tarih, hafta }] — istemcideki paket/model.js ile aynı hesap
+// aralar: grup.donemAralari = [{ no, gun }] (eski: { tarih, hafta }) — istemcideki paket/model.js ile aynı hesap
 function donemNoAra(bas, no, aralar) {
   let b = bas;
   for (let i = 0; i <= no; i++) {
     if (i > 0) b = gunEkle(b, DONEM_GUN);
     let ara = 0;
-    for (const a of aralar) if (a.tarih === b) ara += Number(a.hafta) || 0;
-    if (ara) b = gunEkle(b, ara * 7);
+    for (const a of aralar) if (a.no != null ? a.no === i : a.tarih === b) ara += (Number(a.hafta) || 0) * 7 + (Number(a.gun) || 0);
+    if (ara) b = gunEkle(b, ara);
   }
   return { no, bas: b, bit: gunEkle(b, DONEM_GUN - 1) };
 }

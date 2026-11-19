@@ -1,10 +1,10 @@
 // Grup dönemleri: takvim önizlemesi, ara haftalar (özel durumda dönem kaydırma) ve geçmiş dönemlerin aktarımı
 import { Fragment, useEffect, useState } from 'react';
-import { collection, doc, getDocs, query, updateDoc, where, deleteDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, deleteDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { hataMesaji } from '../auth/hesap';
-import { bugun, kisaTarih } from '../program/model';
-import { donemBul, donemNo, odemeDurumu, tl, YONTEMLER, grupKayitKimligi } from './model.js';
+import { bugun, kisaTarih, gunEkle } from '../program/model';
+import { donemBul, donemNo, odemeDurumu, tl, YONTEMLER, grupKayitKimligi, araGun, araYazi, araNormal } from './model.js';
 import { grupKaydiOlustur, kisiOdemeleri, kisiPaketleri, odemeEkle, paketGuncelle, DONEM_HARIC, KATILIM_ONCESI } from './veri';
 
 // ---------- Takvim önizlemesi ----------
@@ -17,7 +17,7 @@ export function DonemTakvimi({ bas, aralar = [], adet = 5 }) {
     <div className="donem-takvimi" aria-label="Dönem takvimi">
       {l.map((d) => (
         <span key={d.no} className={'donem-cip' + (simdi && d.no === simdi.no && !simdi.arada ? ' simdi' : '')}>
-          {d.araSonrasi ? <small>⏸ {d.araSonrasi} hafta ara · </small> : null}
+          {d.araSonrasi ? <small>⏸ {araYazi(d.araSonrasi)} kaydı · </small> : null}
           {d.no + 1}. dönem: {kisaTarih(d.bas)} – {kisaTarih(d.bit)}
           {simdi && d.no === simdi.no && !simdi.arada ? ' (şu an)' : ''}
         </span>
@@ -26,89 +26,191 @@ export function DonemTakvimi({ bas, aralar = [], adet = 5 }) {
   );
 }
 
-// ---------- Ara haftalar ----------
-export function AraHaftalar({ grup, onDegisti }) {
-  const [acik, setAcik] = useState(false);
-  const [hafta, setHafta] = useState(1);
-  const [hata, setHata] = useState('');
-  const aralar = grup.donemAralari || [];
-  const simdi = donemBul(grup.donemBaslangic, bugun(), aralar);
-  // Yalnızca henüz başlamamış dönemler ertelenebilir
-  const ileri = Array.from({ length: 6 }, (_, i) => donemNo(grup.donemBaslangic, (simdi?.no ?? 0) + i, aralar)).filter((d) => d.bas > bugun());
-  const [secim, setSecim] = useState('');
+// ---------- Ara / tarih kaydırma ----------
+// Takvim değişince (ara eklenir ya da kaldırılır) kaymış dönemlerin kayıtları yeni başlangıç tarihlerine taşınır;
+// ödemeler aynı döneme bağlı kalır (ödeme tarihi değişmez). Hiçbir şey silinmez, çift kayıt oluşmaz.
+export async function takimTasimaPlani(grup, yeniAralar) {
+  const eskiAralar = grup.donemAralari || [];
+  const ps = await getDocs(query(collection(db, 'satilanPaketler'), where('grupId', '==', grup.id)));
+  const kayitlar = ps.docs.map((d) => ({ id: d.id, ref: d.ref, data: d.data() })).filter((r) => r.data.tur === 'grup' && r.data.donemBas);
+  const enGec = kayitlar.reduce((m, r) => (r.data.donemBas > m ? r.data.donemBas : m), bugun());
+  const eskiNo = {};
+  for (let n = 0; n < 400; n++) {
+    const d = donemNo(grup.donemBaslangic, n, eskiAralar);
+    eskiNo[d.bas] = n;
+    if (d.bas > enGec) break;
+  }
+  const tasinacak = [];
+  for (const r of kayitlar) {
+    const n = eskiNo[r.data.donemBas];
+    if (n == null) continue;
+    const y = donemNo(grup.donemBaslangic, n, yeniAralar);
+    if (y.bas === r.data.donemBas) continue;
+    tasinacak.push({ ...r, n, yeni: y, yeniId: grupKayitKimligi(grup.id, y.bas, r.data.kisiId) });
+  }
+  const odemeler = await Promise.all(
+    tasinacak.map((t) => getDocs(query(collection(db, 'odemeler'), where('satilanPaketId', '==', t.id))).then((s) => s.docs))
+  );
+  tasinacak.forEach((t, i) => (t.odemeler = odemeler[i]));
+  // Hedefte (taşınmayacak) bir kayıt varsa dur
+  const kaynaklar = new Set(tasinacak.map((t) => t.id));
+  for (const t of tasinacak) {
+    if (kaynaklar.has(t.yeniId)) continue;
+    const s = await getDoc(doc(db, 'satilanPaketler', t.yeniId));
+    if (s.exists()) throw new Error('Yeni tarihte zaten bir dönem kaydı var; taşıma yapılmadı. Bizimle iletişime geçin.');
+  }
+  return tasinacak;
+}
+export async function takvimiDegistir(grup, yeniAralar, plan, benim) {
+  // Zincirleme taşımada hedef önce boşalsın: ileri kaymada en geçten, geri kaymada en erkenden başla
+  const ileri = plan.some((t) => t.yeni.bas > t.data.donemBas);
+  const sirali = [...plan].sort((a, b) => (ileri ? b.data.donemBas.localeCompare(a.data.donemBas) : a.data.donemBas.localeCompare(b.data.donemBas)));
+  for (const t of sirali) {
+    await setDoc(doc(db, 'satilanPaketler', t.yeniId), {
+      ...t.data,
+      donemBas: t.yeni.bas,
+      donemBit: t.yeni.bit,
+      baslangic: t.yeni.bas,
+      tasimaGecmisi: [...(t.data.tasimaGecmisi || []), { eskiBas: t.data.donemBas, eskiBit: t.data.donemBit || '', yapan: benim, zaman: new Date().toISOString() }],
+    });
+    for (const o of t.odemeler) await updateDoc(o.ref, { satilanPaketId: t.yeniId });
+    await deleteDoc(t.ref);
+  }
+  await updateDoc(doc(db, 'gruplar', grup.id), { donemAralari: yeniAralar });
+}
 
-  async function ekle() {
+export function AraHaftalar({ grup, benim, onDegisti }) {
+  const [acik, setAcik] = useState(false);
+  const [gun, setGun] = useState(3);
+  const [hata, setHata] = useState('');
+  const [plan, setPlan] = useState(null); // { yeniAralar, tasinacak, aciklama }
+  const [bekliyor, setBekliyor] = useState(false);
+  const aralar = araNormal(grup.donemBaslangic, grup.donemAralari || []);
+  const simdi = donemBul(grup.donemBaslangic, bugun(), aralar);
+  const sonNo = (simdi?.no ?? 0) + 4;
+  const donemler = Array.from({ length: sonNo + 1 }, (_, i) => donemNo(grup.donemBaslangic, i, aralar));
+  const [secim, setSecim] = useState(String(simdi?.no ?? 0));
+  const secili = donemler.find((x) => String(x.no) === secim) || donemler[0];
+  const gunSayi = Math.max(0, Math.min(28, Math.round(Number(gun) || 0)));
+  // Ara dönem numarasına yazılır (aynı döneme ikinci ara eklenirse toplanır)
+  const onizleme = secili && gunSayi ? [...aralar, { no: secili.no, gun: gunSayi }] : aralar;
+
+  function sifirla() {
+    setPlan(null);
     setHata('');
-    const d = ileri.find((x) => String(x.no) === secim) || ileri[0];
-    if (!d) return;
-    // Erteleme, dönemin şu anki (kaymış) başlangıcına göre değil, ara öncesi planlanan başlangıcına yazılır
-    const planlanan = d.araSonrasi ? null : d.bas;
-    if (!planlanan) return setHata('Bu dönem zaten ertelenmiş; önce mevcut arayı kaldırın.');
+  }
+  async function hazirla(yeniAralar, aciklama) {
+    setHata('');
+    setBekliyor(true);
     try {
-      await updateDoc(doc(db, 'gruplar', grup.id), { donemAralari: [...aralar, { tarih: planlanan, hafta: Number(hafta) || 1 }] });
+      const tasinacak = await takimTasimaPlani(grup, yeniAralar);
+      setPlan({ yeniAralar, tasinacak, aciklama });
+    } catch (e) {
+      setHata(e.message?.startsWith('Yeni tarihte') ? e.message : hataMesaji(e));
+    }
+    setBekliyor(false);
+  }
+  async function uygula() {
+    setHata('');
+    setBekliyor(true);
+    try {
+      await takvimiDegistir(grup, plan.yeniAralar, plan.tasinacak, benim || '');
+      setPlan(null);
       setAcik(false);
-      onDegisti?.();
+      await onDegisti?.();
     } catch (e) {
       setHata(hataMesaji(e));
     }
+    setBekliyor(false);
   }
-  async function kaldir(a) {
-    if (a.tarih <= bugun()) return setHata('Başlamış ya da geçmiş bir ara kaldırılamaz.');
-    if (!window.confirm(`${kisaTarih(a.tarih)} için ${a.hafta} haftalık ara kaldırılsın mı?`)) return;
-    try {
-      await updateDoc(doc(db, 'gruplar', grup.id), { donemAralari: aralar.filter((x) => !(x.tarih === a.tarih && x.hafta === a.hafta)) });
-      onDegisti?.();
-    } catch (e) {
-      setHata(hataMesaji(e));
-    }
-  }
+  const odemeSayisi = plan ? plan.tasinacak.reduce((t, x) => t + x.odemeler.length, 0) : 0;
+
+  const PlanKutusu = () =>
+    plan && (
+      <div className="uyari-kutu">
+        <strong>{plan.aciklama}</strong>
+        <DonemTakvimi bas={grup.donemBaslangic} aralar={plan.yeniAralar} />
+        <p className="aciklama kucuk-yazi">
+          {plan.tasinacak.length
+            ? `${plan.tasinacak.length} dönem kaydı yeni tarihlerine taşınacak${odemeSayisi ? `, ${odemeSayisi} ödeme aynı döneme bağlı kalacak (ödeme tarihleri değişmez)` : ''}. Ücretler değişmez.`
+            : 'Taşınacak kayıt yok; yalnızca takvim değişecek.'}
+        </p>
+        <div className="dugme-satiri">
+          <button className="birincil kucuk" disabled={bekliyor} onClick={uygula}>{bekliyor ? 'Kaydediliyor…' : 'Onayla ve kaydet'}</button>
+          <button className="metin" onClick={sifirla}>Vazgeç</button>
+        </div>
+      </div>
+    );
 
   return (
     <div className="ara-haftalar">
       {aralar.length > 0 && (
         <p className="aciklama kucuk-yazi">
-          Aralar:{' '}
-          {aralar.map((a) => (
-            <span key={a.tarih + a.hafta}>
-              {kisaTarih(a.tarih)} başlayacak dönem {a.hafta} hafta ertelendi{' '}
-              {a.tarih > bugun() && <button className="metin" onClick={() => kaldir(a)}>kaldır</button>}{' '}
+          Kaydırmalar:{' '}
+          {aralar.map((a, i) => (
+            <span key={a.no + '-' + i}>
+              {a.no + 1}. dönem {araYazi(araGun(a))} ertelendi{' '}
+              {!plan && (
+                <button
+                  className="metin"
+                  onClick={() => {
+                    if (!window.confirm(`${a.no + 1}. dönemdeki ${araYazi(araGun(a))} kaydırma kaldırılsın mı? Sonraki dönemler eski tarihlerine döner.`)) return;
+                    hazirla(aralar.filter((_, j) => j !== i), 'Kaydırma kaldırılınca dönemler');
+                  }}
+                >
+                  kaldır
+                </button>
+              )}{' '}
             </span>
           ))}
         </p>
       )}
-      {!acik ? (
-        <button className="metin" onClick={() => setAcik(true)} disabled={!ileri.length}>⏸ Ara hafta ekle (tatil vb.)</button>
-      ) : (
+      {!acik && !plan && <button className="metin" onClick={() => setAcik(true)}>⏸ Dönem tarihini kaydır (izin, tatil)</button>}
+      {!acik && <PlanKutusu />}
+      {acik && (
         <div className="kart-form ic-form">
-          <strong>Dönemi ertele</strong>
-          <p className="aciklama kucuk-yazi">Seçilen dönem ve sonraki bütün dönemler bu kadar hafta ileri kayar. Geçmiş dönemler değişmez.</p>
+          <strong>Dönem tarihini kaydır</strong>
+          <p className="aciklama kucuk-yazi">
+            Seçilen dönem ve sonraki bütün dönemler bu kadar gün kayar; geçmiş dönemler de seçilebilir. Önceki dönemler değişmez.
+            O dönemden sonraki kayıtlar ve ödemeleri yeni tarihlere taşınır.
+          </p>
           <div className="form-izgara">
             <label className="alan">
-              <span>Ertelenecek dönem</span>
-              <select value={secim} onChange={(e) => setSecim(e.target.value)}>
-                {ileri.map((d) => <option key={d.no} value={d.no}>{d.no + 1}. dönem · {kisaTarih(d.bas)} başlangıçlı</option>)}
+              <span>Kayacak dönem</span>
+              <select value={secim} onChange={(e) => { setSecim(e.target.value); sifirla(); }}>
+                {donemler.map((d) => (
+                  <option key={d.no} value={d.no}>{d.no + 1}. dönem · {kisaTarih(d.bas)} başlangıçlı{simdi && d.no === simdi.no ? ' (şu an)' : ''}</option>
+                ))}
               </select>
             </label>
             <label className="alan">
-              <span>Kaç hafta ara</span>
-              <select value={hafta} onChange={(e) => setHafta(e.target.value)}>
-                {[1, 2, 3, 4].map((h) => <option key={h} value={h}>{h} hafta</option>)}
-              </select>
+              <span>Kaç gün sonra başlasın</span>
+              <input type="number" min="1" max="28" value={gun} onChange={(e) => { setGun(e.target.value); sifirla(); }} />
             </label>
           </div>
-          <DonemTakvimi bas={grup.donemBaslangic} aralar={[...aralar, ...(ileri.length ? [{ tarih: (ileri.find((x) => String(x.no) === secim) || ileri[0]).bas, hafta: Number(hafta) }] : [])]} />
+          <small className="ipucu">Örn. 3 → {secili ? `${kisaTarih(secili.bas)} yerine ${kisaTarih(gunEkle(secili.bas, 3))}` : ''}. 7 gün = 1 hafta. Yanlış girerseniz kaydırmayı "kaldır" ile geri alabilirsiniz.</small>
+          {!plan && <DonemTakvimi bas={grup.donemBaslangic} aralar={onizleme} />}
           {hata && <p className="hata">{hata}</p>}
-          <div className="dugme-satiri">
-            <button className="birincil kucuk" onClick={ekle}>Kaydet</button>
-            <button className="metin" onClick={() => setAcik(false)}>Vazgeç</button>
-          </div>
+          {plan ? (
+            <PlanKutusu />
+          ) : (
+            <div className="dugme-satiri">
+              <button
+                className="birincil kucuk"
+                disabled={!gunSayi || bekliyor}
+                onClick={() => hazirla(onizleme, `${secili.no + 1}. dönem ${kisaTarih(secili.bas)} yerine ${kisaTarih(donemNo(grup.donemBaslangic, secili.no, onizleme).bas)} başlayınca`)}
+              >
+                {bekliyor ? 'Hazırlanıyor…' : 'Önizle'}
+              </button>
+              <button className="metin" onClick={() => { setAcik(false); sifirla(); }}>Vazgeç</button>
+            </div>
+          )}
         </div>
       )}
       {hata && !acik && <p className="hata">{hata}</p>}
     </div>
   );
 }
-
 // ---------- Geçmiş dönemleri aktar ----------
 const DURUM = [
   ['', '—'],

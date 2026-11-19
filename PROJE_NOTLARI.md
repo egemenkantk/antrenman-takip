@@ -327,3 +327,7 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Üyeler Ödemeler sekmesinden isim + kısa not + (isteğe bağlı) katılım tarihiyle eklenir (yönetici): `kisiler` belgesi `sadeceOdeme: true` ile açılır, gruba eklenir, grupKocIds eşitlenir, şu anki dönem kaydı açılır.
 - `kisileriGetir(ben)` bu kişileri varsayılan gizler; Gruplar ve Ödemeler `{ odemeUyeleri: true }` ile ister. Grup üye aramasında da çıkmazlar.
 - Tahsilatlarda grup dersi, koç tablosunda grubun koçuna yazılır (normal grup gibi). Üyeler sekmesinde "Tam karta çevir" → `sadeceOdeme: false`.
+
+## Dönem tarihini kaydırma (Kasım 2026)
+- `gruplar.donemAralari` artık `[{ no, gun }]`: no. dönem (0'dan) gun gün ertelenir. Eski `{ tarih, hafta }` kayıtları okunur; araç kaydederken `araNormal` ile hepsini no'ya çevirir (önceki bir döneme kaydırma eklenince sonrakiler kaybolmasın). Sunucu `functions/donem.js` aynı hesabı yapar.
+- Grup Ödemeler > "⏸ Dönem tarihini kaydır": geçmiş/şu anki/ileri dönem, 1–28 gün. Önizleme: yeni takvim + taşınacak kayıt/ödeme sayısı. Onayda kaymış dönem kayıtları (`satilanPaketler`, kimlik `g_{grup}_{donemBas}_{kisi}`) yeni tarihli kimliğe kopyalanır (`tasimaGecmisi`), ödemelerin `satilanPaketId`'si güncellenir, eski kayıt silinir; ileri kaymada en geç dönemden başlanır. Hedefte başka kayıt varsa hiçbir şey yapılmaz. Kaydırmayı "kaldır" aynı taşımayı tersine yapar.

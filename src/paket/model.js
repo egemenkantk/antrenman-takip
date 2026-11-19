@@ -27,7 +27,8 @@ export const tl = (n) =>
 
 // ---------- Grup dönemleri ----------
 // Grubun ilk dönem başlangıcından itibaren 28 günlük dönemler. tarih hangi döneme düşüyor?
-// aralar: grup.donemAralari = [{ tarih, hafta }] — "tarih" günü başlayacak dönem "hafta" hafta ertelenir
+// aralar: grup.donemAralari = [{ no, gun }] — "no". dönem (0'dan) gun gün ertelenir. Eski kayıtlar { tarih, hafta }:
+// "tarih" günü başlayacak dönem hafta×7 gün ertelenir (araNormal ile no'ya çevrilir).
 // (bayram, tatil gibi özel durumlar). Sonraki bütün dönemler de o kadar kayar.
 export function donemBul(donemBaslangic, tarih, aralar = []) {
   if (!donemBaslangic || !tarih || tarih < donemBaslangic) return null;
@@ -54,8 +55,8 @@ export function donemNo(donemBaslangic, no, aralar = []) {
   for (let i = 0; i <= no; i++) {
     if (i > 0) bas = gunEkle(bas, DONEM_GUN);
     ara = 0;
-    for (const a of aralar) if (a.tarih === bas) ara += Number(a.hafta) || 0;
-    if (ara) bas = gunEkle(bas, ara * 7);
+    for (const a of aralar) if (a.no != null ? a.no === i : a.tarih === bas) ara += araGun(a);
+    if (ara) bas = gunEkle(bas, ara);
   }
   return { no, bas, bit: gunEkle(bas, DONEM_GUN - 1), ...(ara ? { araSonrasi: ara } : {}) };
 }
@@ -72,6 +73,28 @@ export function orantiliUcret(donemUcreti, donemBas, katilim) {
 }
 
 // Grup dönem kaydının belge kimliği: aynı kayıt iki kez açılmasın
+// Bir aranın gün karşılığı (eski kayıtlar hafta, yeniler gün tutar)
+export const araGun = (a) => (Number(a?.hafta) || 0) * 7 + (Number(a?.gun) || 0);
+// Tarihle tutulan eski araları dönem numarasına çevirir (önceki bir döneme ara eklenince sonrakiler kaybolmasın)
+export function araNormal(donemBaslangic, aralar = []) {
+  const kalan = new Set(aralar.map((_, i) => i));
+  const sonuc = aralar.map((a) => (a.no != null ? { no: a.no, gun: araGun(a) } : null));
+  aralar.forEach((a, i) => a.no != null && kalan.delete(i));
+  let bas = donemBaslangic;
+  for (let n = 0; n < 500 && kalan.size; n++) {
+    if (n > 0) bas = gunEkle(bas, DONEM_GUN);
+    let ara = 0;
+    aralar.forEach((a, i) => {
+      if (a.no != null ? a.no === n : a.tarih === bas) {
+        ara += araGun(a);
+        if (kalan.has(i)) { sonuc[i] = { no: n, gun: araGun(a) }; kalan.delete(i); }
+      }
+    });
+    if (ara) bas = gunEkle(bas, ara);
+  }
+  return sonuc.filter(Boolean).sort((a, b) => a.no - b.no);
+}
+export const araYazi = (gun) => (gun % 7 === 0 ? `${gun / 7} hafta` : `${gun} gün`);
 export const grupKayitKimligi = (grupId, donemBas, kisiId) => `g_${grupId}_${donemBas}_${kisiId}`;
 
 // ---------- Ödeme özeti ----------

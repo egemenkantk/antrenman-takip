@@ -233,7 +233,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
   useEffect(() => {
     setVeri(null);
     yukle();
-  }, [grup.id, no, (grup.uyeIds || []).join(',')]);
+  }, [grup.id, no, (grup.uyeIds || []).join(','), JSON.stringify(grup.donemAralari || [])]);
 
   async function dahilAyarla(k, r, dahil) {
     setHata('');
@@ -294,7 +294,7 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
       </div>
       {yonetici && (
         <div className="donem-araclari">
-          <AraHaftalar grup={grup} onDegisti={async () => { await onGrupDegisti?.(); }} />
+          <AraHaftalar grup={grup} benim={benim} onDegisti={async () => { await onGrupDegisti?.(); }} />
           {!aktarim && <button className="metin" onClick={() => setAktarim(true)}>⇪ Geçmiş dönemleri aktar</button>}
           <AktarimListesi grup={grup} benim={benim} onDegisti={async () => { await onGrupDegisti?.(); await yukle(); }} />
         </div>
