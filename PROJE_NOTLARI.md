@@ -343,3 +343,4 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ## Geçmiş günde kayıtlı grup dersi (Kasım 2026)
 - Bugün ekranı, ders günü o gün olmayan (aktif, sadece ödeme olmayan) gruplar için o tarihte üyelerden birinde `antrenmanKayitlari/{tarih}_{grupId}` varsa kartı yine gösterir (`gununKartlari({ kayitliGruplar })`). Ders günü sonradan değişen gruplarda eski dersler düzenlenebilir. Gün geçmişi tutulmaz.
+- Grup > "Dersler" sekmesi (src/gruplar/GrupDersleri.jsx): üyelerin `{tarih}_{grupId}` kayıtları tarih tarih listelenir; "Geçmiş ders ekle" (tarih, üye başına katılım, dersi veren koç), "Düzenle / tarihini değiştir" (yeni tarihli kimliğe yazar, eskisini siler), "Sil". Düet/trioda dersTuru, gelenSayisi, grupBoyu yazılır. Yönetici ve grubun koçları düzenler.

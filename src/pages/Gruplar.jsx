@@ -6,6 +6,7 @@ import { gruplariGetir, grupKaydet, grupDurum } from '../gruplar/veri';
 import { HAFTA_GUNLERI } from '../program/model';
 import ProgramSekmesi from '../program/ProgramSekmesi';
 import { GrupBecerileri } from '../cimnastik/Beceriler';
+import GrupDersleri from '../gruplar/GrupDersleri';
 import GrupOdemeleri, { DuetOdemeleri } from '../paket/GrupOdemeleri';
 import { DonemTakvimi } from '../paket/DonemAraclari';
 import { paketTanimlariGetir, grupKaydiOlustur, grupDonemKayitlari } from '../paket/veri';
@@ -386,7 +387,7 @@ export default function Gruplar({ onGeri }) {
         </p>
         {g.not && <p className="blok-not">{g.not}</p>}
         <nav className="sekmeler">
-          {(g.sadeceOdeme ? [['odeme', 'Ödemeler'], ['uyeler', `Üyeler (${uyeler.length})`]] : [['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ...(g.cimnastik ? [['beceri', 'Beceriler']] : []), ['odeme', 'Ödemeler']]).map(([id, ad]) => (
+          {(g.sadeceOdeme ? [['odeme', 'Ödemeler'], ['uyeler', `Üyeler (${uyeler.length})`]] : [['uyeler', `Üyeler (${uyeler.length})`], ['program', 'Grup programı'], ...(g.cimnastik ? [['beceri', 'Beceriler']] : []), ['dersler', 'Dersler'], ['odeme', 'Ödemeler']]).map(([id, ad]) => (
             <button key={id} className={'sekme' + (sekme === id ? ' secili' : '')} onClick={() => setSekme(id)}>{ad}</button>
           ))}
         </nav>
@@ -440,6 +441,9 @@ export default function Gruplar({ onGeri }) {
             varsayilanGunler={Object.keys(g.saatler || {}).map(Number)}
             dersSuresi={Number(g.sure) || 60}
           />
+        )}
+        {sekme === 'dersler' && !g.sadeceOdeme && (
+          <GrupDersleri grup={g} uyeler={uyeler} benim={ben.id} koclar={koclar} duzenleyebilir={yonetici || (g.kocIds || []).includes(ben.id)} />
         )}
         {sekme === 'beceri' && g.cimnastik && <GrupBecerileri uyeler={uyeler} yapan={ben.id} />}
         {sekme === 'odeme' && g.dersTuru && g.dersTuru !== 'grup' && (
