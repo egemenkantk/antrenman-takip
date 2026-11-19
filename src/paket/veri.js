@@ -329,7 +329,7 @@ async function dersKoclari(kisiId, satilanPaketId) {
 export async function odemeEkle({ kisiId, satilanPaketId, tutar, tarih, yontem, not, ekAlanlar = {} }, yapan) {
   const kocIds = await dersKoclari(kisiId, satilanPaketId);
   return addDoc(collection(db, 'odemeler'), {
-    ...(kocIds ? { dersKocIds: kocIds } : {}),
+    ...(kocIds?.length ? { dersKocIds: kocIds } : {}),
     ...ekAlanlar,
     kisiId,
     satilanPaketId,

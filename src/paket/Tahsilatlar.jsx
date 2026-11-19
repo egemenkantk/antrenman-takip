@@ -251,7 +251,8 @@ function KocaGore({ odemeler, ay, grupMap, kisiMap, koclar, benim, indirAdi, giz
   const satirlar = useMemo(() => {
     const m = {};
     for (const o of odemeler) {
-      const ids = o.dersKocIds || (o.sinif === 'grup' ? grupMap[o.p?.grupId]?.kocIds : kisiMap[o.kisiId]?.kocIds) || [];
+      // Ödeme anında koç yoksa (boş liste kaydedilmiş olabilir) güncel atamaya bakılır
+      const ids = (o.dersKocIds?.length ? o.dersKocIds : o.sinif === 'grup' ? grupMap[o.p?.grupId]?.kocIds : kisiMap[o.kisiId]?.kocIds) || [];
       // Maaş tablosu bize kalan tutarla (ortaklı grupta ortağın payı düşülür)
       const tutar = o.net ?? (Number(o.tutar) || 0);
       const brut = Number(o.tutar) || 0;
