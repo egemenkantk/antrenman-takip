@@ -316,3 +316,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 - Kişi başlangıç tarihi `kisiler.baslangicTarihi` (yeni kişide bugün): gununKartlari bu tarihten önce kişiyi (bireysel kart ve grup üyeliği) göstermez; grup üyeleri ayrıca uyeKatilim'den önce görünmez.
 - Yapılan özel dersler tablosu: tüm kişilerin bireysel/düet/trio kayıtları (paketli: paket maliyeti; abonelik kapsamındaki bireysel: aylikUcret/aylikDers; paketsiz: sayılır, değer 0 ve uyarı). Grup dersleri hariç.
 - Bitmiş paket girişi: paket kartında '⇪ Bitmiş paketi gir' (başlangıç + son ders tarihi = bitisTarihi; oncekiDers = dersSayisi). Aralıktaki site kayıtları bu pakete (oncedenSayildi) yazılır, değer koç listesinde; sonraki dersler bir sonraki pakete.
+
+## Veli/öğrenci izolasyonu (Kasım 2026)
+- Veli/öğrenci yalnızca `bagliKisiler` listesindeki kişiyi okur (kurallar + `portalVerisi` sunucu kontrolü). Bağlamayı yalnızca yönetici yapar.
+- `kurumlar` okuması `aktif` → `ekip` yapıldı (portal bu belgeyi okumaz).
+- `test/kurallar.test.mjs` sonunda çapraz erişim testleri: başka çocuğun kartı, tüm alt koleksiyonları, toplu sorgular, ödeme/paket/grup/program, başka hesap, bildirim, kurum ayarı, kendine çocuk bağlama.
