@@ -13,6 +13,7 @@ import {
   gunEkle,
   coz,
   uzunTarih,
+  kisaTarih,
   gunBolumleri,
   bolumNotu,
   toplamSure,
@@ -161,8 +162,9 @@ function Avatar({ k }) {
   return k.foto ? <img className="avatar kucuk-av" src={k.foto} alt="" /> : <div className="avatar kucuk-av" aria-hidden="true">{k.ad.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toLocaleUpperCase('tr-TR')}</div>;
 }
 
-function Plan({ s }) {
+function Plan({ s, bitti }) {
   const kutuphane = useKutuphane();
+  if (!s && bitti) return <p className="uyari-yazi kucuk-yazi">Program bloğu {kisaTarih(bitti)} tarihinde bitti. Program sekmesinden yeni blok ekleyin.</p>;
   if (!s) return <p className="aciklama kucuk-yazi">Bu gün için programda seans yok.</p>;
   if (s.dinlenme) {
     return (
@@ -558,10 +560,10 @@ export default function Bugun({ onGeri, baslangicTarihi }) {
                 />
               ) : c.tip === 'kisi' && sakatMi(c.k) ? (
                 <RiskliKaliplar.Provider value={riskliKaliplar(c.k, sakatlikTipleri)}>
-                  <Plan s={c.s} />
+                  <Plan s={c.s} bitti={c.programBitti} />
                 </RiskliKaliplar.Provider>
               ) : (
-                <Plan s={c.s} />
+                <Plan s={c.s} bitti={c.programBitti} />
               )}
 
               {!yok && c.tip === 'kisi' && (

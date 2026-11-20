@@ -1,5 +1,5 @@
 // Bir gün için seans kartları (Bugün ekranı ve Takvim aynı hesabı kullanır)
-import { coz, gununSeansi } from '../program/model';
+import { coz, gununSeansi, blokBitis, gunEkle } from '../program/model';
 import { maclar } from './veri';
 
 // degisiklikler: ders saati değişikliği / taşıma / iptal (takvim/degisiklik.js)
@@ -11,6 +11,13 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
   const hg = coz(tarih).getDay();
   const bloklari = (id) =>
     programlar.filter((p) => p.sahipId === id).sort((a, b) => (a.baslangic || '').localeCompare(b.baslangic || ''));
+  // Aktif blok yoksa son biten bloğun son günü (kartta "program bitti" uyarısı için)
+  const programBitti = (id) => {
+    const l = bloklari(id).filter((b) => b.baslangic);
+    if (!l.length || l.some((b) => b.baslangic <= tarih && tarih < blokBitis(b))) return null;
+    const biten = l.filter((b) => blokBitis(b) <= tarih).map((b) => blokBitis(b)).sort();
+    return biten.length ? gunEkle(biten[biten.length - 1], -1) : null;
+  };
   const ozelOf = (id) => ozeller.find((o) => o.sahipId === id && o.tarih === tarih) || null;
   const kisininGruplari = (id) => gruplar.filter((g) => g.aktif !== false && (g.uyeIds || []).includes(id)).map((g) => g.id);
   // Güne özel düzenleme hariç, programda bugün seans var mı
@@ -43,7 +50,7 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     if (saat == null && !ozel && !planli && !deg && !kayitli) continue;
     // Bu güne taşınan ders varsa ve bugün sabit saat/planlı seans yoksa, güne özel düzenleme o derse aittir: ikinci kart açılmaz
     if (saat == null && !kayitli && gelenler(g.id).length && !programli(g.id, maclar(etkinlikler, { tip: 'grup', id: g.id }))) continue;
-    sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', sure: g.sure, s, ozel, uyeler, g, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
+    sonuc.push({ tip: 'grup', id: g.id, ad: g.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', sure: g.sure, s, programBitti: s ? null : programBitti(g.id), ozel, uyeler, g, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
   }
   for (const k of kisiler) {
     if (k.aktif === false) continue;
@@ -58,13 +65,13 @@ export function gununKartlari({ kisiler, gruplar, programlar, ozeller, etkinlikl
     for (const d of gelenler(k.id)) {
       // Taşınan ders asıl gününün programıyla gelir
       const s2 = gununSeansi(bloklari(k.id), d.tarih, ozelOf(k.id), mac);
-      sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: d.yeniSaat || '', s: s2, ozel: null, k, degisiklik: d, durum: 'gelen' });
+      sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: d.yeniSaat || '', s: s2, programBitti: s2 ? null : programBitti(k.id), ozel: null, k, degisiklik: d, durum: 'gelen' });
     }
     const deg = degOf(k.id);
     if (saat == null && !ozel && !planli && !deg) continue;
     // Bu güne taşınan ders varsa ve bugün sabit saat/planlı seans yoksa, güne özel düzenleme o derse aittir: ikinci kart açılmaz
     if (saat == null && gelenler(k.id).length && !programli(k.id, mac)) continue;
-    sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', s, ozel, k, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
+    sonuc.push({ tip: 'kisi', id: k.id, ad: k.ad, saat: deg?.islem === 'saat' ? deg.yeniSaat : saat || '', eskiSaat: saat || '', s, programBitti: s ? null : programBitti(k.id), ozel, k, degisiklik: deg, durum: deg ? (deg.islem === 'saat' ? 'saat' : deg.islem === 'iptal' ? 'iptal' : 'gitti') : null });
   }
   return sonuc.sort((a, b) => (a.saat || '99').localeCompare(b.saat || '99') || a.ad.localeCompare(b.ad, 'tr'));
 }
