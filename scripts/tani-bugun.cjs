@@ -80,6 +80,21 @@ async function main() {
       if (k && k.aktif !== false) ekle(b.sahipId, 'program:' + d.id);
     }
   }
+  // Aktif program bloğunun antrenman günleri ile kişinin/grubun ders günleri uyuşuyor mu
+  console.log('\n== Program günleri / ders günleri ==');
+  const tumBloklar = await db.collection('programlar').get();
+  for (const d of tumBloklar.docs) {
+    const b = d.data();
+    if (!b.baslangic || b.plan === 'mac') continue;
+    const bit = new Date(b.baslangic + 'T00:00:00Z');
+    bit.setUTCDate(bit.getUTCDate() + 7 * (b.haftalar || (b.ilerleme || []).length || 6));
+    if (bit.toISOString().slice(0, 10) <= bugun) continue;
+    const sahip = b.sahipTip === 'grup' ? gruplar.find((x) => x.id === b.sahipId) : kisiler.find((x) => x.id === b.sahipId);
+    if (!sahip || sahip.aktif === false) continue;
+    const ders = Object.keys((b.sahipTip === 'grup' ? sahip.saatler : sahip.haftalikSaatler) || {}).map(Number).sort();
+    const prog = [...(b.haftaGunleri || [1, 3, 5])].sort();
+    console.log(JSON.stringify({ tip: b.sahipTip, sahip: b.sahipId, blok: d.id, bas: b.baslangic, programGunleri: prog, dersGunleri: ders, gunSayisi: (b.gunler || []).length, ayni: JSON.stringify(prog) === JSON.stringify(ders) }));
+  }
   const ozs = await db.collection('gunOzel').where('tarih', '==', bugun).get();
   for (const d of ozs.docs) if (d.data().sahipTip === 'kisi') ekle(d.data().sahipId, 'ozel');
   // Geçmiş dönemlerden ödenmemiş grup/abonelik kayıtları (sayı)
