@@ -80,6 +80,14 @@ async function main() {
       if (k && k.aktif !== false) ekle(b.sahipId, 'program:' + d.id);
     }
   }
+  // Bugün değişikliği olan kişilerin bloklarının özeti (içerik yazdırılmaz)
+  console.log('\n== Bugün değişikliği olanların blokları ==');
+  const degSahip = [...new Set(ds.docs.map((x) => x.data()).filter((d) => d.tarih === bugun || d.yeniTarih === bugun).map((d) => d.sahipId))];
+  for (const id of degSahip) {
+    const bs = await db.collection('programlar').where('sahipId', '==', id).get();
+    const k = kisiler.find((x) => x.id === id) || gruplar.find((x) => x.id === id);
+    console.log(JSON.stringify({ sahip: id, dersGunleri: Object.keys(k?.haftalikSaatler || k?.saatler || {}), bloklar: bs.docs.map((d) => { const b = d.data(); return { id: d.id, bas: b.baslangic, haftalar: b.haftalar || null, ilerleme: (b.ilerleme || []).length, plan: b.plan || 'hafta', haftaGunleri: b.haftaGunleri || null, gunler: (b.gunler || []).length }; }), degisiklikler: ds.docs.map((x) => x.data()).filter((d) => d.sahipId === id && (d.tarih >= '2026-11-01' || d.yeniTarih >= '2026-11-01')).map((d) => `${d.islem} ${d.tarih}->${d.yeniTarih || ''}`) }));
+  }
   // Aktif program bloğunun antrenman günleri ile kişinin/grubun ders günleri uyuşuyor mu
   console.log('\n== Program günleri / ders günleri ==');
   const tumBloklar = await db.collection('programlar').get();
