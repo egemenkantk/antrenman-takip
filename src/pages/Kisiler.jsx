@@ -656,6 +656,8 @@ export default function Kisiler({ onGeri, acilisKisiId }) {
     );
   }, [kisiler, ara, tip, sube, koc, pasifler]);
 
+  // Sol menüden kişi açılınca liste henüz yüklenmemiş olabilir (null): önce yüklenmesini bekle
+  if (secili && !kisiler) return <p className="aciklama">{hata || 'Yükleniyor…'}</p>;
   if (secili) {
     const kisi = kisiler.find((k) => k.id === secili);
     if (kisi) {
