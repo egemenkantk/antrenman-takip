@@ -32,6 +32,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
     cimnastik: !!ilk?.cimnastik,
     sadeceOdeme: !!ilk?.sadeceOdeme,
     ortakPayi: ilk?.ortakPayi ?? null,
+    gunlukUcret: ilk?.gunlukUcret ?? '',
     paketTanimId: ilk?.paketTanimId || '',
     donemBaslangic: ilk?.donemBaslangic || '',
     gunKoclari: ilk?.gunKoclari || {},
@@ -76,6 +77,7 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
         return setHata('Ortağa giden pay 1 ile 99 arasında bir yüzde olmalı.');
       }
       f.ortakPayi = f.ortakPayi == null ? null : Number(f.ortakPayi);
+      f.gunlukUcret = f.sadeceOdeme && Number(f.gunlukUcret) > 0 ? Number(f.gunlukUcret) : null;
       if (f.sadeceOdeme) {
         // Sadece ödeme takibi: ders/yoklama yok
         f.saatler = {};
@@ -139,6 +141,12 @@ function GrupForm({ ilk, subeler, koclar, kisiler, tanimlar, onKaydet, onVazgec,
         <span>Sadece ödeme takibi</span>
       </label>
       <small className="ipucu">Ders saati, yoklama ve program olmaz; üyeleri kişi kartı açmadan isimle eklersin (Ödemeler sekmesinden). Tahsilatlarda grup dersi olarak, koçun tablosunda grup gibi görünür.</small>
+      {f.sadeceOdeme && (
+        <label className="alan">
+          <span>Günlük giriş ücreti (₺, isteğe bağlı)</span>
+          <input type="number" min="0" value={f.gunlukUcret ?? ''} onChange={(e) => setF({ ...f, gunlukUcret: e.target.value })} placeholder="Örn. 500" />
+        </label>
+      )}
       {!f.sadeceOdeme && (<>
       <label className="onay-kutusu">
         <input type="checkbox" checked={f.cimnastik} onChange={(e) => setF({ ...f, cimnastik: e.target.checked })} />

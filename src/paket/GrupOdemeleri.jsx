@@ -7,6 +7,7 @@ import { orantiliUcret } from './model.js';
 import { DurumRozeti, OdemeFormu, OdemeListesi } from './bilesenler';
 import { AraHaftalar, GecmisAktarim, AktarimListesi } from './DonemAraclari';
 import { kisiEkle, kisiGuncelle } from '../veri';
+import GunlukGirisler from './GunlukGirisler';
 import { grupKaydet } from '../gruplar/veri';
 
 // Sadece ödeme grubu: kişi kartı açmadan isim (+ kısa not) ile üye ekleme
@@ -316,6 +317,9 @@ export default function GrupOdemeleri({ grup, kisiler, tanim, yonetici, yetki = 
       )}
       {yonetici && grup.sadeceOdeme && (
         <IsimleUyeEkle grup={grup} tanim={tanim} benim={benim} onEklendi={async (ad) => { setBilgi(`${ad} eklendi.`); await onGrupDegisti?.(); }} />
+      )}
+      {grup.sadeceOdeme && donem && (
+        <GunlukGirisler grup={grup} kisiler={kisiler} donem={donem} yonetici={yonetici} benim={benim} onKisiEklendi={onGrupDegisti} />
       )}
       {hata && <p className="hata">{hata}</p>}
       {!veri && <p className="aciklama">Yükleniyor…</p>}

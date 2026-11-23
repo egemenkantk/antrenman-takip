@@ -252,7 +252,7 @@ function Alacaklar({ veri, kisiler }) {
               {satirlar.map(({ p, od }) => (
                 <tr key={p.id}>
                   <th>{kisiAdi(p.kisiId)}</th>
-                  <td>{p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? `${p.paketAdi} · ${kisaTarih(p.baslangic)}` : p.tur === 'abonelikDonem' ? `Abonelik · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : `${TUR_KISA[p.tur]} · ${p.paketAdi}`}</td>
+                  <td>{p.tur === 'gunluk' ? `${p.grupAdi || 'Grup'} · günlük giriş ${kisaTarih(p.baslangic)}` : p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : p.tur === 'ek' ? `${p.paketAdi} · ${kisaTarih(p.baslangic)}` : p.tur === 'abonelikDonem' ? `Abonelik · ${kisaTarih(p.donemBas)}–${kisaTarih(p.donemBit)}` : `${TUR_KISA[p.tur]} · ${p.paketAdi}`}</td>
                   <td>{tl(p.uygulananFiyat)}</td>
                   <td>{tl(od.odenen)}</td>
                   <td><strong>{tl(od.kalan)}</strong></td>

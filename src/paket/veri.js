@@ -327,7 +327,7 @@ export async function donemDahilAyarla(grup, donem, tanim, kisiId, kayit, dahil,
 async function dersKoclari(kisiId, satilanPaketId) {
   try {
     const p = (await getDoc(doc(db, 'satilanPaketler', satilanPaketId))).data();
-    if (p?.tur === 'grup' && p.grupId) {
+    if ((p?.tur === 'grup' || p?.tur === 'gunluk') && p.grupId) {
       const g = await getDoc(doc(db, 'gruplar', p.grupId));
       if (g.exists()) return g.data().kocIds || [];
     }

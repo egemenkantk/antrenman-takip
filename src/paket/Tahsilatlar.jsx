@@ -21,7 +21,7 @@ export const SINIFLAR = [
 const SINIF_ADI = Object.fromEntries(SINIFLAR);
 const sinifOf = (p) => {
   if (!p) return 'ek';
-  if (p.tur === 'grup') return 'grup';
+  if (p.tur === 'grup' || p.tur === 'gunluk') return 'grup';
   if (p.tur === 'duet' || p.tur === 'trio') return 'duettrio';
   if (p.tur === 'abonelik' || p.tur === 'abonelikDonem') return 'abonelik';
   if (p.tur === 'ek') return 'ek';
@@ -437,7 +437,7 @@ export default function Tahsilatlar({ veri, kisiler, gruplar = [], subeler = [],
 
   const liste = ayinkiler.filter((o) => !sinif || o.sinif === sinif).sort((a, b) => b.tarih.localeCompare(a.tarih));
   const tahsilEdenler = [...new Set(veri.odemeler.map((o) => o.tahsilEdenKocId).filter(Boolean))];
-  const paketAdi = (p) => (p ? (p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}` : p.paketAdi || '') : '');
+  const paketAdi = (p) => (p ? (p.tur === 'grup' ? `${p.grupAdi || p.paketAdi} · ${kisaTarih(p.donemBas)}` : p.tur === 'gunluk' ? `${p.grupAdi || 'Grup'} · günlük ${kisaTarih(p.baslangic)}` : p.paketAdi || '') : '');
 
   function indir() {
     csvIndir(`tahsilat-${ay}.csv`, [

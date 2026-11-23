@@ -347,3 +347,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 
 ## İptal paketi silme (Kasım 2026)
 - Kişi > Paket > iptal edilmiş bireysel/düet/trio/ek paketinde "Paketi sil" (yönetici): bağlı ödemeler `silindi: true` (neden "Paket silindi (yanlış giriş)") işaretlenir, paket belgesi silinir, `islemGecmisi`ne "paket-silindi" yazılır. Grup dönemi ve abonelik kayıtları silinmez (iptal = döneme dahil değil işareti).
+
+## Günlük giriş (sadece ödeme grupları, Kasım 2026)
+- Grup formunda (sadece ödeme takibi açıkken) `gruplar.gunlukUcret`.
+- Grup > Ödemeler altında "Günlük girişler" (src/paket/GunlukGirisler.jsx, yönetici ekler): tarih, ad (grubun üyeleri/önceki günlükçüler önerilir; yeni ad `kisiler` hafif kaydı açar: `sadeceOdeme`, `gunlukGruplar`, `grupKocIds` = grubun koçları, gruba üye edilmez), ücret, yöntem, "ödeme alındı". Her giriş `satilanPaketler` {tur: 'gunluk', grupId, baslangic = tarih} + ödeme. Liste görüntülenen dönemin tarih aralığını gösterir; bekleyene "Ödeme al".
+- Tahsilatlar `sinifOf`: gunluk → grup (grubun satırı, ortaklı pay, koç tablosu `dersKoclari` grubun koçları).
