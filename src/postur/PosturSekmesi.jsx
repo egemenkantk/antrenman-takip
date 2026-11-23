@@ -126,7 +126,12 @@ function DegerlendirmeFormu({ son, onKaydet, onVazgec }) {
 
 // Son değerlendirmenin düzeltici egzersizlerini kişinin aktif ya da planlı bloğuna ekler
 function DuzelticiOneriler({ kisi, bulgular, programYetkisi, yapan }) {
-  const egzersizler = [...new Set(Object.entries(bulgular).filter(([, f]) => f?.sev).flatMap(([k]) => BULGU[k]?.egz || []))];
+  // Bulgu bazında grupla (belirgin olanlar önce); aynı egzersiz birden çok bulguda olabilir, seçimi ortak
+  const gruplar = Object.entries(bulgular)
+    .filter(([k, f]) => f?.sev && BULGU[k])
+    .map(([k, f]) => ({ k, f, b: BULGU[k] }))
+    .sort((x, y) => y.f.sev - x.f.sev);
+  const egzersizler = [...new Set(gruplar.flatMap((g) => g.b.egz || []))];
   const [secili, setSecili] = useState(egzersizler);
   const [bloklar, setBloklar] = useState(null);
   const [bolum, setBolum] = useState('mobilite');
@@ -172,16 +177,38 @@ function DuzelticiOneriler({ kisi, bulgular, programYetkisi, yapan }) {
   return (
     <section className="kart-form" key={anahtar}>
       <h3>Düzeltici egzersiz önerileri</h3>
-      <p className="aciklama kucuk-yazi">Son değerlendirmedeki bulgulara göre. İstediklerini seç, programa eklensin.</p>
-      <div className="cip-grubu kucuk">
-        {egzersizler.map((e) => {
-          const acik = secili.includes(e);
-          return (
-            <button type="button" key={e} className={'cip' + (acik ? ' secili' : '')} aria-pressed={acik} onClick={() => setSecili(acik ? secili.filter((x) => x !== e) : [...secili, e])}>
-              {e}
-            </button>
-          );
-        })}
+      <p className="aciklama kucuk-yazi">Son değerlendirmedeki bulgulara göre, bulgu bulgu. İstediklerini seç, programa eklensin.</p>
+      <div className="duzeltici-gruplar">
+        {gruplar.map(({ k, f, b }) => (
+          <div key={k} className="duzeltici-grup">
+            <div className="duzeltici-baslik">
+              <strong>{b.ad}</strong> <small className="aciklama">{bulguMetni(f)}</small>
+              {(b.egz || []).length > 0 && (
+                <button
+                  type="button"
+                  className="metin kucuk-yazi"
+                  onClick={() => {
+                    const hepsi = b.egz.every((e) => secili.includes(e));
+                    setSecili(hepsi ? secili.filter((x) => !b.egz.includes(x)) : [...new Set([...secili, ...b.egz])]);
+                  }}
+                >
+                  {b.egz.every((e) => secili.includes(e)) ? 'hiçbirini seçme' : 'hepsini seç'}
+                </button>
+              )}
+            </div>
+            {b.yonlendir && <p className="uyari-yazi kucuk-yazi">Uzmana (fizyoterapist / hekim) yönlendirin.</p>}
+            <div className="cip-grubu kucuk">
+              {(b.egz || []).map((e) => {
+                const acik = secili.includes(e);
+                return (
+                  <button type="button" key={e} className={'cip' + (acik ? ' secili' : '')} aria-pressed={acik} onClick={() => setSecili(acik ? secili.filter((x) => x !== e) : [...secili, e])}>
+                    {e}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
       {!programYetkisi ? (
         <p className="aciklama kucuk-yazi">Programa eklemek için program düzenleme yetkisi gerekli.</p>
