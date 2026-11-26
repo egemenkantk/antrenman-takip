@@ -57,7 +57,12 @@ export default function RaporSekmesi({ kisi, yapan }) {
   const [mod, setMod] = useState(sporcu ? 'test' : 'donem'); // test: iki test günü · donem: tarih aralığı
   const [A, setA] = useState('');
   const [B, setB] = useState('');
-  const [bolum, setBolum] = useState({ testler: sporcu, norm: sporcu, grafikler: sporcu, antrenman: true, postur: true, vucut: !sporcu, yorum: true });
+  const [bolum, setBolum] = useState({ testler: sporcu, norm: sporcu, grafikler: sporcu, antrenman: true, postur: true, vucut: true, yorum: true });
+  // Yağ oranı: küçük yaşta (12 altı) varsayılan gizli
+  const [yagGoster, setYagGoster] = useState(() => {
+    const y = yasHesapla(kisi.dogumTarihi, kisi.dogumYili);
+    return y == null || y >= 12;
+  });
   const [yorum, setYorum] = useState({ degerlendirme: '', hedefler: '' });
   const [durum, setDurum] = useState('');
   const sayfa = useRef(null);
@@ -107,8 +112,12 @@ export default function RaporSekmesi({ kisi, yapan }) {
   const kiyas = satirlar.filter((r) => r.iyi != null);
   const ozetBas = A || (mod === 'test' ? tarihler[0] : '');
   const ozet = ozetBas && B ? antrenmanOzeti(veri.kayitlar, veri.wellness, ozetBas, B) : null;
+  // Sporcu raporunda yalnızca boy, kilo, yağ oranı (nötr); PT raporunda bütün antropometri (bel/yağ düşüşü olumlu)
+  const SPORCU_VUCUT = ['Boy (cm)', 'Vücut ağırlığı (kg)', 'Yağ oranı (%)'];
   const vucut = B
-    ? testSatirlari(veri.testler, A, B, { vucut: true }).flatMap((g) => g.satirlar).filter((r) => r.bilgi.kat === 'Antropometri')
+    ? testSatirlari(veri.testler, A, B, { vucut: true })
+        .flatMap((g) => g.satirlar)
+        .filter((r) => r.bilgi.kat === 'Antropometri' && (!sporcu || SPORCU_VUCUT.includes(r.test)) && (yagGoster || r.test !== 'Yağ oranı (%)'))
     : [];
   const kartOlculeri = [
     ['Boy (cm)', kisi.boy],
@@ -236,6 +245,12 @@ export default function RaporSekmesi({ kisi, yapan }) {
               <span>{ad}</span>
             </label>
           ))}
+          {bolum.vucut && (
+            <label className="onay-kutusu ic-secenek">
+              <input type="checkbox" checked={yagGoster} onChange={(e) => setYagGoster(e.target.checked)} />
+              <span>Yağ oranını göster</span>
+            </label>
+          )}
         </fieldset>
 
         {bolum.yorum && (
@@ -480,7 +495,11 @@ export default function RaporSekmesi({ kisi, yapan }) {
                   {vucut.map((r) => (
                     <tr key={r.anahtar}>
                       <td><b>{r.test}</b></td>
-                      <td className="r-sayi">{r.onceki != null ? `${degerGoster(r.test, r.onceki)} → ` : ''}{degerGoster(r.test, r.son.deger)}</td>
+                      <td className="r-sayi">
+                        {r.onceki != null ? `${degerGoster(r.test, r.onceki)} → ` : ''}
+                        {degerGoster(r.test, r.son.deger)}
+                        {!sporcu && r.onceki != null && r.bilgi.iyi === 'dusuk' && r.son.deger < r.onceki && <span className="r-artı"> ↓</span>}
+                      </td>
                     </tr>
                   ))}
                   {kartOlculeri.map(([t, v]) => (

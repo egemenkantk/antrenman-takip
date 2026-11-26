@@ -356,3 +356,8 @@ Sporcu Kartı ve Tenis Takip'teki her şey: sporcu listesi, Bugün panosu, progr
 ## Etkinlikler: kişi kartı ve fikstür (Kasım 2026)
 - `src/takvim/EtkinlikFormu.jsx` (Takvim'den ayrıldı): yeni etkinlikte "Birden fazla tarih (fikstür)": ortak tür/yer/kapsam/kişiler, satır satır tarih-saat-başlık; WhatsApp metni yapıştırılıp "Tarihleri oku" (`src/takvim/fikstur.js`: 07.12(.2026), 7/12/26, 7 Aralık (2027); saat 14:00/14.00; gün adları atılır; yıl yazılmamışsa 60 günden eskiye düşen tarih gelecek yıla). Her tarih ayrı `etkinlikler` belgesi. `onKaydet(liste)`.
 - Kişi kartı > Özet altında `KisiEtkinlikleri`: kişiyi kapsayan (kendisi, üyesi olduğu grup, herkes) yaklaşan etkinlikler (5, "tümünü göster"), geri sayım (7 gün ve altı vurgulu), son 3 geçmiş; "+ Etkinlik" kişi seçili açılır; satıra tıklayınca düzenle/sil.
+
+## Raporda vücut ölçüleri (Kasım 2026)
+- "Vücut ölçüleri" bölümü her raporda varsayılan açık. Antropometri kategorisi artık test sonuçları/norm bölümlerinde yok, yalnızca burada.
+- Sporcu raporu: boy, kilo, yağ oranı (renksiz, önceki → son). PT raporu: bütün antropometri; yağ oranı/bel düşüşünde yeşil ↓.
+- "Yağ oranını göster" kutusu (bölüm açıkken); 12 yaş altında varsayılan kapalı.

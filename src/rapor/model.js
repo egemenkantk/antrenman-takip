@@ -60,7 +60,8 @@ export function testSatirlari(liste, A, B, { vucut = false, cihaz = {} } = {}) {
     const satirlar = anahtarlar
       .filter((k) => {
         const t = k.split('|')[0];
-        if (!vucut && ANTROPOMETRI.has(t)) return false;
+        // Antropometri yalnızca "Vücut ölçüleri" bölümünde gösterilir
+        if (!vucut && (ANTROPOMETRI.has(t) || TESTLER[t]?.kat === 'Antropometri')) return false;
         return testBilgisi(t).kat === kat;
       })
       .sort((x, y) => {
