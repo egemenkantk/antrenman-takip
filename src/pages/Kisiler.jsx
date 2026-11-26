@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import KisiEtkinlikleri from '../takvim/KisiEtkinlikleri';
 import { useOturum } from '../auth/OturumContext';
 import { yetkili } from '../auth/hesap';
 import { kisiSilSunucu, hataMesaji, telefonuDuzenle, telefonuGoster } from '../auth/hesap';
@@ -518,6 +519,7 @@ function KisiKarti({ kisi, subeler, koclar, kullanicilar, yonetici, benim, progr
             <div><dt>Koç</dt><dd>{kocAdlari.join(', ') || (kisi.eskiKoclar?.length ? `Atanmadı (eski kayıtta: ${kisi.eskiKoclar.join(', ')})` : '—')}</dd></div>
             {kisi.not && <div className="genis"><dt>Not</dt><dd>{kisi.not}</dd></div>}
           </dl>
+          {!kisi.sadeceOdeme && <KisiEtkinlikleri kisi={kisi} />}
           <div className="dugme-satiri">
             <button className="ikincil kucuk" onClick={() => setDuzenle(true)}>Bilgileri düzenle</button>
             {yonetici && (

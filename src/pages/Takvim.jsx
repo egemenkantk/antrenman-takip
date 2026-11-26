@@ -8,6 +8,7 @@ import { degisiklikleriGetir } from '../takvim/degisiklik';
 import { bugun, gunEkle, coz, ymd, HARF } from '../program/model';
 import { gununKartlari } from '../takvim/gunHesap';
 import { etkinlikleriGetir, etkinlikKaydet, etkinlikSil, ETKINLIK_TURU, ETKINLIK_SIMGE } from '../takvim/veri';
+import EtkinlikFormu from '../takvim/EtkinlikFormu';
 
 const GUNLER = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 const haftaBasi = (t) => gunEkle(t, -((coz(t).getDay() + 6) % 7));
@@ -16,118 +17,6 @@ const ayAdi = (t) => coz(t).toLocaleDateString('tr-TR', { month: 'long', year: '
 const gunNo = (t) => coz(t).getDate();
 const aralikMetni = (a, b) =>
   `${coz(a).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })} – ${coz(b).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-
-function EtkinlikFormu({ ilk, kisiler, gruplar, onKaydet, onSil, onVazgec }) {
-  const [f, setF] = useState({
-    tur: ilk?.tur || 'mac',
-    ad: ilk?.ad || '',
-    tarih: ilk?.tarih || bugun(),
-    saat: ilk?.saat || '',
-    yer: ilk?.yer || '',
-    kapsam: ilk?.kapsam || 'secili',
-    grupIds: ilk?.grupIds || [],
-    kisiIds: ilk?.kisiIds || [],
-    not: ilk?.not || '',
-  });
-  const [ara, setAra] = useState('');
-  const [hata, setHata] = useState('');
-  const [bekliyor, setBekliyor] = useState(false);
-  const adaylar = ara.trim()
-    ? kisiler.filter((k) => k.aktif !== false && !f.kisiIds.includes(k.id) && k.ad.toLocaleLowerCase('tr').includes(ara.trim().toLocaleLowerCase('tr')))
-    : [];
-
-  async function kaydet(e) {
-    e.preventDefault();
-    setHata('');
-    if (!f.tarih) return setHata('Tarih gerekli.');
-    if (f.kapsam === 'secili' && !f.grupIds.length && !f.kisiIds.length) return setHata('Etkinliğin kimleri kapsadığını seç ya da "Herkes"i işaretle.');
-    setBekliyor(true);
-    try {
-      await onKaydet({ ...f, ad: f.ad.trim(), grupIds: f.kapsam === 'herkes' ? [] : f.grupIds, kisiIds: f.kapsam === 'herkes' ? [] : f.kisiIds });
-    } catch (err) {
-      setHata(hataMesaji(err));
-      setBekliyor(false);
-    }
-  }
-
-  return (
-    <form className="kart-form" onSubmit={kaydet}>
-      <h3>{ilk ? 'Etkinliği düzenle' : 'Yeni etkinlik'}</h3>
-      <div className="secim-cubugu" role="radiogroup" aria-label="Etkinlik türü">
-        {Object.entries(ETKINLIK_TURU).map(([v, ad]) => (
-          <button type="button" key={v} role="radio" aria-checked={f.tur === v} className={'secim' + (f.tur === v ? ' secili' : '')} onClick={() => setF({ ...f, tur: v })}>
-            {ETKINLIK_SIMGE[v]} {ad}
-          </button>
-        ))}
-      </div>
-      <div className="form-izgara">
-        <label className="alan"><span>Başlık</span><input value={f.ad} onChange={(e) => setF({ ...f, ad: e.target.value })} placeholder={f.tur === 'mac' ? 'Örn. Lig maçı – deplasman' : ''} /></label>
-        <label className="alan"><span>Tarih</span><input type="date" value={f.tarih} onChange={(e) => setF({ ...f, tarih: e.target.value })} /></label>
-        <label className="alan"><span>Saat (isteğe bağlı)</span><input type="time" value={f.saat} onChange={(e) => setF({ ...f, saat: e.target.value })} /></label>
-        <label className="alan"><span>Yer</span><input value={f.yer} onChange={(e) => setF({ ...f, yer: e.target.value })} /></label>
-      </div>
-      <div className="alan">
-        <span>Kimleri kapsıyor?</span>
-        <div className="secim-cubugu" role="radiogroup" aria-label="Kapsam">
-          {[['secili', 'Seçili grup / kişiler'], ['herkes', 'Herkes']].map(([v, ad]) => (
-            <button type="button" key={v} role="radio" aria-checked={f.kapsam === v} className={'secim' + (f.kapsam === v ? ' secili' : '')} onClick={() => setF({ ...f, kapsam: v })}>
-              {ad}
-            </button>
-          ))}
-        </div>
-      </div>
-      {f.kapsam === 'secili' && (
-        <>
-          {gruplar.length > 0 && (
-            <div className="alan">
-              <span>Gruplar</span>
-              <div className="cip-grubu">
-                {gruplar.filter((g) => g.aktif !== false).map((g) => {
-                  const acik = f.grupIds.includes(g.id);
-                  return (
-                    <button type="button" key={g.id} className={'cip' + (acik ? ' secili' : '')} aria-pressed={acik} onClick={() => setF({ ...f, grupIds: acik ? f.grupIds.filter((x) => x !== g.id) : [...f.grupIds, g.id] })}>
-                      {g.ad}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          <div className="alan">
-            <span>Kişiler ({f.kisiIds.length})</span>
-            <div className="cip-grubu">
-              {f.kisiIds.map((id) => (
-                <button type="button" key={id} className="cip secili" onClick={() => setF({ ...f, kisiIds: f.kisiIds.filter((x) => x !== id) })}>
-                  {kisiler.find((k) => k.id === id)?.ad || 'Kişi'} ×
-                </button>
-              ))}
-            </div>
-            <input type="search" placeholder="Kişi eklemek için isim ara" value={ara} onChange={(e) => setAra(e.target.value)} />
-            {adaylar.length > 0 && (
-              <div className="cip-grubu">
-                {adaylar.slice(0, 10).map((k) => (
-                  <button type="button" key={k.id} className="cip" onClick={() => { setF({ ...f, kisiIds: [...f.kisiIds, k.id] }); setAra(''); }}>+ {k.ad}</button>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-      <label className="alan"><span>Not</span><input value={f.not} onChange={(e) => setF({ ...f, not: e.target.value })} /></label>
-      {(f.tur === 'mac' || f.tur === 'turnuva') && (
-        <p className="aciklama kucuk-yazi">Maç ve turnuvalar, "maç gününe göre" planlanmış bloklarda seansların yerini belirler (MD-4, MD-2…).</p>
-      )}
-      {hata && <p className="hata">{hata}</p>}
-      <div className="dugme-satiri">
-        <button className="birincil" disabled={bekliyor}>{bekliyor ? 'Kaydediliyor…' : 'Kaydet'}</button>
-        <button type="button" className="metin" onClick={onVazgec}>Vazgeç</button>
-        {ilk && (
-          <button type="button" className="metin tehlike" onClick={onSil}>Sil</button>
-        )}
-      </div>
-    </form>
-  );
-}
 
 function SeansSatiri({ c, onAc }) {
   const s = c.s;
@@ -226,10 +115,11 @@ export default function Takvim({ onGeri, onGunAc }) {
           kisiler={temel?.kisiler || []}
           gruplar={temel?.gruplar || []}
           onVazgec={() => setForm(null)}
-          onKaydet={async (v) => {
-            await etkinlikKaydet(form.id ? form : null, v, ben.id);
+          onKaydet={async (liste) => {
+            if (form.id) await etkinlikKaydet(form, liste[0], ben.id);
+            else for (const v of liste) await etkinlikKaydet(null, v, ben.id);
             setForm(null);
-            setOdak(v.tarih);
+            setOdak(liste[0].tarih);
             await araligiYukle();
           }}
           onSil={async () => {
